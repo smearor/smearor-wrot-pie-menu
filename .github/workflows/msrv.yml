@@ -1,0 +1,53 @@
+name: MSRV
+run-name: Minimum Supported Rust Version for ${{ github.ref == 'refs/heads/main' && 'Nightly' || github.event_name == 'pull_request' && format('{0} {1}', 'Pull Request', github.event.pull_request.number) || format('{0} {1}', 'Branch', github.ref) }} by @${{ github.actor }}
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "crates/**/*.rs"
+      - "crates/**/Cargo.toml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/msrv.yml"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "crates/**/*.rs"
+      - "crates/**/Cargo.toml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/msrv.yml"
+
+env:
+  CARGO_TERM_COLOR: always
+  APT_PACKAGES: curl build-essential libgtk-4-dev libgtk4-layer-shell-dev
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:26.04
+    continue-on-error: true
+    steps:
+      - name: VCS Checkout
+        uses: actions/checkout@v7
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y ${{ env.APT_PACKAGES }}
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Install cargo msrv
+        uses: taiki-e/cache-cargo-install-action@v3
+        with:
+          tool: cargo-msrv@0.19.3
+      - name: Version of cargo msrv
+        run: cargo msrv --version
+      - name: Run cargo msrv
+        run: cargo msrv --output-format json verify
+      - name: Run cargo msrv on verify failure
+        if: ${{ failure() }}
+        run: cargo msrv find --output-format json

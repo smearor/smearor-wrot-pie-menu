@@ -1,0 +1,50 @@
+# MenuItem
+
+The `MenuItem` struct represents a single item in the pie menu. It is constructed using the `TypedBuilder` pattern.
+
+## Fields
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `id` | `String` | Yes | — | Unique identifier |
+| `label` | `String` | Yes | — | Display text below the icon |
+| `label_color` | `RgbaColor` | No | White (`#FFFFFFFF`) | Color of the label text |
+| `icon_name` | `String` | Yes | — | GTK icon theme name |
+| `color` | `RgbaColor` | No | Grey (`#77777777`) | Background circle color |
+| `angle` | `f32` | Yes | — | Position in degrees (0 = right, 90 = down) |
+| `radius` | `Option<f32>` | No | `40.0` | Item circle radius in pixels |
+| `event` | `String` | Yes | — | Event name sent as `PieMenuMessage::Event` |
+
+## Construction
+
+```rust
+use smearor_wrot_pie_menu::MenuItem;
+
+let item = MenuItem::builder()
+    .id("rotate-cw")
+    .label("Rotate CW")
+    .icon_name("object-rotate-right-symbolic")
+    .color("#00000077")
+    .label_color("#FFFFFFFF")
+    .angle(0.0)
+    .radius(30.0)
+    .event("rotate-cw")
+    .build();
+```
+
+## Colors
+
+Colors accept any type that implements `Into<RgbaColor>`:
+- `&str` / `String` — hex string like `"#RRGGBBAA"` or `"#RRGGBB"`
+- `RgbColor` — RGB only (alpha defaults to 1.0)
+- `RgbaColor` — full RGBA
+
+## Equality
+
+`MenuItem` implements `Hash`, `PartialEq`, and `Eq` based **only** on the `id` field. This allows items with the same id to be treated as equal regardless of other fields.
+
+## Default Constants
+
+- `DEFAULT_MENU_ITEM_RADIUS: f32 = 40.0`
+- `DEFAULT_LABEL_COLOR: RgbaColor = white`
+- `DEFAULT_ICON_COLOR: RgbaColor = grey`

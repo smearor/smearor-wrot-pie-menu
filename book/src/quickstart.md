@@ -1,0 +1,87 @@
+# Quick Start
+
+## Installation
+
+Add `smearor-wrot-pie-menu` to your `Cargo.toml`:
+
+```toml
+[dependencies]
+smearor-wrot-pie-menu = "0.1"
+gtk4 = { version = "0.11", features = ["v4_20"] }
+```
+
+## Minimal Example
+
+The following example creates a GTK4 application window containing a `PieMenuOverlayWidget` with a label as child and two menu items:
+
+```rust
+use smearor_wrot_pie_menu::MenuItem;
+use smearor_wrot_pie_menu::PieMenuMessage;
+use smearor_wrot_pie_menu::PieMenuOverlayWidget;
+use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
+use gtk4::prelude::*;
+use gtk4::{Application, ApplicationWindow, Label};
+use std::sync::mpsc::channel;
+
+fn main() -> glib::ExitCode {
+    let application = Application::builder()
+        .application_id("io.smearor.pie_menu.example")
+        .build();
+
+    application.connect_activate(|app| {
+        let window = ApplicationWindow::builder()
+            .application(app)
+            .title("Pie Menu Example")
+            .default_width(400)
+            .default_height(400)
+            .build();
+
+        let label = Label::new(Some("Pinch to open pie menu"));
+
+        let (sender, receiver) = channel::<PieMenuMessage>();
+
+        let overlay = PieMenuOverlayWidget::new(Some(&label));
+        overlay.set_message_sender(sender);
+
+        overlay.add_menu_item(
+            MenuItem::builder()
+                .id("red")
+                .label("Red")
+                .icon_name("media-playback-stop-symbolic")
+                .color("#FF000077")
+                .angle(0.0)
+                .event("red")
+                .build(),
+        );
+        overlay.add_menu_item(
+            MenuItem::builder()
+                .id("green")
+                .label("Green")
+                .icon_name("media-playback-stop-symbolic")
+                .color("#00FF0077")
+                .angle(180.0)
+                .event("green")
+                .build(),
+        );
+
+        window.set_child(Some(&overlay));
+        window.present();
+    });
+
+    application.run()
+}
+```
+
+## Running
+
+Build and run the example:
+
+```sh
+cargo run
+```
+
+## Next Steps
+
+- See the [Examples](examples.md) page for interactive demos.
+- Read about the full [API Reference](api.md) for all available methods.
+- Learn about the [Architecture](architecture.md) for internal details.
