@@ -7,9 +7,9 @@
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
+use smearor_wrot_pie_menu::RotationHandler;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
-use smearor_wrot_pie_menu::RotationHandler;
 use smearor_wrot_rotation::RotationControlHandler;
 use smearor_wrot_rotation::RotationWidget;
 use smearor_wrot_rotation::SmearorRotation;
@@ -276,21 +276,19 @@ fn build_ui(app: &Application) {
                 Ok(PieMenuMessage::Rotate(degrees)) => {
                     last_rotation_msg = Some(degrees);
                 }
-                Ok(PieMenuMessage::Event(event)) => {
-                    match event.as_str() {
-                        "rotate-cw" => {
-                            let current = rotation_widget_for_messages.rotation();
-                            let new_rotation = (current + 90.0) % 360.0;
-                            rotation_widget_for_messages.set_rotation_with_animation(new_rotation as f64);
-                        }
-                        "rotate-ccw" => {
-                            let current = rotation_widget_for_messages.rotation();
-                            let new_rotation = (current - 90.0 + 360.0) % 360.0;
-                            rotation_widget_for_messages.set_rotation_with_animation(new_rotation as f64);
-                        }
-                        _ => {}
+                Ok(PieMenuMessage::Event(event)) => match event.as_str() {
+                    "rotate-cw" => {
+                        let current = rotation_widget_for_messages.rotation();
+                        let new_rotation = (current + 90.0) % 360.0;
+                        rotation_widget_for_messages.set_rotation_with_animation(new_rotation as f64);
                     }
-                }
+                    "rotate-ccw" => {
+                        let current = rotation_widget_for_messages.rotation();
+                        let new_rotation = (current - 90.0 + 360.0) % 360.0;
+                        rotation_widget_for_messages.set_rotation_with_animation(new_rotation as f64);
+                    }
+                    _ => {}
+                },
                 Err(_) => break,
             }
         }

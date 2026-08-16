@@ -121,13 +121,7 @@ mod tests {
 
     #[test]
     fn test_menu_item_radius_default() {
-        let item = MenuItem::builder()
-            .id("test")
-            .label("Test")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("event")
-            .build();
+        let item = MenuItem::builder().id("test").label("Test").icon_name("icon").angle(0.0).event("event").build();
         assert_eq!(item.radius(), DEFAULT_MENU_ITEM_RADIUS);
     }
 

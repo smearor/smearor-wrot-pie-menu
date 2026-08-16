@@ -150,11 +150,7 @@ impl RgbaColor {
 
 impl Display for RgbaColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "RgbaColor(r={}, g={}, b={} a={})",
-            self.color.red, self.color.green, self.color.blue, self.alpha
-        )
+        write!(f, "RgbaColor(r={}, g={}, b={} a={})", self.color.red, self.color.green, self.color.blue, self.alpha)
     }
 }
 
@@ -172,8 +168,7 @@ impl From<&RgbaColor> for gdk::RGBA {
 
 impl From<&str> for RgbaColor {
     fn from(hex: &str) -> Self {
-        RgbaColor::parse_hex_with_optional_alpha(hex)
-            .unwrap_or_else(|_| panic!("Invalid hex color string: '{hex}'"))
+        RgbaColor::parse_hex_with_optional_alpha(hex).unwrap_or_else(|_| panic!("Invalid hex color string: '{hex}'"))
     }
 }
 

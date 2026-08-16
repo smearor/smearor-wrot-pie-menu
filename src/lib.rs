@@ -10,8 +10,8 @@ pub mod menu;
 pub mod menu_widget;
 pub mod overlay_widget;
 
-pub use menu::MenuItem;
 pub use menu::DEFAULT_MENU_ITEM_RADIUS;
+pub use menu::MenuItem;
 pub use menu_widget::PieMenuWidget;
 pub use menu_widget::imp::PieMenuWidgetImpl;
 pub use menu_widget::rotation::handler::RotationHandler;
