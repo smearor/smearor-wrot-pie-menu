@@ -21,6 +21,9 @@ thiserror = "2.0"
 tracing = "0.1"
 typed-builder = "0.23.2"
 
+[dev-dependencies]
+smearor-wrot-rotation = { path = "../smearor-wrot-rotation" }
+
 [features]
 default = ["layer-shell"]
 layer-shell = ["dep:gtk4-layer-shell"]
