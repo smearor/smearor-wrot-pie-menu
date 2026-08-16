@@ -22,7 +22,7 @@ tracing = "0.1"
 typed-builder = "0.23.2"
 
 [dev-dependencies]
-smearor-wrot-rotation = { path = "../smearor-wrot-rotation" }
+smearor-wrot-rotation = { version = "0.2.0" }
 
 [features]
 default = ["layer-shell"]

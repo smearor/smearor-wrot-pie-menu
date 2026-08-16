@@ -724,6 +724,8 @@ dependencies = [
 [[package]]
 name = "smearor-wrot-rotation"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f1ca582f388ed6a625e7711971cca8adaccf463d205b430b7dddc6bf8a11c62"
 dependencies = [
  "glib",
  "gtk4",
