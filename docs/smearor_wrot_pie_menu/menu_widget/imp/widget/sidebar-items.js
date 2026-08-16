@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_PIE_MENU_CENTER_RADIUS","DEFAULT_PIE_MENU_RADIUS"],"struct":["PieMenuWidgetImpl"]};

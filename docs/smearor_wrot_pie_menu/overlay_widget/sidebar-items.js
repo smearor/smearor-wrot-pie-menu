@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["control","imp","menu_item","message","rotation","widget"]};
