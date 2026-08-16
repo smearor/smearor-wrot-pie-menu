@@ -1,5 +1,7 @@
 use crate::menu::item::MenuItem;
 use dashmap::DashMap;
+use serde::Deserialize;
+use serde::Serialize;
 use std::ops::Deref;
 
 /// A collection of menu items indexed by their id
@@ -22,6 +24,35 @@ impl Deref for Menu {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl Serialize for Menu {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeMap;
+        let mut map = serializer.serialize_map(Some(self.0.len()))?;
+        for entry in self.0.iter() {
+            map.serialize_entry(&entry.key(), &entry.value())?;
+        }
+        map.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for Menu {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use std::collections::HashMap;
+        let items: HashMap<String, MenuItem> = HashMap::deserialize(deserializer)?;
+        let dash_map = DashMap::new();
+        for (id, item) in items {
+            dash_map.insert(id, item);
+        }
+        Ok(Menu(dash_map))
     }
 }
 

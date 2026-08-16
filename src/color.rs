@@ -1,4 +1,6 @@
 use gtk4::gdk;
+use serde::Deserialize;
+use serde::Serialize;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::str::FromStr;
@@ -21,7 +23,7 @@ pub enum ParseHexError {
 }
 
 /// An RGB color with f32 components in the range [0.0, 1.0]
-#[derive(Debug, Clone, Copy, PartialEq, TypedBuilder)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TypedBuilder)]
 pub struct RgbColor {
     /// The red component
     pub red: f32,
@@ -88,7 +90,7 @@ impl From<RgbColor> for RgbaColor {
 }
 
 /// An RGBA color with f32 components in the range [0.0, 1.0]
-#[derive(Debug, Clone, Copy, PartialEq, TypedBuilder)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TypedBuilder)]
 pub struct RgbaColor {
     /// The RGB color components
     pub color: RgbColor,

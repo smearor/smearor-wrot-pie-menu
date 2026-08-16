@@ -1,4 +1,6 @@
 use crate::color::RgbaColor;
+use serde::Deserialize;
+use serde::Serialize;
 use std::hash::Hash;
 use std::hash::Hasher;
 use typed_builder::TypedBuilder;
@@ -13,7 +15,7 @@ pub const DEFAULT_LABEL_COLOR: RgbaColor = RgbaColor::with_rgb(1.0, 1.0, 1.0, 1.
 pub const DEFAULT_ICON_COLOR: RgbaColor = RgbaColor::with_rgb(0.467, 0.467, 0.467, 0.467);
 
 /// A single item in a pie menu
-#[derive(Debug, Clone, TypedBuilder)]
+#[derive(Debug, Clone, Serialize, Deserialize, TypedBuilder)]
 pub struct MenuItem {
     /// The unique identifier
     #[builder(setter(into))]
