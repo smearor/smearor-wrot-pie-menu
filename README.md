@@ -54,6 +54,16 @@ match receiver.try_recv() {
 }
 ```
 
+## Interactive Demo
+
+![Interactive Demo](book/src/assets/interactive-demo.png)
+
+Run the interactive demo that integrates `smearor-wrot-rotation`:
+
+```sh
+cargo run --example interactive_demo
+```
+
 ## API
 
 ### `PieMenuOverlayWidget`
