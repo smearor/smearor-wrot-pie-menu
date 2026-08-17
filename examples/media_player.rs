@@ -358,7 +358,11 @@ fn build_ui(app: &Application) {
                         }
                         if let Some(mut item) = overlay_for_messages.get_menu_item("play-pause") {
                             item.label = if *playing { "Pause".to_string() } else { "Play".to_string() };
-                            item.icon_name = if *playing { "media-playback-pause-symbolic".to_string() } else { "media-playback-start-symbolic".to_string() };
+                            item.icon_name = if *playing {
+                                "media-playback-pause-symbolic".to_string()
+                            } else {
+                                "media-playback-start-symbolic".to_string()
+                            };
                             let _ = overlay_for_messages.update_menu_item(item);
                         }
                     }
