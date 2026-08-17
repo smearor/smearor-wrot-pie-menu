@@ -4,6 +4,7 @@ use crate::PieMenuWidget;
 use crate::RotationHandler;
 use crate::overlay_widget::control::handler::PieMenuControlHandler;
 use crate::overlay_widget::message::handler::PieMenuMessageSender;
+use atomic_float::AtomicF64;
 use glib::Propagation;
 use glib::subclass::prelude::*;
 use gtk4::BinLayout;
@@ -51,7 +52,21 @@ pub struct PieMenuOverlayWidgetImpl {
 
     /// Last rotation value sent to main application
     pub(crate) last_sent_rotation: RefCell<Option<f32>>,
+
+    /// Pinch-to-zoom scale threshold above which the pie menu opens.
+    /// Configurable via `set_activation_threshold()`. Default: `3.5`.
+    pub(crate) activation_threshold: AtomicF64,
+
+    /// Pinch-out scale threshold below which the pie menu closes.
+    /// Configurable via `set_deactivation_threshold()`. Default: `0.5`.
+    pub(crate) deactivation_threshold: AtomicF64,
 }
+
+/// Default activation threshold for pinch-to-zoom (scale must exceed this to open the menu)
+pub const DEFAULT_ACTIVATION_THRESHOLD: f64 = 3.5;
+
+/// Default deactivation threshold for pinch-out (scale must drop below this to close the menu)
+pub const DEFAULT_DEACTIVATION_THRESHOLD: f64 = 0.5;
 
 impl Default for PieMenuOverlayWidgetImpl {
     fn default() -> Self {
@@ -64,6 +79,8 @@ impl Default for PieMenuOverlayWidgetImpl {
             initial_rotation: RefCell::new(None),
             is_rotating: Arc::new(AtomicBool::new(false)),
             last_sent_rotation: RefCell::new(None),
+            activation_threshold: AtomicF64::new(DEFAULT_ACTIVATION_THRESHOLD),
+            deactivation_threshold: AtomicF64::new(DEFAULT_DEACTIVATION_THRESHOLD),
         }
     }
 }
@@ -105,14 +122,8 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
 
         let widget_weak = widget.downgrade();
         event_controller.connect_event(move |_event_controller, _event| {
-            let Some(widget) = widget_weak.upgrade() else {
-                return Propagation::Proceed;
-            };
-            if widget.is_pie_menu_open() {
-                Propagation::Proceed
-            } else {
-                Propagation::Proceed
-            }
+            let _ = widget_weak.upgrade();
+            Propagation::Proceed
         });
 
         widget.add_controller(event_controller);
@@ -128,11 +139,13 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
             };
             widget.imp().is_zooming.store(true, Ordering::Relaxed);
             let is_open = widget.is_pie_menu_open();
-            if scale > 3.5 && !is_open {
+            let activation_threshold = widget.imp().activation_threshold.load(Ordering::Relaxed);
+            let deactivation_threshold = widget.imp().deactivation_threshold.load(Ordering::Relaxed);
+            if scale > activation_threshold && !is_open {
                 info!("Zoom gesture detected (scale: {:.2}), opening pie menu", scale);
                 let _ = widget.show_pie_menu();
                 gesture.set_state(EventSequenceState::Claimed);
-            } else if scale < 0.5 && is_open {
+            } else if scale < deactivation_threshold && is_open {
                 info!("Zoom gesture detected (scale: {:.2}), closing pie menu", scale);
                 let _ = widget.hide_pie_menu();
                 gesture.set_state(EventSequenceState::Claimed);
@@ -273,6 +286,9 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                     let menu_items = &menu_widget.imp().menu_items;
 
                     for item in menu_items.iter() {
+                        if !item.enabled {
+                            continue;
+                        }
                         let angle_rad = (item.angle + rotation).to_radians();
                         let item_x = center_x + (radius * 0.7) * angle_rad.cos();
                         let item_y = center_y + (radius * 0.7) * angle_rad.sin();
@@ -318,5 +334,36 @@ impl WidgetImpl for PieMenuOverlayWidgetImpl {
     fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
         self.parent_size_allocate(width, height, baseline);
         self.overlay.allocate(width, height, baseline, None);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_activation_threshold() {
+        let threshold = AtomicF64::new(DEFAULT_ACTIVATION_THRESHOLD);
+        assert_eq!(threshold.load(Ordering::Relaxed), 3.5);
+    }
+
+    #[test]
+    fn test_default_deactivation_threshold() {
+        let threshold = AtomicF64::new(DEFAULT_DEACTIVATION_THRESHOLD);
+        assert_eq!(threshold.load(Ordering::Relaxed), 0.5);
+    }
+
+    #[test]
+    fn test_set_activation_threshold() {
+        let threshold = AtomicF64::new(DEFAULT_ACTIVATION_THRESHOLD);
+        threshold.store(2.5, Ordering::Relaxed);
+        assert_eq!(threshold.load(Ordering::Relaxed), 2.5);
+    }
+
+    #[test]
+    fn test_set_deactivation_threshold() {
+        let threshold = AtomicF64::new(DEFAULT_DEACTIVATION_THRESHOLD);
+        threshold.store(0.3, Ordering::Relaxed);
+        assert_eq!(threshold.load(Ordering::Relaxed), 0.3);
     }
 }

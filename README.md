@@ -18,11 +18,16 @@ via the [`MenuItem`] API and receive events via [`PieMenuMessage`].
 
 ## Features
 
-- **Touch gesture activation**: Opens on pinch-to-zoom (scale > 3.5), closes on pinch-out (scale < 0.5)
+- **Touch gesture activation**: Opens on pinch-to-zoom, closes on pinch-out — both thresholds are configurable
 - **Rotation gesture**: Rotate the menu ring with a two-finger rotation gesture
 - **Configurable menu items**: Add/remove items programmatically with custom icons, colors, angles, and events
-- **Hover detection**: Mouse hover highlights the nearest menu item
-- **Click-to-select**: Click a menu item to trigger its event
+- **Disabled state**: Disable individual menu items (reduced opacity, no click, no hover)
+- **Builder pattern**: Fluent API for ergonomic widget construction (`with_message_sender()`, `with_menu_item()`, etc.)
+- **Automatic angle distribution**: Auto-distribute items evenly across the ring with `add_menu_item_auto()`
+- **Fixed-position items**: Pin semantically positioned items (e.g. "Rotate CW" at 0°) that resist redistribution
+- **Overlap validation**: Prevents visually overlapping items with automatic rollback on failure
+- **Hover detection**: Mouse hover highlights the nearest enabled menu item
+- **Click-to-select**: Click an enabled menu item to trigger its event
 - **Center close button**: Click the center circle to close the menu
 - **GTK4 native**: Built as a proper GTK4 widget with `BinLayout` overlay
 
@@ -37,24 +42,25 @@ use std::sync::mpsc::channel;
 
 let (sender, receiver) = channel::<PieMenuMessage>();
 
-let overlay = PieMenuOverlayWidget::new(Some(&child_widget));
-overlay.set_message_sender(sender);
-
-// Add menu items
-overlay.add_menu_item(
-    MenuItem::builder()
-        .id("rotate-cw")
-        .label("Rotate CW")
-        .icon_name("object-rotate-right-symbolic")
-        .color("#00000077")
-        .angle(0.0)
-        .radius(30.0)
-        .event("rotate-cw")
-        .build(),
-);
+let overlay = PieMenuOverlayWidget::new(Some(&child_widget))
+    .with_message_sender(sender)
+    .with_activation_threshold(2.5)
+    .with_menu_item(
+        MenuItem::builder()
+            .id("rotate-cw")
+            .label("Rotate CW")
+            .icon_name("object-rotate-right-symbolic")
+            .color("#00000077")
+            .angle(0.0)
+            .fixed_position(true)
+            .event("rotate-cw")
+            .build(),
+    )?;
 
 // Handle messages in your event loop
 match receiver.try_recv() {
+    Ok(PieMenuMessage::Opened) => { /* pie menu opened */ }
+    Ok(PieMenuMessage::Closed) => { /* pie menu closed */ }
     Ok(PieMenuMessage::Rotate(degrees)) => { /* handle rotation */ }
     Ok(PieMenuMessage::Event(name)) => { /* handle event by name */ }
     Err(_) => {}
@@ -79,11 +85,13 @@ The main widget. Wrap any child widget with this overlay to add pie menu functio
 
 ### `MenuItem`
 
-A single menu item with an id, label, icon, color, angle, radius, and event name.
+A single menu item with an id, label, icon, color, angle, radius, event name, enabled state, and fixed-position flag.
 
 ### `PieMenuMessage`
 
 Messages sent from the pie menu to the consumer:
+- `Opened` — the pie menu was opened
+- `Closed` — the pie menu was closed
 - `Rotate(f32)` — rotation delta in degrees from the rotation gesture
 - `Event(String)` — the event name of the clicked menu item
 

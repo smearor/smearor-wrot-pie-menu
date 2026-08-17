@@ -33,4 +33,20 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
     fn is_pie_menu_open(&self) -> bool {
         self.visible.load(Ordering::Relaxed)
     }
+
+    fn set_activation_threshold(&self, threshold: f64) {
+        self.activation_threshold.store(threshold, Ordering::Relaxed);
+    }
+
+    fn activation_threshold(&self) -> f64 {
+        self.activation_threshold.load(Ordering::Relaxed)
+    }
+
+    fn set_deactivation_threshold(&self, threshold: f64) {
+        self.deactivation_threshold.store(threshold, Ordering::Relaxed);
+    }
+
+    fn deactivation_threshold(&self) -> f64 {
+        self.deactivation_threshold.load(Ordering::Relaxed)
+    }
 }

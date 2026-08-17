@@ -40,29 +40,33 @@ fn main() -> glib::ExitCode {
 
         let (sender, receiver) = channel::<PieMenuMessage>();
 
-        let overlay = PieMenuOverlayWidget::new(Some(&label));
-        overlay.set_message_sender(sender);
-
-        overlay.add_menu_item(
-            MenuItem::builder()
-                .id("red")
-                .label("Red")
-                .icon_name("media-playback-stop-symbolic")
-                .color("#FF000077")
-                .angle(0.0)
-                .event("red")
-                .build(),
-        );
-        overlay.add_menu_item(
-            MenuItem::builder()
-                .id("green")
-                .label("Green")
-                .icon_name("media-playback-stop-symbolic")
-                .color("#00FF0077")
-                .angle(180.0)
-                .event("green")
-                .build(),
-        );
+        let overlay = PieMenuOverlayWidget::new(Some(&label))
+            .with_message_sender(sender)
+            .with_activation_threshold(2.5)
+            .with_menu_item(
+                MenuItem::builder()
+                    .id("red")
+                    .label("Red")
+                    .icon_name("media-playback-stop-symbolic")
+                    .color("#FF000077")
+                    .angle(0.0)
+                    .fixed_position(true)
+                    .event("red")
+                    .build(),
+            )
+            .unwrap()
+            .with_menu_item(
+                MenuItem::builder()
+                    .id("green")
+                    .label("Green")
+                    .icon_name("media-playback-stop-symbolic")
+                    .color("#00FF0077")
+                    .angle(180.0)
+                    .fixed_position(true)
+                    .event("green")
+                    .build(),
+            )
+            .unwrap();
 
         window.set_child(Some(&overlay));
         window.present();

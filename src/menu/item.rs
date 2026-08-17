@@ -40,6 +40,14 @@ pub struct MenuItem {
     /// The name of the event to be triggered when the menu item is selected
     #[builder(setter(into))]
     pub event: String,
+    /// Whether the menu item is enabled (clickable). Defaults to `true`.
+    #[builder(default = true)]
+    pub enabled: bool,
+    /// When `true`, the item's `angle` is treated as a fixed semantic position.
+    /// Auto-distribution will not re-assign this item's angle.
+    /// The remaining items are distributed in the gaps between fixed items.
+    #[builder(default = false)]
+    pub fixed_position: bool,
 }
 
 impl MenuItem {
@@ -155,5 +163,24 @@ mod tests {
             .event("event2")
             .build();
         assert_eq!(item1, item2);
+    }
+
+    #[test]
+    fn test_menu_item_enabled_default() {
+        let item = MenuItem::builder().id("test").label("Test").icon_name("icon").angle(0.0).event("event").build();
+        assert!(item.enabled);
+    }
+
+    #[test]
+    fn test_menu_item_disabled() {
+        let item = MenuItem::builder()
+            .id("test")
+            .label("Test")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("event")
+            .enabled(false)
+            .build();
+        assert!(!item.enabled);
     }
 }

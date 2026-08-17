@@ -8,6 +8,10 @@ The `PieMenuMenuItemHandler` trait provides methods for adding and removing menu
 pub trait PieMenuMenuItemHandler {
     fn add_menu_item(&self, menu_item: MenuItem) -> Result<(), AddMenuItemError>;
     fn remove_menu_item(&self, id: &str) -> Result<(), RemoveMenuItemError>;
+    fn remove_all_menu_items(&self);
+    fn menu_item_count(&self) -> usize;
+    fn set_menu_item_enabled(&self, id: &str, enabled: bool) -> Result<(), SetMenuItemEnabledError>;
+    fn add_menu_item_auto(&self, menu_item: MenuItem) -> Result<(), AddMenuItemError>;
 }
 ```
 
@@ -39,6 +43,46 @@ Removes the menu item with the given id.
 overlay.remove_menu_item("exit");
 ```
 
+### `remove_all_menu_items()`
+
+Removes all menu items from the pie menu.
+
+```rust
+overlay.remove_all_menu_items();
+```
+
+### `menu_item_count() -> usize`
+
+Returns the number of menu items currently in the pie menu.
+
+```rust
+let count = overlay.menu_item_count();
+```
+
+### `set_menu_item_enabled(&str, bool)`
+
+Sets the enabled state of a menu item. Disabled items render at reduced opacity and do not respond to hover or click.
+
+```rust
+overlay.set_menu_item_enabled("exit", false)?;
+```
+
+### `add_menu_item_auto(MenuItem)`
+
+Adds a menu item with an automatically calculated angle. See [Auto Distribution](auto_distribution.md).
+
+```rust
+overlay.add_menu_item_auto(
+    MenuItem::builder()
+        .id("save")
+        .label("Save")
+        .icon_name("document-save-symbolic")
+        .angle(0.0)
+        .event("save")
+        .build(),
+)?;
+```
+
 ## PieMenuControlHandler Trait
 
 The `PieMenuControlHandler` trait provides methods for showing and hiding the pie menu:
@@ -48,6 +92,10 @@ pub trait PieMenuControlHandler {
     fn show_pie_menu(&self) -> Result<(), ShowPieMenuError>;
     fn hide_pie_menu(&self) -> Result<(), HidePieMenuError>;
     fn is_pie_menu_open(&self) -> bool;
+    fn set_activation_threshold(&self, threshold: f64);
+    fn activation_threshold(&self) -> f64;
+    fn set_deactivation_threshold(&self, threshold: f64);
+    fn deactivation_threshold(&self) -> f64;
 }
 ```
 
@@ -62,6 +110,14 @@ Hides the pie menu widget by setting it invisible.
 ### `is_pie_menu_open() -> bool`
 
 Returns whether the pie menu is currently visible.
+
+### `set_activation_threshold(f64)` / `activation_threshold() -> f64`
+
+Sets/gets the pinch-to-zoom activation threshold. Default: `3.5`.
+
+### `set_deactivation_threshold(f64)` / `deactivation_threshold() -> f64`
+
+Sets/gets the pinch-out deactivation threshold. Default: `0.5`.
 
 ## PieMenuMessageSender Trait
 
@@ -116,6 +172,8 @@ MenuItem::builder()
     .color("#RRGGBBAA")        // optional, default: grey
     .label_color("#RRGGBBAA")  // optional, default: white
     .radius(30.0)              // optional, default: 40.0
+    .enabled(true)             // optional, default: true
+    .fixed_position(false)     // optional, default: false
     .build()
 ```
 
@@ -125,6 +183,8 @@ Messages sent from the pie menu to the consumer:
 
 ```rust
 pub enum PieMenuMessage {
+    Opened,           // pie menu was opened
+    Closed,           // pie menu was closed
     Rotate(f32),      // rotation in degrees
     Event(String),    // menu item event name
 }
@@ -135,11 +195,23 @@ pub enum PieMenuMessage {
 | Method | Trait | Parameters | Description |
 |--------|-------|-----------|-------------|
 | `add_menu_item` | `PieMenuMenuItemHandler` | `MenuItem` | Add a menu item |
+| `add_menu_item_auto` | `PieMenuMenuItemHandler` | `MenuItem` | Add with auto-calculated angle |
 | `remove_menu_item` | `PieMenuMenuItemHandler` | `&str` | Remove by id |
+| `remove_all_menu_items` | `PieMenuMenuItemHandler` | — | Remove all items |
+| `menu_item_count` | `PieMenuMenuItemHandler` | — | Get item count |
+| `set_menu_item_enabled` | `PieMenuMenuItemHandler` | `&str, bool` | Enable/disable an item |
 | `show_pie_menu` | `PieMenuControlHandler` | — | Show the menu |
 | `hide_pie_menu` | `PieMenuControlHandler` | — | Hide the menu |
 | `is_pie_menu_open` | `PieMenuControlHandler` | — | Check visibility |
+| `set_activation_threshold` | `PieMenuControlHandler` | `f64` | Set activation threshold |
+| `activation_threshold` | `PieMenuControlHandler` | — | Get activation threshold |
+| `set_deactivation_threshold` | `PieMenuControlHandler` | `f64` | Set deactivation threshold |
+| `deactivation_threshold` | `PieMenuControlHandler` | — | Get deactivation threshold |
 | `set_message_sender` | `PieMenuMessageSender` | `Sender<PieMenuMessage>` | Set channel |
 | `send_message` | `PieMenuMessageSender` | `PieMenuMessage` | Send message |
 | `set_rotation` | `RotationHandler` | `f32` | Set rotation |
 | `set_close_callback` | `PieMenuWidget` | `Fn() + 'static` | Center click callback |
+| `with_message_sender` | `PieMenuOverlayWidget` | `Sender<PieMenuMessage>` | Builder: set sender |
+| `with_activation_threshold` | `PieMenuOverlayWidget` | `f64` | Builder: set activation threshold |
+| `with_deactivation_threshold` | `PieMenuOverlayWidget` | `f64` | Builder: set deactivation threshold |
+| `with_menu_item` | `PieMenuOverlayWidget` | `MenuItem` | Builder: add item |

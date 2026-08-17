@@ -14,6 +14,8 @@ The `MenuItem` struct represents a single item in the pie menu. It is constructe
 | `angle` | `f32` | Yes | — | Position in degrees (0 = right, 90 = down) |
 | `radius` | `Option<f32>` | No | `40.0` | Item circle radius in pixels |
 | `event` | `String` | Yes | — | Event name sent as `PieMenuMessage::Event` |
+| `enabled` | `bool` | No | `true` | Whether the item is clickable (disabled items render at reduced opacity) |
+| `fixed_position` | `bool` | No | `false` | When `true`, the item's angle is treated as a fixed semantic position that resists auto-redistribution |
 
 ## Construction
 
@@ -29,6 +31,8 @@ let item = MenuItem::builder()
     .angle(0.0)
     .radius(30.0)
     .event("rotate-cw")
+    .enabled(true)
+    .fixed_position(false)
     .build();
 ```
 

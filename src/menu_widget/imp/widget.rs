@@ -120,6 +120,9 @@ impl ObjectImpl for PieMenuWidgetImpl {
             let mut closest_index = -1i32;
             let mut closest_distance = f64::MAX;
             for (index, item) in menu_items.iter().enumerate() {
+                if !item.enabled {
+                    continue;
+                }
                 let item_angle = item.angle as f64;
                 let angle_diff = (normalized_angle - item_angle).abs();
                 let angle_diff = angle_diff.min(360.0 - angle_diff); // Handle wrap-around
@@ -327,12 +330,13 @@ impl WidgetImpl for PieMenuWidgetImpl {
             let item_color: RGBA = item.color.into();
             let item_radius = item.radius();
 
-            // Highlight if hovered
-            let is_hovered = index as i32 == hovered_index;
+            // Highlight if hovered (only for enabled items)
+            let is_hovered = item.enabled && index as i32 == hovered_index;
+            let disabled_alpha = if item.enabled { 1.0 } else { 0.4 };
             let item_color = if is_hovered {
                 RGBA::new(item_color.red() * 1.3, item_color.green() * 1.3, item_color.blue() * 1.3, 1.0)
             } else {
-                item_color
+                RGBA::new(item_color.red(), item_color.green(), item_color.blue(), disabled_alpha)
             };
 
             // Draw shadow for item circle
@@ -369,6 +373,7 @@ impl WidgetImpl for PieMenuWidgetImpl {
             pango_layout.set_font_description(Some(&font_desc));
 
             let label_color: RGBA = item.label_color.into();
+            let label_color = RGBA::new(label_color.red(), label_color.green(), label_color.blue(), disabled_alpha);
             let (_ink_rect, logical_rect) = pango_layout.extents();
             let label_width = logical_rect.width() as f32 / gtk4::pango::SCALE as f32;
 

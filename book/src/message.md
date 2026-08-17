@@ -31,6 +31,12 @@ overlay.set_message_sender(sender);
 
 // In your event loop:
 match receiver.try_recv() {
+    Ok(PieMenuMessage::Opened) => {
+        println!("Pie menu opened");
+    }
+    Ok(PieMenuMessage::Closed) => {
+        println!("Pie menu closed");
+    }
     Ok(PieMenuMessage::Rotate(degrees)) => {
         println!("Rotated to {} degrees", degrees);
     }

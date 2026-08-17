@@ -35,6 +35,21 @@ overlay.add_menu_item(
 );
 ```
 
+You can also use the [builder pattern](builder_pattern.md) for fluent construction, or `add_menu_item_auto()` for [automatic angle distribution](auto_distribution.md).
+
+## Configurable Thresholds
+
+The activation and deactivation thresholds are configurable at runtime via the `PieMenuControlHandler` trait:
+
+```rust
+use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+overlay.set_activation_threshold(2.5);
+overlay.set_deactivation_threshold(0.3);
+```
+
+See the [Thresholds](thresholds.md) page for details.
+
 ## Message Channel
 
 Set up an `mpsc` channel to receive messages from the pie menu:
@@ -49,6 +64,8 @@ overlay.set_message_sender(sender);
 ```
 
 Messages received:
+- `PieMenuMessage::Opened` — the pie menu was opened
+- `PieMenuMessage::Closed` — the pie menu was closed
 - `PieMenuMessage::Rotate(f32)` — rotation in degrees from the rotation gesture
 - `PieMenuMessage::Event(String)` — the event name of the clicked menu item
 
@@ -56,7 +73,7 @@ Messages received:
 
 The `PieMenuOverlayWidget` responds to two touch gestures:
 
-- **Pinch-to-zoom** (`GestureZoom`): Opens the menu when scale > 3.5, closes when scale < 0.5
+- **Pinch-to-zoom** (`GestureZoom`): Opens the menu when scale exceeds the activation threshold (default: 3.5), closes when scale drops below the deactivation threshold (default: 0.5)
 - **Rotation** (`GestureRotate`): Rotates the menu ring and sends `Rotate` messages when the delta exceeds 10 degrees
 
 Click detection handles:
