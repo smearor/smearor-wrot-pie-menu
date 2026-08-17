@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4e877116.js";
+            window.path_to_searchindex_js = "searchindex-8203b32f.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e95e564d.js"></script>
+        <script src="toc-f3f75a96.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -205,6 +205,33 @@ overlay.add_menu_item(
         .build(),
 );
 <span class="boring">}</span></code></pre>
+<p>You can also use the <a href="builder_pattern.html">builder pattern</a> for fluent construction, or <code>add_menu_item_auto()</code> for <a href="auto_distribution.html">automatic angle distribution</a>.</p>
+<h2 id="configurable-thresholds"><a class="header" href="#configurable-thresholds">Configurable Thresholds</a></h2>
+<p>The activation and deactivation thresholds are configurable at runtime via the <code>PieMenuControlHandler</code> trait:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+overlay.set_activation_threshold(2.5);
+overlay.set_deactivation_threshold(0.3);
+<span class="boring">}</span></code></pre>
+<p>See the <a href="thresholds.html">Thresholds</a> page for details.</p>
+<h2 id="optional-rotation-gesture"><a class="header" href="#optional-rotation-gesture">Optional Rotation Gesture</a></h2>
+<p>The rotation gesture (two-finger rotate) can be enabled or disabled at runtime. When disabled, the gesture controller’s propagation phase is set to <code>None</code>, effectively ignoring rotation input. Default: <code>true</code>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+overlay.set_rotation_gesture_enabled(false);
+<span class="boring">}</span></code></pre>
+<h2 id="optional-ring-markings"><a class="header" href="#optional-ring-markings">Optional Ring Markings</a></h2>
+<p>The inner and outer ring markings (5-degree tick marks) can be toggled at runtime. Default: <code>true</code>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+overlay.set_markings_enabled(false);
+<span class="boring">}</span></code></pre>
 <h2 id="message-channel"><a class="header" href="#message-channel">Message Channel</a></h2>
 <p>Set up an <code>mpsc</code> channel to receive messages from the pie menu:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -218,13 +245,15 @@ overlay.set_message_sender(sender);
 <span class="boring">}</span></code></pre>
 <p>Messages received:</p>
 <ul>
+<li><code>PieMenuMessage::Opened</code> — the pie menu was opened</li>
+<li><code>PieMenuMessage::Closed</code> — the pie menu was closed</li>
 <li><code>PieMenuMessage::Rotate(f32)</code> — rotation in degrees from the rotation gesture</li>
 <li><code>PieMenuMessage::Event(String)</code> — the event name of the clicked menu item</li>
 </ul>
 <h2 id="gesture-handling"><a class="header" href="#gesture-handling">Gesture Handling</a></h2>
 <p>The <code>PieMenuOverlayWidget</code> responds to two touch gestures:</p>
 <ul>
-<li><strong>Pinch-to-zoom</strong> (<code>GestureZoom</code>): Opens the menu when scale &gt; 3.5, closes when scale &lt; 0.5</li>
+<li><strong>Pinch-to-zoom</strong> (<code>GestureZoom</code>): Opens the menu when scale exceeds the activation threshold (default: 3.5), closes when scale drops below the deactivation threshold (default: 0.5)</li>
 <li><strong>Rotation</strong> (<code>GestureRotate</code>): Rotates the menu ring and sends <code>Rotate</code> messages when the delta exceeds 10 degrees</li>
 </ul>
 <p>Click detection handles:</p>

@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4e877116.js";
+            window.path_to_searchindex_js = "searchindex-8203b32f.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e95e564d.js"></script>
+        <script src="toc-f3f75a96.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -182,6 +182,13 @@
 </span>pub trait PieMenuMenuItemHandler {
     fn add_menu_item(&amp;self, menu_item: MenuItem) -&gt; Result&lt;(), AddMenuItemError&gt;;
     fn remove_menu_item(&amp;self, id: &amp;str) -&gt; Result&lt;(), RemoveMenuItemError&gt;;
+    fn remove_all_menu_items(&amp;self);
+    fn menu_item_count(&amp;self) -&gt; usize;
+    fn set_menu_item_enabled(&amp;self, id: &amp;str, enabled: bool) -&gt; Result&lt;(), SetMenuItemEnabledError&gt;;
+    fn add_menu_item_auto(&amp;self, menu_item: MenuItem) -&gt; Result&lt;(), AddMenuItemError&gt;;
+    fn redistribute(&amp;self);
+    fn get_menu_item(&amp;self, id: &amp;str) -&gt; Option&lt;MenuItem&gt;;
+    fn update_menu_item(&amp;self, menu_item: MenuItem) -&gt; Result&lt;(), UpdateMenuItemError&gt;;
 }
 <span class="boring">}</span></code></pre>
 <h3 id="add_menu_itemmenuitem"><a class="header" href="#add_menu_itemmenuitem"><code>add_menu_item(MenuItem)</code></a></h3>
@@ -208,6 +215,64 @@ overlay.add_menu_item(
 </span><span class="boring">fn main() {
 </span>overlay.remove_menu_item("exit");
 <span class="boring">}</span></code></pre>
+<h3 id="remove_all_menu_items"><a class="header" href="#remove_all_menu_items"><code>remove_all_menu_items()</code></a></h3>
+<p>Removes all menu items from the pie menu.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.remove_all_menu_items();
+<span class="boring">}</span></code></pre>
+<h3 id="menu_item_count---usize"><a class="header" href="#menu_item_count---usize"><code>menu_item_count() -&gt; usize</code></a></h3>
+<p>Returns the number of menu items currently in the pie menu.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let count = overlay.menu_item_count();
+<span class="boring">}</span></code></pre>
+<h3 id="set_menu_item_enabledstr-bool"><a class="header" href="#set_menu_item_enabledstr-bool"><code>set_menu_item_enabled(&amp;str, bool)</code></a></h3>
+<p>Sets the enabled state of a menu item. Disabled items render at reduced opacity and do not respond to hover or click.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.set_menu_item_enabled("exit", false)?;
+<span class="boring">}</span></code></pre>
+<h3 id="add_menu_item_automenuitem"><a class="header" href="#add_menu_item_automenuitem"><code>add_menu_item_auto(MenuItem)</code></a></h3>
+<p>Adds a menu item with an automatically calculated angle. See <a href="auto_distribution.html">Auto Distribution</a>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.add_menu_item_auto(
+    MenuItem::builder()
+        .id("save")
+        .label("Save")
+        .icon_name("document-save-symbolic")
+        .angle(0.0)
+        .event("save")
+        .build(),
+)?;
+<span class="boring">}</span></code></pre>
+<h3 id="redistribute"><a class="header" href="#redistribute"><code>redistribute()</code></a></h3>
+<p>Redistributes all non-fixed items proportionally in the gaps between fixed items. Triggers a redraw. Useful after <code>remove_menu_item()</code> to re-space remaining items.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.remove_menu_item("shuffle")?;
+overlay.redistribute();
+<span class="boring">}</span></code></pre>
+<h3 id="get_menu_itemstr---optionmenuitem"><a class="header" href="#get_menu_itemstr---optionmenuitem"><code>get_menu_item(&amp;str) -&gt; Option&lt;MenuItem&gt;</code></a></h3>
+<p>Returns a clone of the menu item with the given id, or <code>None</code> if not found.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>if let Some(mut item) = overlay.get_menu_item("play-pause") {
+    item.label = "Pause";
+    item.icon_name = "media-playback-pause-symbolic";
+    overlay.update_menu_item(item)?;
+}
+<span class="boring">}</span></code></pre>
+<h3 id="update_menu_itemmenuitem---result-updatemenuitemerror"><a class="header" href="#update_menu_itemmenuitem---result-updatemenuitemerror"><code>update_menu_item(MenuItem) -&gt; Result&lt;(), UpdateMenuItemError&gt;</code></a></h3>
+<p>Replaces an existing menu item (matched by <code>id</code>) with the given item. All fields except <code>id</code> can be changed. If <code>angle</code> or <code>radius</code> changed, overlap validation is performed and the update is rolled back on failure. Triggers a redraw on success.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut item = overlay.get_menu_item("play-pause").unwrap();
+item.label = "Pause";
+item.icon_name = "media-playback-pause-symbolic";
+overlay.update_menu_item(item)?;
+<span class="boring">}</span></code></pre>
 <h2 id="piemenucontrolhandler-trait"><a class="header" href="#piemenucontrolhandler-trait">PieMenuControlHandler Trait</a></h2>
 <p>The <code>PieMenuControlHandler</code> trait provides methods for showing and hiding the pie menu:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -216,6 +281,14 @@ overlay.add_menu_item(
     fn show_pie_menu(&amp;self) -&gt; Result&lt;(), ShowPieMenuError&gt;;
     fn hide_pie_menu(&amp;self) -&gt; Result&lt;(), HidePieMenuError&gt;;
     fn is_pie_menu_open(&amp;self) -&gt; bool;
+    fn set_activation_threshold(&amp;self, threshold: f64);
+    fn activation_threshold(&amp;self) -&gt; f64;
+    fn set_deactivation_threshold(&amp;self, threshold: f64);
+    fn deactivation_threshold(&amp;self) -&gt; f64;
+    fn set_rotation_gesture_enabled(&amp;self, enabled: bool);
+    fn rotation_gesture_enabled(&amp;self) -&gt; bool;
+    fn set_markings_enabled(&amp;self, enabled: bool);
+    fn markings_enabled(&amp;self) -&gt; bool;
 }
 <span class="boring">}</span></code></pre>
 <h3 id="show_pie_menu"><a class="header" href="#show_pie_menu"><code>show_pie_menu()</code></a></h3>
@@ -224,6 +297,14 @@ overlay.add_menu_item(
 <p>Hides the pie menu widget by setting it invisible.</p>
 <h3 id="is_pie_menu_open---bool"><a class="header" href="#is_pie_menu_open---bool"><code>is_pie_menu_open() -&gt; bool</code></a></h3>
 <p>Returns whether the pie menu is currently visible.</p>
+<h3 id="set_activation_thresholdf64--activation_threshold---f64"><a class="header" href="#set_activation_thresholdf64--activation_threshold---f64"><code>set_activation_threshold(f64)</code> / <code>activation_threshold() -&gt; f64</code></a></h3>
+<p>Sets/gets the pinch-to-zoom activation threshold. Default: <code>3.5</code>.</p>
+<h3 id="set_deactivation_thresholdf64--deactivation_threshold---f64"><a class="header" href="#set_deactivation_thresholdf64--deactivation_threshold---f64"><code>set_deactivation_threshold(f64)</code> / <code>deactivation_threshold() -&gt; f64</code></a></h3>
+<p>Sets/gets the pinch-out deactivation threshold. Default: <code>0.5</code>.</p>
+<h3 id="set_rotation_gesture_enabledbool--rotation_gesture_enabled---bool"><a class="header" href="#set_rotation_gesture_enabledbool--rotation_gesture_enabled---bool"><code>set_rotation_gesture_enabled(bool)</code> / <code>rotation_gesture_enabled() -&gt; bool</code></a></h3>
+<p>Enables or disables the rotation gesture when the pie menu is open. When disabled, the gesture controller’s propagation phase is set to <code>None</code>, effectively ignoring rotation input. Default: <code>true</code>.</p>
+<h3 id="set_markings_enabledbool--markings_enabled---bool"><a class="header" href="#set_markings_enabledbool--markings_enabled---bool"><code>set_markings_enabled(bool)</code> / <code>markings_enabled() -&gt; bool</code></a></h3>
+<p>Enables or disables drawing of inner and outer ring markings. Default: <code>true</code>.</p>
 <h2 id="piemenumessagesender-trait"><a class="header" href="#piemenumessagesender-trait">PieMenuMessageSender Trait</a></h2>
 <p>The <code>PieMenuMessageSender</code> trait provides the message channel interface:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -266,6 +347,8 @@ overlay.set_rotation(45.0);
     .color("#RRGGBBAA")        // optional, default: grey
     .label_color("#RRGGBBAA")  // optional, default: white
     .radius(30.0)              // optional, default: 40.0
+    .enabled(true)             // optional, default: true
+    .fixed_position(false)     // optional, default: false
     .build()
 <span class="boring">}</span></code></pre>
 <h2 id="piemenumessage"><a class="header" href="#piemenumessage">PieMenuMessage</a></h2>
@@ -273,6 +356,8 @@ overlay.set_rotation(45.0);
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub enum PieMenuMessage {
+    Opened,           // pie menu was opened
+    Closed,           // pie menu was closed
     Rotate(f32),      // rotation in degrees
     Event(String),    // menu item event name
 }
@@ -285,14 +370,37 @@ overlay.set_rotation(45.0);
 </thead>
 <tbody>
 <tr><td><code>add_menu_item</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>MenuItem</code></td><td>Add a menu item</td></tr>
+<tr><td><code>add_menu_item_auto</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>MenuItem</code></td><td>Add with auto-calculated angle</td></tr>
+<tr><td><code>redistribute</code></td><td><code>PieMenuMenuItemHandler</code></td><td>—</td><td>Redistribute flexible item angles</td></tr>
 <tr><td><code>remove_menu_item</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>&amp;str</code></td><td>Remove by id</td></tr>
+<tr><td><code>remove_all_menu_items</code></td><td><code>PieMenuMenuItemHandler</code></td><td>—</td><td>Remove all items</td></tr>
+<tr><td><code>menu_item_count</code></td><td><code>PieMenuMenuItemHandler</code></td><td>—</td><td>Get item count</td></tr>
+<tr><td><code>set_menu_item_enabled</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>&amp;str, bool</code></td><td>Enable/disable an item</td></tr>
+<tr><td><code>get_menu_item</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>&amp;str</code></td><td>Get a clone of an item</td></tr>
+<tr><td><code>update_menu_item</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>MenuItem</code></td><td>Replace an item (all fields except <code>id</code>)</td></tr>
 <tr><td><code>show_pie_menu</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Show the menu</td></tr>
 <tr><td><code>hide_pie_menu</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Hide the menu</td></tr>
 <tr><td><code>is_pie_menu_open</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Check visibility</td></tr>
+<tr><td><code>set_activation_threshold</code></td><td><code>PieMenuControlHandler</code></td><td><code>f64</code></td><td>Set activation threshold</td></tr>
+<tr><td><code>activation_threshold</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get activation threshold</td></tr>
+<tr><td><code>set_deactivation_threshold</code></td><td><code>PieMenuControlHandler</code></td><td><code>f64</code></td><td>Set deactivation threshold</td></tr>
+<tr><td><code>deactivation_threshold</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get deactivation threshold</td></tr>
+<tr><td><code>set_rotation_gesture_enabled</code></td><td><code>PieMenuControlHandler</code></td><td><code>bool</code></td><td>Enable/disable rotation gesture</td></tr>
+<tr><td><code>rotation_gesture_enabled</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get rotation gesture state</td></tr>
+<tr><td><code>set_markings_enabled</code></td><td><code>PieMenuControlHandler</code></td><td><code>bool</code></td><td>Enable/disable ring markings</td></tr>
+<tr><td><code>markings_enabled</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get markings state</td></tr>
 <tr><td><code>set_message_sender</code></td><td><code>PieMenuMessageSender</code></td><td><code>Sender&lt;PieMenuMessage&gt;</code></td><td>Set channel</td></tr>
 <tr><td><code>send_message</code></td><td><code>PieMenuMessageSender</code></td><td><code>PieMenuMessage</code></td><td>Send message</td></tr>
 <tr><td><code>set_rotation</code></td><td><code>RotationHandler</code></td><td><code>f32</code></td><td>Set rotation</td></tr>
 <tr><td><code>set_close_callback</code></td><td><code>PieMenuWidget</code></td><td><code>Fn() + 'static</code></td><td>Center click callback</td></tr>
+<tr><td><code>set_markings_enabled</code></td><td><code>PieMenuWidget</code></td><td><code>bool</code></td><td>Enable/disable ring markings</td></tr>
+<tr><td><code>markings_enabled</code></td><td><code>PieMenuWidget</code></td><td>—</td><td>Get markings state</td></tr>
+<tr><td><code>with_message_sender</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>Sender&lt;PieMenuMessage&gt;</code></td><td>Builder: set sender</td></tr>
+<tr><td><code>with_activation_threshold</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f64</code></td><td>Builder: set activation threshold</td></tr>
+<tr><td><code>with_deactivation_threshold</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f64</code></td><td>Builder: set deactivation threshold</td></tr>
+<tr><td><code>with_rotation_gesture_enabled</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>bool</code></td><td>Builder: enable/disable rotation gesture</td></tr>
+<tr><td><code>with_markings_enabled</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>bool</code></td><td>Builder: enable/disable markings</td></tr>
+<tr><td><code>with_menu_item</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>MenuItem</code></td><td>Builder: add item</td></tr>
 </tbody>
 </table>
 </div>
@@ -305,7 +413,7 @@ overlay.set_rotation(45.0);
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="architecture.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="thresholds.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -319,7 +427,7 @@ overlay.set_rotation(45.0);
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="architecture.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="thresholds.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

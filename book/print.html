@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4e877116.js";
+            window.path_to_searchindex_js = "searchindex-8203b32f.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e95e564d.js"></script>
+        <script src="toc-f3f75a96.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -223,29 +223,33 @@ fn main() -&gt; glib::ExitCode {
 
         let (sender, receiver) = channel::&lt;PieMenuMessage&gt;();
 
-        let overlay = PieMenuOverlayWidget::new(Some(&amp;label));
-        overlay.set_message_sender(sender);
-
-        overlay.add_menu_item(
-            MenuItem::builder()
-                .id("red")
-                .label("Red")
-                .icon_name("media-playback-stop-symbolic")
-                .color("#FF000077")
-                .angle(0.0)
-                .event("red")
-                .build(),
-        );
-        overlay.add_menu_item(
-            MenuItem::builder()
-                .id("green")
-                .label("Green")
-                .icon_name("media-playback-stop-symbolic")
-                .color("#00FF0077")
-                .angle(180.0)
-                .event("green")
-                .build(),
-        );
+        let overlay = PieMenuOverlayWidget::new(Some(&amp;label))
+            .with_message_sender(sender)
+            .with_activation_threshold(2.5)
+            .with_menu_item(
+                MenuItem::builder()
+                    .id("red")
+                    .label("Red")
+                    .icon_name("media-playback-stop-symbolic")
+                    .color("#FF000077")
+                    .angle(0.0)
+                    .fixed_position(true)
+                    .event("red")
+                    .build(),
+            )
+            .unwrap()
+            .with_menu_item(
+                MenuItem::builder()
+                    .id("green")
+                    .label("Green")
+                    .icon_name("media-playback-stop-symbolic")
+                    .color("#00FF0077")
+                    .angle(180.0)
+                    .fixed_position(true)
+                    .event("green")
+                    .build(),
+            )
+            .unwrap();
 
         window.set_child(Some(&amp;overlay));
         window.present();
@@ -295,6 +299,33 @@ overlay.add_menu_item(
         .build(),
 );
 <span class="boring">}</span></code></pre>
+<p>You can also use the <a href="#builder-pattern-1">builder pattern</a> for fluent construction, or <code>add_menu_item_auto()</code> for <a href="#auto-distribution">automatic angle distribution</a>.</p>
+<h2 id="configurable-thresholds"><a class="header" href="#configurable-thresholds">Configurable Thresholds</a></h2>
+<p>The activation and deactivation thresholds are configurable at runtime via the <code>PieMenuControlHandler</code> trait:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+overlay.set_activation_threshold(2.5);
+overlay.set_deactivation_threshold(0.3);
+<span class="boring">}</span></code></pre>
+<p>See the <a href="#thresholds">Thresholds</a> page for details.</p>
+<h2 id="optional-rotation-gesture"><a class="header" href="#optional-rotation-gesture">Optional Rotation Gesture</a></h2>
+<p>The rotation gesture (two-finger rotate) can be enabled or disabled at runtime. When disabled, the gesture controller’s propagation phase is set to <code>None</code>, effectively ignoring rotation input. Default: <code>true</code>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+overlay.set_rotation_gesture_enabled(false);
+<span class="boring">}</span></code></pre>
+<h2 id="optional-ring-markings"><a class="header" href="#optional-ring-markings">Optional Ring Markings</a></h2>
+<p>The inner and outer ring markings (5-degree tick marks) can be toggled at runtime. Default: <code>true</code>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+overlay.set_markings_enabled(false);
+<span class="boring">}</span></code></pre>
 <h2 id="message-channel"><a class="header" href="#message-channel">Message Channel</a></h2>
 <p>Set up an <code>mpsc</code> channel to receive messages from the pie menu:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -308,13 +339,15 @@ overlay.set_message_sender(sender);
 <span class="boring">}</span></code></pre>
 <p>Messages received:</p>
 <ul>
+<li><code>PieMenuMessage::Opened</code> — the pie menu was opened</li>
+<li><code>PieMenuMessage::Closed</code> — the pie menu was closed</li>
 <li><code>PieMenuMessage::Rotate(f32)</code> — rotation in degrees from the rotation gesture</li>
 <li><code>PieMenuMessage::Event(String)</code> — the event name of the clicked menu item</li>
 </ul>
 <h2 id="gesture-handling"><a class="header" href="#gesture-handling">Gesture Handling</a></h2>
 <p>The <code>PieMenuOverlayWidget</code> responds to two touch gestures:</p>
 <ul>
-<li><strong>Pinch-to-zoom</strong> (<code>GestureZoom</code>): Opens the menu when scale &gt; 3.5, closes when scale &lt; 0.5</li>
+<li><strong>Pinch-to-zoom</strong> (<code>GestureZoom</code>): Opens the menu when scale exceeds the activation threshold (default: 3.5), closes when scale drops below the deactivation threshold (default: 0.5)</li>
 <li><strong>Rotation</strong> (<code>GestureRotate</code>): Rotates the menu ring and sends <code>Rotate</code> messages when the delta exceeds 10 degrees</li>
 </ul>
 <p>Click detection handles:</p>
@@ -349,6 +382,9 @@ overlay.set_rotation(45.0);
 <tr><td><code>angle</code></td><td><code>f32</code></td><td>Yes</td><td>—</td><td>Position in degrees (0 = right, 90 = down)</td></tr>
 <tr><td><code>radius</code></td><td><code>Option&lt;f32&gt;</code></td><td>No</td><td><code>40.0</code></td><td>Item circle radius in pixels</td></tr>
 <tr><td><code>event</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>Event name sent as <code>PieMenuMessage::Event</code></td></tr>
+<tr><td><code>enabled</code></td><td><code>bool</code></td><td>No</td><td><code>true</code></td><td>Whether the item is clickable (disabled items render at reduced opacity)</td></tr>
+<tr><td><code>fixed_position</code></td><td><code>bool</code></td><td>No</td><td><code>false</code></td><td>When <code>true</code>, the item’s angle is treated as a fixed semantic position that resists auto-redistribution</td></tr>
+<tr><td><code>close_on_click</code></td><td><code>bool</code></td><td>No</td><td><code>true</code></td><td>Whether the pie menu closes after this item is clicked</td></tr>
 </tbody>
 </table>
 </div>
@@ -366,6 +402,9 @@ let item = MenuItem::builder()
     .angle(0.0)
     .radius(30.0)
     .event("rotate-cw")
+    .enabled(true)
+    .fixed_position(false)
+    .close_on_click(true)
     .build();
 <span class="boring">}</span></code></pre>
 <h2 id="colors"><a class="header" href="#colors">Colors</a></h2>
@@ -410,6 +449,12 @@ overlay.set_message_sender(sender);
 
 // In your event loop:
 match receiver.try_recv() {
+    Ok(PieMenuMessage::Opened) =&gt; {
+        println!("Pie menu opened");
+    }
+    Ok(PieMenuMessage::Closed) =&gt; {
+        println!("Pie menu closed");
+    }
     Ok(PieMenuMessage::Rotate(degrees)) =&gt; {
         println!("Rotated to {} degrees", degrees);
     }
@@ -435,6 +480,13 @@ match receiver.try_recv() {
 </span>pub trait PieMenuMenuItemHandler {
     fn add_menu_item(&amp;self, menu_item: MenuItem) -&gt; Result&lt;(), AddMenuItemError&gt;;
     fn remove_menu_item(&amp;self, id: &amp;str) -&gt; Result&lt;(), RemoveMenuItemError&gt;;
+    fn remove_all_menu_items(&amp;self);
+    fn menu_item_count(&amp;self) -&gt; usize;
+    fn set_menu_item_enabled(&amp;self, id: &amp;str, enabled: bool) -&gt; Result&lt;(), SetMenuItemEnabledError&gt;;
+    fn add_menu_item_auto(&amp;self, menu_item: MenuItem) -&gt; Result&lt;(), AddMenuItemError&gt;;
+    fn redistribute(&amp;self);
+    fn get_menu_item(&amp;self, id: &amp;str) -&gt; Option&lt;MenuItem&gt;;
+    fn update_menu_item(&amp;self, menu_item: MenuItem) -&gt; Result&lt;(), UpdateMenuItemError&gt;;
 }
 <span class="boring">}</span></code></pre>
 <h3 id="add_menu_itemmenuitem"><a class="header" href="#add_menu_itemmenuitem"><code>add_menu_item(MenuItem)</code></a></h3>
@@ -461,6 +513,64 @@ overlay.add_menu_item(
 </span><span class="boring">fn main() {
 </span>overlay.remove_menu_item("exit");
 <span class="boring">}</span></code></pre>
+<h3 id="remove_all_menu_items"><a class="header" href="#remove_all_menu_items"><code>remove_all_menu_items()</code></a></h3>
+<p>Removes all menu items from the pie menu.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.remove_all_menu_items();
+<span class="boring">}</span></code></pre>
+<h3 id="menu_item_count---usize"><a class="header" href="#menu_item_count---usize"><code>menu_item_count() -&gt; usize</code></a></h3>
+<p>Returns the number of menu items currently in the pie menu.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let count = overlay.menu_item_count();
+<span class="boring">}</span></code></pre>
+<h3 id="set_menu_item_enabledstr-bool"><a class="header" href="#set_menu_item_enabledstr-bool"><code>set_menu_item_enabled(&amp;str, bool)</code></a></h3>
+<p>Sets the enabled state of a menu item. Disabled items render at reduced opacity and do not respond to hover or click.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.set_menu_item_enabled("exit", false)?;
+<span class="boring">}</span></code></pre>
+<h3 id="add_menu_item_automenuitem"><a class="header" href="#add_menu_item_automenuitem"><code>add_menu_item_auto(MenuItem)</code></a></h3>
+<p>Adds a menu item with an automatically calculated angle. See <a href="#auto-distribution">Auto Distribution</a>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.add_menu_item_auto(
+    MenuItem::builder()
+        .id("save")
+        .label("Save")
+        .icon_name("document-save-symbolic")
+        .angle(0.0)
+        .event("save")
+        .build(),
+)?;
+<span class="boring">}</span></code></pre>
+<h3 id="redistribute"><a class="header" href="#redistribute"><code>redistribute()</code></a></h3>
+<p>Redistributes all non-fixed items proportionally in the gaps between fixed items. Triggers a redraw. Useful after <code>remove_menu_item()</code> to re-space remaining items.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.remove_menu_item("shuffle")?;
+overlay.redistribute();
+<span class="boring">}</span></code></pre>
+<h3 id="get_menu_itemstr---optionmenuitem"><a class="header" href="#get_menu_itemstr---optionmenuitem"><code>get_menu_item(&amp;str) -&gt; Option&lt;MenuItem&gt;</code></a></h3>
+<p>Returns a clone of the menu item with the given id, or <code>None</code> if not found.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>if let Some(mut item) = overlay.get_menu_item("play-pause") {
+    item.label = "Pause";
+    item.icon_name = "media-playback-pause-symbolic";
+    overlay.update_menu_item(item)?;
+}
+<span class="boring">}</span></code></pre>
+<h3 id="update_menu_itemmenuitem---result-updatemenuitemerror"><a class="header" href="#update_menu_itemmenuitem---result-updatemenuitemerror"><code>update_menu_item(MenuItem) -&gt; Result&lt;(), UpdateMenuItemError&gt;</code></a></h3>
+<p>Replaces an existing menu item (matched by <code>id</code>) with the given item. All fields except <code>id</code> can be changed. If <code>angle</code> or <code>radius</code> changed, overlap validation is performed and the update is rolled back on failure. Triggers a redraw on success.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut item = overlay.get_menu_item("play-pause").unwrap();
+item.label = "Pause";
+item.icon_name = "media-playback-pause-symbolic";
+overlay.update_menu_item(item)?;
+<span class="boring">}</span></code></pre>
 <h2 id="piemenucontrolhandler-trait"><a class="header" href="#piemenucontrolhandler-trait">PieMenuControlHandler Trait</a></h2>
 <p>The <code>PieMenuControlHandler</code> trait provides methods for showing and hiding the pie menu:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -469,6 +579,14 @@ overlay.add_menu_item(
     fn show_pie_menu(&amp;self) -&gt; Result&lt;(), ShowPieMenuError&gt;;
     fn hide_pie_menu(&amp;self) -&gt; Result&lt;(), HidePieMenuError&gt;;
     fn is_pie_menu_open(&amp;self) -&gt; bool;
+    fn set_activation_threshold(&amp;self, threshold: f64);
+    fn activation_threshold(&amp;self) -&gt; f64;
+    fn set_deactivation_threshold(&amp;self, threshold: f64);
+    fn deactivation_threshold(&amp;self) -&gt; f64;
+    fn set_rotation_gesture_enabled(&amp;self, enabled: bool);
+    fn rotation_gesture_enabled(&amp;self) -&gt; bool;
+    fn set_markings_enabled(&amp;self, enabled: bool);
+    fn markings_enabled(&amp;self) -&gt; bool;
 }
 <span class="boring">}</span></code></pre>
 <h3 id="show_pie_menu"><a class="header" href="#show_pie_menu"><code>show_pie_menu()</code></a></h3>
@@ -477,6 +595,14 @@ overlay.add_menu_item(
 <p>Hides the pie menu widget by setting it invisible.</p>
 <h3 id="is_pie_menu_open---bool"><a class="header" href="#is_pie_menu_open---bool"><code>is_pie_menu_open() -&gt; bool</code></a></h3>
 <p>Returns whether the pie menu is currently visible.</p>
+<h3 id="set_activation_thresholdf64--activation_threshold---f64"><a class="header" href="#set_activation_thresholdf64--activation_threshold---f64"><code>set_activation_threshold(f64)</code> / <code>activation_threshold() -&gt; f64</code></a></h3>
+<p>Sets/gets the pinch-to-zoom activation threshold. Default: <code>3.5</code>.</p>
+<h3 id="set_deactivation_thresholdf64--deactivation_threshold---f64"><a class="header" href="#set_deactivation_thresholdf64--deactivation_threshold---f64"><code>set_deactivation_threshold(f64)</code> / <code>deactivation_threshold() -&gt; f64</code></a></h3>
+<p>Sets/gets the pinch-out deactivation threshold. Default: <code>0.5</code>.</p>
+<h3 id="set_rotation_gesture_enabledbool--rotation_gesture_enabled---bool"><a class="header" href="#set_rotation_gesture_enabledbool--rotation_gesture_enabled---bool"><code>set_rotation_gesture_enabled(bool)</code> / <code>rotation_gesture_enabled() -&gt; bool</code></a></h3>
+<p>Enables or disables the rotation gesture when the pie menu is open. When disabled, the gesture controller’s propagation phase is set to <code>None</code>, effectively ignoring rotation input. Default: <code>true</code>.</p>
+<h3 id="set_markings_enabledbool--markings_enabled---bool"><a class="header" href="#set_markings_enabledbool--markings_enabled---bool"><code>set_markings_enabled(bool)</code> / <code>markings_enabled() -&gt; bool</code></a></h3>
+<p>Enables or disables drawing of inner and outer ring markings. Default: <code>true</code>.</p>
 <h2 id="piemenumessagesender-trait"><a class="header" href="#piemenumessagesender-trait">PieMenuMessageSender Trait</a></h2>
 <p>The <code>PieMenuMessageSender</code> trait provides the message channel interface:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -519,6 +645,8 @@ overlay.set_rotation(45.0);
     .color("#RRGGBBAA")        // optional, default: grey
     .label_color("#RRGGBBAA")  // optional, default: white
     .radius(30.0)              // optional, default: 40.0
+    .enabled(true)             // optional, default: true
+    .fixed_position(false)     // optional, default: false
     .build()
 <span class="boring">}</span></code></pre>
 <h2 id="piemenumessage-1"><a class="header" href="#piemenumessage-1">PieMenuMessage</a></h2>
@@ -526,6 +654,8 @@ overlay.set_rotation(45.0);
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub enum PieMenuMessage {
+    Opened,           // pie menu was opened
+    Closed,           // pie menu was closed
     Rotate(f32),      // rotation in degrees
     Event(String),    // menu item event name
 }
@@ -538,17 +668,268 @@ overlay.set_rotation(45.0);
 </thead>
 <tbody>
 <tr><td><code>add_menu_item</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>MenuItem</code></td><td>Add a menu item</td></tr>
+<tr><td><code>add_menu_item_auto</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>MenuItem</code></td><td>Add with auto-calculated angle</td></tr>
+<tr><td><code>redistribute</code></td><td><code>PieMenuMenuItemHandler</code></td><td>—</td><td>Redistribute flexible item angles</td></tr>
 <tr><td><code>remove_menu_item</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>&amp;str</code></td><td>Remove by id</td></tr>
+<tr><td><code>remove_all_menu_items</code></td><td><code>PieMenuMenuItemHandler</code></td><td>—</td><td>Remove all items</td></tr>
+<tr><td><code>menu_item_count</code></td><td><code>PieMenuMenuItemHandler</code></td><td>—</td><td>Get item count</td></tr>
+<tr><td><code>set_menu_item_enabled</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>&amp;str, bool</code></td><td>Enable/disable an item</td></tr>
+<tr><td><code>get_menu_item</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>&amp;str</code></td><td>Get a clone of an item</td></tr>
+<tr><td><code>update_menu_item</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>MenuItem</code></td><td>Replace an item (all fields except <code>id</code>)</td></tr>
 <tr><td><code>show_pie_menu</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Show the menu</td></tr>
 <tr><td><code>hide_pie_menu</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Hide the menu</td></tr>
 <tr><td><code>is_pie_menu_open</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Check visibility</td></tr>
+<tr><td><code>set_activation_threshold</code></td><td><code>PieMenuControlHandler</code></td><td><code>f64</code></td><td>Set activation threshold</td></tr>
+<tr><td><code>activation_threshold</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get activation threshold</td></tr>
+<tr><td><code>set_deactivation_threshold</code></td><td><code>PieMenuControlHandler</code></td><td><code>f64</code></td><td>Set deactivation threshold</td></tr>
+<tr><td><code>deactivation_threshold</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get deactivation threshold</td></tr>
+<tr><td><code>set_rotation_gesture_enabled</code></td><td><code>PieMenuControlHandler</code></td><td><code>bool</code></td><td>Enable/disable rotation gesture</td></tr>
+<tr><td><code>rotation_gesture_enabled</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get rotation gesture state</td></tr>
+<tr><td><code>set_markings_enabled</code></td><td><code>PieMenuControlHandler</code></td><td><code>bool</code></td><td>Enable/disable ring markings</td></tr>
+<tr><td><code>markings_enabled</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get markings state</td></tr>
 <tr><td><code>set_message_sender</code></td><td><code>PieMenuMessageSender</code></td><td><code>Sender&lt;PieMenuMessage&gt;</code></td><td>Set channel</td></tr>
 <tr><td><code>send_message</code></td><td><code>PieMenuMessageSender</code></td><td><code>PieMenuMessage</code></td><td>Send message</td></tr>
 <tr><td><code>set_rotation</code></td><td><code>RotationHandler</code></td><td><code>f32</code></td><td>Set rotation</td></tr>
 <tr><td><code>set_close_callback</code></td><td><code>PieMenuWidget</code></td><td><code>Fn() + 'static</code></td><td>Center click callback</td></tr>
+<tr><td><code>set_markings_enabled</code></td><td><code>PieMenuWidget</code></td><td><code>bool</code></td><td>Enable/disable ring markings</td></tr>
+<tr><td><code>markings_enabled</code></td><td><code>PieMenuWidget</code></td><td>—</td><td>Get markings state</td></tr>
+<tr><td><code>with_message_sender</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>Sender&lt;PieMenuMessage&gt;</code></td><td>Builder: set sender</td></tr>
+<tr><td><code>with_activation_threshold</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f64</code></td><td>Builder: set activation threshold</td></tr>
+<tr><td><code>with_deactivation_threshold</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f64</code></td><td>Builder: set deactivation threshold</td></tr>
+<tr><td><code>with_rotation_gesture_enabled</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>bool</code></td><td>Builder: enable/disable rotation gesture</td></tr>
+<tr><td><code>with_markings_enabled</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>bool</code></td><td>Builder: enable/disable markings</td></tr>
+<tr><td><code>with_menu_item</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>MenuItem</code></td><td>Builder: add item</td></tr>
 </tbody>
 </table>
 </div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="thresholds"><a class="header" href="#thresholds">Thresholds</a></h1>
+<p>The pie menu opens and closes based on pinch-to-zoom gesture scale values. These thresholds are configurable at runtime.</p>
+<h2 id="default-values"><a class="header" href="#default-values">Default Values</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Threshold</th><th>Default</th><th>Constant</th></tr>
+</thead>
+<tbody>
+<tr><td>Activation</td><td><code>3.5</code></td><td><code>DEFAULT_ACTIVATION_THRESHOLD</code></td></tr>
+<tr><td>Deactivation</td><td><code>0.5</code></td><td><code>DEFAULT_DEACTIVATION_THRESHOLD</code></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="configuration"><a class="header" href="#configuration">Configuration</a></h2>
+<p>Thresholds are stored as <code>AtomicF64</code> values, allowing thread-safe updates without locking.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+// Set custom thresholds
+overlay.set_activation_threshold(2.5);
+overlay.set_deactivation_threshold(0.3);
+
+// Read current thresholds
+let active = overlay.activation_threshold();
+let inactive = overlay.deactivation_threshold();
+<span class="boring">}</span></code></pre>
+<h2 id="how-it-works"><a class="header" href="#how-it-works">How It Works</a></h2>
+<p>When a pinch-to-zoom gesture is detected:</p>
+<ol>
+<li>If <code>scale &gt; activation_threshold</code> and the menu is closed → <strong>open</strong> the menu</li>
+<li>If <code>scale &lt; deactivation_threshold</code> and the menu is open → <strong>close</strong> the menu</li>
+</ol>
+<p>The gesture is claimed to prevent the child widget from receiving the event.</p>
+<h2 id="builder-pattern"><a class="header" href="#builder-pattern">Builder Pattern</a></h2>
+<p>You can also set thresholds using the builder pattern:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let overlay = PieMenuOverlayWidget::new(Some(&amp;child))
+    .with_activation_threshold(2.5)
+    .with_deactivation_threshold(0.3);
+<span class="boring">}</span></code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="disabled-state"><a class="header" href="#disabled-state">Disabled State</a></h1>
+<p>Menu items can be individually disabled. A disabled item is rendered at reduced opacity, does not respond to hover, and click events are suppressed.</p>
+<h2 id="the-enabled-field"><a class="header" href="#the-enabled-field">The <code>enabled</code> Field</a></h2>
+<p><code>MenuItem</code> has an <code>enabled</code> field that defaults to <code>true</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let item = MenuItem::builder()
+    .id("save")
+    .label("Save")
+    .icon_name("document-save-symbolic")
+    .angle(0.0)
+    .event("save")
+    .enabled(false) // disabled by default
+    .build();
+<span class="boring">}</span></code></pre>
+<h2 id="toggling-at-runtime"><a class="header" href="#toggling-at-runtime">Toggling at Runtime</a></h2>
+<p>Use <code>set_menu_item_enabled()</code> to change the state at runtime. This triggers a redraw:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Disable an item
+overlay.set_menu_item_enabled("save", false)?;
+
+// Re-enable an item
+overlay.set_menu_item_enabled("save", true)?;
+<span class="boring">}</span></code></pre>
+<p>Returns <code>Err(SetMenuItemEnabledError::NotFound)</code> if the item id does not exist.</p>
+<h2 id="rendering"><a class="header" href="#rendering">Rendering</a></h2>
+<p>Disabled items are rendered with <strong>40% opacity</strong> on both the item circle and label. Hover detection skips disabled items, so no highlight is applied. Click events on disabled items are ignored entirely.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="builder-pattern-1"><a class="header" href="#builder-pattern-1">Builder Pattern</a></h1>
+<p><code>PieMenuOverlayWidget</code> supports a fluent builder API for ergonomic construction. Each <code>with_*</code> method takes ownership of <code>self</code>, applies the setting, and returns <code>Self</code> for chaining.</p>
+<h2 id="available-methods"><a class="header" href="#available-methods">Available Methods</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>with_message_sender(sender)</code></td><td><code>Self</code></td><td>Sets the message channel sender</td></tr>
+<tr><td><code>with_activation_threshold(f64)</code></td><td><code>Self</code></td><td>Sets the pinch-to-zoom activation threshold</td></tr>
+<tr><td><code>with_deactivation_threshold(f64)</code></td><td><code>Self</code></td><td>Sets the pinch-out deactivation threshold</td></tr>
+<tr><td><code>with_menu_item(MenuItem)</code></td><td><code>Result&lt;Self, AddMenuItemError&gt;</code></td><td>Adds a menu item</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let overlay = PieMenuOverlayWidget::new(Some(&amp;child))
+    .with_message_sender(sender)
+    .with_activation_threshold(2.5)
+    .with_deactivation_threshold(0.3)
+    .with_menu_item(
+        MenuItem::builder()
+            .id("rotate-cw")
+            .label("Rotate CW")
+            .icon_name("object-rotate-right-symbolic")
+            .angle(0.0)
+            .fixed_position(true)
+            .event("rotate-cw")
+            .build(),
+    )?;
+<span class="boring">}</span></code></pre>
+<h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
+<p><code>with_menu_item()</code> returns <code>Result&lt;Self, AddMenuItemError&gt;</code>. If the item overlaps with an existing item, the error is propagated and the chain stops. Use <code>?</code> to short-circuit on failure.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="auto-distribution"><a class="header" href="#auto-distribution">Auto Distribution</a></h1>
+<p>The <code>add_menu_item_auto()</code> method automatically calculates item angles, distributing them evenly across the ring.</p>
+<h2 id="basic-usage"><a class="header" href="#basic-usage">Basic Usage</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Add items without specifying a meaningful angle —
+// the angle is computed automatically
+overlay.add_menu_item_auto(
+    MenuItem::builder()
+        .id("item-a")
+        .label("A")
+        .icon_name("icon-a")
+        .angle(0.0) // ignored for flexible items
+        .event("a")
+        .build(),
+)?;
+<span class="boring">}</span></code></pre>
+<h2 id="even-distribution"><a class="header" href="#even-distribution">Even Distribution</a></h2>
+<p>When no items have <code>fixed_position</code>, all items are evenly spaced across 360°:</p>
+<pre><code>1 item  → 0°
+2 items → 0°, 180°
+3 items → 0°, 120°, 240°
+4 items → 0°, 90°, 180°, 270°
+</code></pre>
+<h2 id="fixed-position-items"><a class="header" href="#fixed-position-items">Fixed-Position Items</a></h2>
+<p>Items with <code>fixed_position(true)</code> keep their angle as a semantic anchor. Flexible items are distributed in the gaps between fixed items, with wider gaps receiving proportionally more items.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Fixed items define anchor points
+let rotate_cw = MenuItem::builder()
+    .id("rotate-cw")
+    .label("Rotate CW")
+    .icon_name("object-rotate-right-symbolic")
+    .angle(0.0)
+    .fixed_position(true)
+    .event("rotate-cw")
+    .build();
+
+let rotate_ccw = MenuItem::builder()
+    .id("rotate-ccw")
+    .label("Rotate CCW")
+    .icon_name("object-rotate-left-symbolic")
+    .angle(180.0)
+    .fixed_position(true)
+    .event("rotate-ccw")
+    .build();
+<span class="boring">}</span></code></pre>
+<p>With two fixed items at 0° and 180°, two flexible items are placed at 90° and 270°.</p>
+<pre class="mermaid">flowchart LR
+    subgraph Fixed["Fixed items (semantic positions)"]
+        F1["Rotate CW\n0° (right)"]
+        F2["Rotate CCW\n180° (left)"]
+    end
+    subgraph Flexible["Flexible items (auto-distributed)"]
+        X1["Item A\n90° (top)"]
+        X2["Item B\n270° (bottom)"]
+    end
+    F1 -.-&gt;|"gap 0°–180°"| X1
+    X1 -.-&gt;|"gap 180°–360°"| X2
+    X2 -.-&gt; F2
+</pre>
+
+<h2 id="proportional-segment-sizing"><a class="header" href="#proportional-segment-sizing">Proportional Segment Sizing</a></h2>
+<p>The distribution algorithm uses the <strong>largest remainder method</strong> to allocate flexible items to segments proportionally to their angular width. This ensures all items are distributed even when the math doesn’t divide evenly.</p>
+<h2 id="rollback"><a class="header" href="#rollback">Rollback</a></h2>
+<p>If overlap validation fails after redistribution, the entire operation is rolled back:</p>
+<ol>
+<li>The new item is removed (or the previous item is restored on overwrite)</li>
+<li>All angle changes to existing items are reverted to their pre-redistribution values</li>
+<li><code>AddMenuItemError::ItemOverlap</code> is returned</li>
+</ol>
+<h2 id="manual-redistribution"><a class="header" href="#manual-redistribution">Manual Redistribution</a></h2>
+<p>After removing items with <code>remove_menu_item()</code>, the remaining flexible items are not automatically re-spaced. Call <code>redistribute()</code> to trigger redistribution:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.remove_menu_item("shuffle")?;
+overlay.redistribute();
+<span class="boring">}</span></code></pre>
+<p>This re-runs the proportional distribution algorithm, keeping fixed-position items in place and re-spacing flexible items in the gaps between them.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="overlap-validation"><a class="header" href="#overlap-validation">Overlap Validation</a></h1>
+<p>When adding menu items, the widget validates that the new item does not visually overlap with existing items on the ring.</p>
+<h2 id="how-overlap-is-detected"><a class="header" href="#how-overlap-is-detected">How Overlap Is Detected</a></h2>
+<p>Two items overlap when the distance between their positions on the ring is less than the sum of their radii, normalized by the ring radius:</p>
+<pre><code class="language-text">distance &lt; (item_a.radius + item_b.radius) / ring_radius
+</code></pre>
+<p>Positions are computed from the item angle and ring radius using trigonometry.</p>
+<h2 id="error-type"><a class="header" href="#error-type">Error Type</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub enum AddMenuItemError {
+    MenuWidgetNotAvailable,
+    ItemOverlap { id: String, overlapping_with: String },
+}
+<span class="boring">}</span></code></pre>
+<h2 id="transactional-rollback"><a class="header" href="#transactional-rollback">Transactional Rollback</a></h2>
+<p>When <code>add_menu_item()</code> detects an overlap after inserting the item into the <code>DashMap</code>:</p>
+<ol>
+<li>The item is <strong>removed</strong> from the map</li>
+<li><code>AddMenuItemError::ItemOverlap</code> is returned</li>
+</ol>
+<p>For <code>add_menu_item_auto()</code>, the rollback is more comprehensive:</p>
+<ol>
+<li>The new item is removed (or the previous item is restored on overwrite)</li>
+<li>All angle changes from <code>redistribute_angles()</code> are reverted using an angle snapshot</li>
+<li><code>AddMenuItemError::ItemOverlap</code> is returned</li>
+</ol>
+<h2 id="validation-methods"><a class="header" href="#validation-methods">Validation Methods</a></h2>
+<ul>
+<li><code>validate_no_overlap(new_item, ring_radius)</code> — checks a single item against all existing items</li>
+<li><code>validate_all_no_overlap(ring_radius)</code> — checks all items against each other (used after redistribution)</li>
+</ul>
+<h2 id="guards"><a class="header" href="#guards">Guards</a></h2>
+<ul>
+<li><strong>Zero ring radius</strong>: Returns <code>Ok(())</code> (e.g. during initialization when the widget has no size yet)</li>
+<li><strong>Self-overlap</strong>: An item is never compared against itself (matched by id)</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
 <p><code>PieMenuOverlayWidget</code> achieves its pie menu functionality through three core components working together within the GTK4 layout and rendering pipeline.</p>
@@ -691,7 +1072,7 @@ overlay.set_rotation(45.0);
     RotationWidget --&gt; Picture["Picture (smearor.png)"]
 </pre>
 
-<h3 id="how-it-works"><a class="header" href="#how-it-works">How It Works</a></h3>
+<h3 id="how-it-works-1"><a class="header" href="#how-it-works-1">How It Works</a></h3>
 <ol>
 <li>
 <p><strong>Widget hierarchy</strong>: A <code>Picture</code> widget loads <code>assets/smearor.png</code> and is set as the child of a <code>RotationWidget</code>. The <code>RotationWidget</code> is then passed as the child of a <code>PieMenuOverlayWidget</code>.</p>

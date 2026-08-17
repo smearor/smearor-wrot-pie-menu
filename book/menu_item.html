@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4e877116.js";
+            window.path_to_searchindex_js = "searchindex-8203b32f.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e95e564d.js"></script>
+        <script src="toc-f3f75a96.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -191,6 +191,9 @@
 <tr><td><code>angle</code></td><td><code>f32</code></td><td>Yes</td><td>—</td><td>Position in degrees (0 = right, 90 = down)</td></tr>
 <tr><td><code>radius</code></td><td><code>Option&lt;f32&gt;</code></td><td>No</td><td><code>40.0</code></td><td>Item circle radius in pixels</td></tr>
 <tr><td><code>event</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>Event name sent as <code>PieMenuMessage::Event</code></td></tr>
+<tr><td><code>enabled</code></td><td><code>bool</code></td><td>No</td><td><code>true</code></td><td>Whether the item is clickable (disabled items render at reduced opacity)</td></tr>
+<tr><td><code>fixed_position</code></td><td><code>bool</code></td><td>No</td><td><code>false</code></td><td>When <code>true</code>, the item’s angle is treated as a fixed semantic position that resists auto-redistribution</td></tr>
+<tr><td><code>close_on_click</code></td><td><code>bool</code></td><td>No</td><td><code>true</code></td><td>Whether the pie menu closes after this item is clicked</td></tr>
 </tbody>
 </table>
 </div>
@@ -208,6 +211,9 @@ let item = MenuItem::builder()
     .angle(0.0)
     .radius(30.0)
     .event("rotate-cw")
+    .enabled(true)
+    .fixed_position(false)
+    .close_on_click(true)
     .build();
 <span class="boring">}</span></code></pre>
 <h2 id="colors"><a class="header" href="#colors">Colors</a></h2>
