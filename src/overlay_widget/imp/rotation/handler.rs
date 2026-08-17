@@ -9,4 +9,12 @@ impl RotationHandler for PieMenuOverlayWidgetImpl {
         };
         pie_menu_widget.set_rotation(rotation);
     }
+
+    fn rotation(&self) -> f32 {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        let Some(pie_menu_widget) = pie_menu_widget_borrow.clone() else {
+            return 0.0;
+        };
+        pie_menu_widget.rotation()
+    }
 }

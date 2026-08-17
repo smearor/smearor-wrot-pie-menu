@@ -44,6 +44,11 @@ pub struct PieMenuWidgetImpl {
 
     /// Whether inner and outer ring markings are drawn. Default: `true`.
     pub(crate) markings_enabled: AtomicBool,
+
+    /// ID of the currently keyboard-selected item, if any.
+    /// Stored as a string ID (not an index) to remain stable across
+    /// DashMap insertion/removal order changes.
+    pub(crate) keyboard_selection: RefCell<Option<String>>,
 }
 
 impl Default for PieMenuWidgetImpl {
@@ -56,6 +61,7 @@ impl Default for PieMenuWidgetImpl {
             close_callback: RefCell::new(None),
             hovered_item_index: RefCell::new(-1),
             markings_enabled: AtomicBool::new(true),
+            keyboard_selection: RefCell::new(None),
         }
     }
 }
@@ -337,10 +343,11 @@ impl WidgetImpl for PieMenuWidgetImpl {
             let item_color: RGBA = item.color.into();
             let item_radius = item.radius();
 
-            // Highlight if hovered (only for enabled items)
+            // Highlight if hovered or keyboard-selected (only for enabled items)
             let is_hovered = item.enabled && index as i32 == hovered_index;
+            let is_keyboard_selected = item.enabled && self.is_keyboard_selected(&item.id);
             let disabled_alpha = if item.enabled { 1.0 } else { 0.4 };
-            let item_color = if is_hovered {
+            let item_color = if is_hovered || is_keyboard_selected {
                 RGBA::new(item_color.red() * 1.3, item_color.green() * 1.3, item_color.blue() * 1.3, 1.0)
             } else {
                 RGBA::new(item_color.red(), item_color.green(), item_color.blue(), disabled_alpha)
@@ -362,6 +369,24 @@ impl WidgetImpl for PieMenuWidgetImpl {
             snapshot.append_color(&item_color, &item_rect);
             snapshot.pop();
             debug!("Drew menu item at ({}, {})", item_x, item_y);
+
+            // Draw selection ring outline for keyboard-selected item
+            if is_keyboard_selected {
+                let selection_ring_radius = item_radius + 3.0;
+                let selection_ring_rect = Rect::new(
+                    item_x - selection_ring_radius,
+                    item_y - selection_ring_radius,
+                    selection_ring_radius * 2.0,
+                    selection_ring_radius * 2.0,
+                );
+                let selection_ring_rounded = RoundedRect::from_rect(selection_ring_rect, selection_ring_radius);
+                let selection_ring_color = RGBA::new(1.0, 1.0, 1.0, 0.9);
+                let selection_stroke = gtk4::gsk::Stroke::new(2.0);
+                let builder = gtk4::gsk::PathBuilder::new();
+                builder.add_rounded_rect(&selection_ring_rounded);
+                let path = builder.to_path();
+                snapshot.append_stroke(&path, &selection_stroke, &selection_ring_color);
+            }
 
             // Draw icon from icon_name
             let paintable =

@@ -11,5 +11,6 @@
     - [Builder Pattern](builder_pattern.md)
     - [Auto Distribution](auto_distribution.md)
     - [Overlap Validation](overlap_validation.md)
+    - [Input Handling](input_handling.md)
 - [Architecture](architecture.md)
 - [Examples](examples.md)

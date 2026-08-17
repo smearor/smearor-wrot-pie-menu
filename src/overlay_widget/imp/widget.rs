@@ -19,6 +19,7 @@ use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::widget::WidgetImplExt;
+use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -66,6 +67,24 @@ pub struct PieMenuOverlayWidgetImpl {
 
     /// Reference to the rotate gesture controller for propagation phase toggling.
     pub(crate) rotate_gesture: RefCell<Option<GestureRotate>>,
+
+    /// Scroll rotation sensitivity multiplier. Default: `5.0`.
+    /// The rotation delta is computed as `dy * sensitivity`.
+    pub(crate) scroll_rotation_step: AtomicF64,
+
+    /// Latest left stick X-axis value in [-1.0, 1.0].
+    /// Updated by `handle_left_stick_x`, consumed by the tick callback.
+    /// A value of `0.0` (or within deadzone) stops continuous rotation.
+    ///
+    /// **Thread safety**: `Cell` is `!Sync`. This is safe because all writes
+    /// occur on the GTK main thread via `glib::idle_add_local`. The SDL2/evdev
+    /// polling thread must not write to this field directly.
+    pub(crate) left_stick_x: Cell<f32>,
+
+    /// Key controller attached to the root window for global keyboard shortcuts.
+    /// Created in `root()`, removed in `unroot()`.
+    #[cfg(feature = "keyboard")]
+    pub(crate) key_controller: RefCell<Option<gtk4::EventControllerKey>>,
 }
 
 /// Default activation threshold for pinch-to-zoom (scale must exceed this to open the menu)
@@ -73,6 +92,10 @@ pub const DEFAULT_ACTIVATION_THRESHOLD: f64 = 3.5;
 
 /// Default deactivation threshold for pinch-out (scale must drop below this to close the menu)
 pub const DEFAULT_DEACTIVATION_THRESHOLD: f64 = 0.5;
+
+/// Default scroll rotation sensitivity multiplier.
+/// With a discrete mouse wheel tick (`dy ≈ 1.0`), this yields ~5° per tick.
+pub const DEFAULT_SCROLL_ROTATION_STEP: f64 = 5.0;
 
 impl Default for PieMenuOverlayWidgetImpl {
     fn default() -> Self {
@@ -89,6 +112,10 @@ impl Default for PieMenuOverlayWidgetImpl {
             deactivation_threshold: AtomicF64::new(DEFAULT_DEACTIVATION_THRESHOLD),
             rotation_gesture_enabled: AtomicBool::new(true),
             rotate_gesture: RefCell::new(None),
+            scroll_rotation_step: AtomicF64::new(DEFAULT_SCROLL_ROTATION_STEP),
+            left_stick_x: Cell::new(0.0),
+            #[cfg(feature = "keyboard")]
+            key_controller: RefCell::new(None),
         }
     }
 }
@@ -326,6 +353,61 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
         });
 
         widget.add_controller(click_controller);
+
+        // --- Mouse scroll rotation controller (feature: mouse-scroll) ---
+        #[cfg(feature = "mouse-scroll")]
+        {
+            let scroll_controller = gtk4::EventControllerScroll::new(gtk4::EventControllerScrollFlags::VERTICAL);
+            scroll_controller.set_propagation_phase(PropagationPhase::Capture);
+
+            let widget_weak = widget.downgrade();
+            scroll_controller.connect_scroll(move |_controller, _dx, dy| {
+                let Some(widget) = widget_weak.upgrade() else {
+                    return glib::Propagation::Proceed;
+                };
+
+                if !widget.is_pie_menu_open() {
+                    return glib::Propagation::Proceed;
+                }
+
+                let rotation_step = widget.scroll_rotation_step();
+                let current_rotation = widget.rotation();
+                let new_rotation = current_rotation + (dy as f32 * rotation_step);
+                widget.set_rotation(new_rotation.rem_euclid(360.0));
+
+                glib::Propagation::Stop
+            });
+
+            widget.add_controller(scroll_controller);
+        }
+
+        // --- Controller tick callback for analog stick rotation (feature: controller-sdl2 or controller-evdev) ---
+        #[cfg(any(feature = "controller-sdl2", feature = "controller-evdev"))]
+        {
+            let widget_weak = widget.downgrade();
+            widget.add_tick_callback(move |_widget, _frame_clock| {
+                let Some(widget) = widget_weak.upgrade() else {
+                    return glib::ControlFlow::Break;
+                };
+
+                if !widget.is_pie_menu_open() {
+                    return glib::ControlFlow::Continue;
+                }
+
+                let stick_x = widget.imp().left_stick_x.get();
+                let deadzone = 0.15;
+
+                if stick_x.abs() < deadzone {
+                    return glib::ControlFlow::Continue;
+                }
+
+                let rotation_delta = stick_x * widget.scroll_rotation_step();
+                let current = widget.rotation();
+                widget.set_rotation((current + rotation_delta).rem_euclid(360.0));
+
+                glib::ControlFlow::Continue
+            });
+        }
     }
 
     fn dispose(&self) {
@@ -345,6 +427,119 @@ impl WidgetImpl for PieMenuOverlayWidgetImpl {
     fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
         self.parent_size_allocate(width, height, baseline);
         self.overlay.allocate(width, height, baseline, None);
+    }
+
+    fn root(&self) {
+        self.parent_root();
+
+        #[cfg(feature = "keyboard")]
+        {
+            let widget = self.obj();
+            let root = widget.root();
+            let Some(root_widget) = root.as_ref() else {
+                return;
+            };
+
+            let key_controller = gtk4::EventControllerKey::new();
+            key_controller.set_propagation_phase(PropagationPhase::Capture);
+
+            let widget_weak = widget.downgrade();
+            key_controller.connect_key_pressed(move |_controller, keyval, _keycode, state| {
+                let Some(widget) = widget_weak.upgrade() else {
+                    return glib::Propagation::Proceed;
+                };
+
+                use gtk4::gdk::Key;
+
+                debug!("Key pressed: keyval={:?}, state={:?}", keyval, state);
+
+                match keyval {
+                    Key::space if state.contains(gtk4::gdk::ModifierType::CONTROL_MASK) => {
+                        if !widget.is_pie_menu_open() {
+                            let _ = widget.show_pie_menu();
+                            glib::Propagation::Stop
+                        } else {
+                            glib::Propagation::Proceed
+                        }
+                    }
+                    Key::Menu => {
+                        if !widget.is_pie_menu_open() {
+                            let _ = widget.show_pie_menu();
+                            glib::Propagation::Stop
+                        } else {
+                            glib::Propagation::Proceed
+                        }
+                    }
+                    Key::Return | Key::space => {
+                        if widget.is_pie_menu_open() {
+                            widget.confirm_selection();
+                            glib::Propagation::Stop
+                        } else {
+                            glib::Propagation::Proceed
+                        }
+                    }
+                    Key::Escape => {
+                        if widget.is_pie_menu_open() {
+                            let _ = widget.hide_pie_menu();
+                            glib::Propagation::Stop
+                        } else {
+                            glib::Propagation::Proceed
+                        }
+                    }
+                    Key::Left | Key::Down => {
+                        if widget.is_pie_menu_open() {
+                            widget.cycle_selection(-1);
+                            glib::Propagation::Stop
+                        } else {
+                            glib::Propagation::Proceed
+                        }
+                    }
+                    Key::Right | Key::Up => {
+                        if widget.is_pie_menu_open() {
+                            widget.cycle_selection(1);
+                            glib::Propagation::Stop
+                        } else {
+                            glib::Propagation::Proceed
+                        }
+                    }
+                    Key::Home => {
+                        if widget.is_pie_menu_open() {
+                            widget.select_first_item();
+                            glib::Propagation::Stop
+                        } else {
+                            glib::Propagation::Proceed
+                        }
+                    }
+                    Key::Tab => {
+                        if widget.is_pie_menu_open() {
+                            widget.cycle_selection(1);
+                            glib::Propagation::Stop
+                        } else {
+                            glib::Propagation::Proceed
+                        }
+                    }
+                    _ => glib::Propagation::Proceed,
+                }
+            });
+
+            root_widget.add_controller(key_controller.clone());
+            *self.key_controller.borrow_mut() = Some(key_controller);
+        }
+    }
+
+    fn unroot(&self) {
+        #[cfg(feature = "keyboard")]
+        {
+            if let Some(controller) = self.key_controller.borrow_mut().take() {
+                let widget = self.obj();
+                let root = widget.root();
+                if let Some(root_widget) = root.as_ref() {
+                    root_widget.remove_controller(&controller);
+                }
+            }
+        }
+
+        self.parent_unroot();
     }
 }
 

@@ -6,4 +6,8 @@ impl RotationHandler for PieMenuOverlayWidget {
     fn set_rotation(&self, rotation: f32) {
         self.imp().set_rotation(rotation)
     }
+
+    fn rotation(&self) -> f32 {
+        self.imp().rotation()
+    }
 }

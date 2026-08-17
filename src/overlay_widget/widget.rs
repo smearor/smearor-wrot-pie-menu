@@ -64,6 +64,13 @@ impl PieMenuOverlayWidget {
         self
     }
 
+    /// Sets the scroll rotation sensitivity multiplier and returns self for chaining.
+    /// Default: `5.0`.
+    pub fn with_scroll_rotation_step(self, sensitivity: f64) -> Self {
+        self.set_scroll_rotation_step(sensitivity);
+        self
+    }
+
     /// Adds a menu item and returns self for chaining.
     /// Returns `Err` if the item could not be added.
     pub fn with_menu_item(self, item: MenuItem) -> Result<Self, AddMenuItemError> {

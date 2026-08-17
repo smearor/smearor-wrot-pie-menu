@@ -100,6 +100,14 @@ Click detection handles:
 - **Center circle click**: Closes the menu
 - **Menu item click**: Sends `Event` message with the item's event name
 
+### Additional Input Methods
+
+Optional input methods are available via feature flags. See [Input Handling](input_handling.md) for details:
+
+- **Keyboard** (`keyboard` feature, enabled by default): Navigate with arrow keys, confirm with `Enter`
+- **Mouse scroll** (`mouse-scroll` feature, enabled by default): Rotate the ring with the mouse wheel
+- **Controller** (`controller-sdl2` or `controller-evdev` feature): Navigate with analog sticks
+
 ## Rotation
 
 Use the `RotationHandler` trait to set the menu rotation programmatically:

@@ -6,4 +6,8 @@ impl RotationHandler for PieMenuWidgetImpl {
     fn set_rotation(&self, rotation: f32) {
         self.rotation.store(rotation, Ordering::Relaxed);
     }
+
+    fn rotation(&self) -> f32 {
+        self.rotation.load(Ordering::Relaxed)
+    }
 }

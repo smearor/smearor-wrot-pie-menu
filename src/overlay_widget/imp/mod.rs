@@ -1,4 +1,5 @@
 pub mod control;
+pub mod input;
 pub mod menu_item;
 pub mod message;
 pub mod rotation;

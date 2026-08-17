@@ -20,8 +20,11 @@ via the [`MenuItem`] API and receive events via [`PieMenuMessage`].
 
 - **Touch gesture activation**: Opens on pinch-to-zoom, closes on pinch-out — both thresholds are configurable
 - **Rotation gesture**: Rotate the menu ring with a two-finger rotation gesture
+- **Keyboard navigation**: Open with `Ctrl+Space`/`Menu`, navigate with arrows, confirm with `Enter`/`Space` (feature: `keyboard`)
+- **Mouse scroll rotation**: Rotate the ring with the mouse wheel, proportional to scroll distance (feature: `mouse-scroll`)
+- **Controller support**: Navigate with game controller sticks and buttons (features: `controller-sdl2` or `controller-evdev`)
 - **Configurable menu items**: Add/remove items programmatically with custom icons, colors, angles, and events
-- **Disabled state**: Disable individual menu items (reduced opacity, no click, no hover)
+- **Disabled state**: Disable individual menu items (reduced opacity, no click, no hover, skipped by keyboard navigation)
 - **Builder pattern**: Fluent API for ergonomic widget construction (`with_message_sender()`, `with_menu_item()`, etc.)
 - **Automatic angle distribution**: Auto-distribute items evenly across the ring with `add_menu_item_auto()`
 - **Fixed-position items**: Pin semantically positioned items (e.g. "Rotate CW" at 0°) that resist redistribution
@@ -30,6 +33,29 @@ via the [`MenuItem`] API and receive events via [`PieMenuMessage`].
 - **Click-to-select**: Click an enabled menu item to trigger its event
 - **Center close button**: Click the center circle to close the menu
 - **GTK4 native**: Built as a proper GTK4 widget with `BinLayout` overlay
+
+## Feature Flags
+
+| Feature | Description | Extra Dependencies |
+|---------|-------------|--------------------|
+| `keyboard` | Keyboard navigation | None |
+| `mouse-scroll` | Mouse wheel ring rotation | None |
+| `controller-sdl2` | Game controller via SDL2 | `sdl2` |
+| `controller-evdev` | Game controller via evdev (Linux-only) | `evdev` |
+
+Keyboard and mouse-scroll are enabled by default. To use controller support:
+
+```toml
+[dependencies]
+smearor-wrot-pie-menu = { version = "0.1", features = ["controller-sdl2"] }
+```
+
+To opt out of default features:
+
+```toml
+[dependencies]
+smearor-wrot-pie-menu = { version = "0.1", default-features = false }
+```
 
 ## Quick Start
 

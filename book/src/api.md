@@ -135,6 +135,15 @@ pub trait PieMenuControlHandler {
     fn rotation_gesture_enabled(&self) -> bool;
     fn set_markings_enabled(&self, enabled: bool);
     fn markings_enabled(&self) -> bool;
+    fn set_scroll_rotation_step(&self, sensitivity: f64);
+    fn scroll_rotation_step(&self) -> f32;
+    fn cycle_selection(&self, direction: i32);
+    fn select_first_item(&self);
+    fn confirm_selection(&self);
+    fn handle_left_stick_x(&self, x: f32);
+    fn handle_right_stick(&self, x: f32, y: f32);
+    fn find_nearest_item(&self, target_angle: f32) -> Option<String>;
+    fn set_keyboard_selection(&self, id: String);
 }
 ```
 
@@ -166,6 +175,38 @@ Enables or disables the rotation gesture when the pie menu is open. When disable
 
 Enables or disables drawing of inner and outer ring markings. Default: `true`.
 
+### `set_scroll_rotation_step(f64)` / `scroll_rotation_step() -> f32`
+
+Sets/gets the scroll rotation sensitivity multiplier. The rotation delta is computed as `dy * sensitivity`. Default: `5.0`. See [Input Handling](input_handling.md).
+
+### `cycle_selection(i32)`
+
+Cycles the keyboard selection by `direction` (-1 for CCW, +1 for CW). Items are sorted by angle for deterministic navigation order. Disabled items are skipped.
+
+### `select_first_item()`
+
+Selects the first enabled item (smallest angle, typically 0°). Disabled items are skipped.
+
+### `confirm_selection()`
+
+Confirms the current keyboard selection by sending `PieMenuMessage::Event` for the selected item. Does nothing if no item is selected or if the selected item is disabled.
+
+### `handle_left_stick_x(f32)`
+
+Updates the stored left stick X-axis value for continuous rotation. Must be called on the GTK main thread. See [Input Handling](input_handling.md).
+
+### `handle_right_stick(f32, f32)`
+
+Selects the nearest menu item based on the right stick direction. Must be called on the GTK main thread. See [Input Handling](input_handling.md).
+
+### `find_nearest_item(f32) -> Option<String>`
+
+Finds the enabled menu item whose angle is closest to `target_angle` (in degrees). Returns the item ID, or `None` if the menu has no enabled items. Disabled items are skipped.
+
+### `set_keyboard_selection(String)`
+
+Sets the keyboard selection to the given item ID and triggers a redraw.
+
 ## PieMenuMessageSender Trait
 
 The `PieMenuMessageSender` trait provides the message channel interface:
@@ -192,12 +233,17 @@ The `RotationHandler` trait provides rotation control:
 ```rust
 pub trait RotationHandler {
     fn set_rotation(&self, rotation: f32);
+    fn rotation(&self) -> f32;
 }
 ```
 
 ### `set_rotation(f32)`
 
 Sets the menu rotation in degrees. The menu ring is redrawn at the new angle.
+
+### `rotation() -> f32`
+
+Returns the current rotation in degrees.
 
 ```rust
 use smearor_wrot_pie_menu::RotationHandler;
@@ -261,9 +307,19 @@ pub enum PieMenuMessage {
 | `rotation_gesture_enabled` | `PieMenuControlHandler` | — | Get rotation gesture state |
 | `set_markings_enabled` | `PieMenuControlHandler` | `bool` | Enable/disable ring markings |
 | `markings_enabled` | `PieMenuControlHandler` | — | Get markings state |
+| `set_scroll_rotation_step` | `PieMenuControlHandler` | `f64` | Set scroll rotation sensitivity |
+| `scroll_rotation_step` | `PieMenuControlHandler` | — | Get scroll rotation sensitivity |
+| `cycle_selection` | `PieMenuControlHandler` | `i32` | Cycle keyboard selection |
+| `select_first_item` | `PieMenuControlHandler` | — | Select first item |
+| `confirm_selection` | `PieMenuControlHandler` | — | Confirm keyboard selection |
+| `handle_left_stick_x` | `PieMenuControlHandler` | `f32` | Update left stick X value |
+| `handle_right_stick` | `PieMenuControlHandler` | `f32, f32` | Select nearest item by stick direction |
+| `find_nearest_item` | `PieMenuControlHandler` | `f32` | Find nearest item by angle |
+| `set_keyboard_selection` | `PieMenuControlHandler` | `String` | Set keyboard selection by ID |
 | `set_message_sender` | `PieMenuMessageSender` | `Sender<PieMenuMessage>` | Set channel |
 | `send_message` | `PieMenuMessageSender` | `PieMenuMessage` | Send message |
 | `set_rotation` | `RotationHandler` | `f32` | Set rotation |
+| `rotation` | `RotationHandler` | — | Get rotation |
 | `set_close_callback` | `PieMenuWidget` | `Fn() + 'static` | Center click callback |
 | `set_markings_enabled` | `PieMenuWidget` | `bool` | Enable/disable ring markings |
 | `markings_enabled` | `PieMenuWidget` | — | Get markings state |
@@ -272,4 +328,5 @@ pub enum PieMenuMessage {
 | `with_deactivation_threshold` | `PieMenuOverlayWidget` | `f64` | Builder: set deactivation threshold |
 | `with_rotation_gesture_enabled` | `PieMenuOverlayWidget` | `bool` | Builder: enable/disable rotation gesture |
 | `with_markings_enabled` | `PieMenuOverlayWidget` | `bool` | Builder: enable/disable markings |
+| `with_scroll_rotation_step` | `PieMenuOverlayWidget` | `f64` | Builder: set scroll rotation sensitivity |
 | `with_menu_item` | `PieMenuOverlayWidget` | `MenuItem` | Builder: add item |

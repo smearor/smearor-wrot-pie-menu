@@ -1,3 +1,4 @@
+pub mod input;
 pub mod menu_item;
 pub mod widget;
 pub use widget::PieMenuWidgetImpl;
