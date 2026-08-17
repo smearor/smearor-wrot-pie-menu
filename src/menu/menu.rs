@@ -19,6 +19,12 @@ impl Menu {
     }
 }
 
+impl Default for Menu {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Deref for Menu {
     type Target = DashMap<String, MenuItem>;
 
