@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["AddMenuItemError","RemoveMenuItemError"]};
+window.SIDEBAR_ITEMS = {"enum":["AddMenuItemError","RemoveMenuItemError","SetMenuItemEnabledError","UpdateMenuItemError"]};

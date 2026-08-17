@@ -4,11 +4,33 @@
 <a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">pub enum </span>AddMenuItemError {
 <a href=#5 id=5 data-nosnippet>5</a>    <span class="attr">#[error(<span class="string">"Failed to borrow menu widget"</span>)]
 <a href=#6 id=6 data-nosnippet>6</a>    </span>MenuWidgetNotAvailable,
-<a href=#7 id=7 data-nosnippet>7</a>}
-<a href=#8 id=8 data-nosnippet>8</a>
-<a href=#9 id=9 data-nosnippet>9</a><span class="attr">#[derive(Debug, Clone, Error)]
-<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">pub enum </span>RemoveMenuItemError {
-<a href=#11 id=11 data-nosnippet>11</a>    <span class="attr">#[error(<span class="string">"Failed to borrow menu widget"</span>)]
-<a href=#12 id=12 data-nosnippet>12</a>    </span>MenuWidgetNotAvailable,
-<a href=#13 id=13 data-nosnippet>13</a>}
+<a href=#7 id=7 data-nosnippet>7</a>    <span class="doccomment">/// The new item overlaps with an existing item on the ring.
+<a href=#8 id=8 data-nosnippet>8</a>    </span><span class="attr">#[error(<span class="string">"Menu item '{id}' overlaps with existing item '{overlapping_with}'"</span>)]
+<a href=#9 id=9 data-nosnippet>9</a>    </span>ItemOverlap { id: String, overlapping_with: String },
+<a href=#10 id=10 data-nosnippet>10</a>}
+<a href=#11 id=11 data-nosnippet>11</a>
+<a href=#12 id=12 data-nosnippet>12</a><span class="attr">#[derive(Debug, Clone, Error)]
+<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">pub enum </span>RemoveMenuItemError {
+<a href=#14 id=14 data-nosnippet>14</a>    <span class="attr">#[error(<span class="string">"Failed to borrow menu widget"</span>)]
+<a href=#15 id=15 data-nosnippet>15</a>    </span>MenuWidgetNotAvailable,
+<a href=#16 id=16 data-nosnippet>16</a>}
+<a href=#17 id=17 data-nosnippet>17</a>
+<a href=#18 id=18 data-nosnippet>18</a><span class="doccomment">/// Error returned when setting the enabled state of a menu item that does not exist.
+<a href=#19 id=19 data-nosnippet>19</a></span><span class="attr">#[derive(Debug, Clone, Error)]
+<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">pub enum </span>SetMenuItemEnabledError {
+<a href=#21 id=21 data-nosnippet>21</a>    <span class="doccomment">/// No menu item with the given id was found.
+<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="attr">#[error(<span class="string">"Menu item not found: {id}"</span>)]
+<a href=#23 id=23 data-nosnippet>23</a>    </span>NotFound { id: String },
+<a href=#24 id=24 data-nosnippet>24</a>}
+<a href=#25 id=25 data-nosnippet>25</a>
+<a href=#26 id=26 data-nosnippet>26</a><span class="doccomment">/// Error returned when updating a menu item that does not exist.
+<a href=#27 id=27 data-nosnippet>27</a></span><span class="attr">#[derive(Debug, Clone, Error)]
+<a href=#28 id=28 data-nosnippet>28</a></span><span class="kw">pub enum </span>UpdateMenuItemError {
+<a href=#29 id=29 data-nosnippet>29</a>    <span class="doccomment">/// No menu item with the given id was found.
+<a href=#30 id=30 data-nosnippet>30</a>    </span><span class="attr">#[error(<span class="string">"Menu item not found: {id}"</span>)]
+<a href=#31 id=31 data-nosnippet>31</a>    </span>NotFound { id: String },
+<a href=#32 id=32 data-nosnippet>32</a>    <span class="doccomment">/// The updated item overlaps with an existing item on the ring.
+<a href=#33 id=33 data-nosnippet>33</a>    </span><span class="attr">#[error(<span class="string">"Menu item '{id}' overlaps with existing item '{overlapping_with}'"</span>)]
+<a href=#34 id=34 data-nosnippet>34</a>    </span>ItemOverlap { id: String, overlapping_with: String },
+<a href=#35 id=35 data-nosnippet>35</a>}
 </code></pre></div></section></main></body></html>

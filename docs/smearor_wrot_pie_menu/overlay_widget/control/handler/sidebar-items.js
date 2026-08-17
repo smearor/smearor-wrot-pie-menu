@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["PieMenuControlHandler"]};
+window.SIDEBAR_ITEMS = {"fn":["default_activation_threshold","default_deactivation_threshold"],"trait":["PieMenuControlHandler"]};

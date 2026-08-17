@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["PieMenuOverlayWidgetImpl"]};
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_ACTIVATION_THRESHOLD","DEFAULT_DEACTIVATION_THRESHOLD"],"struct":["PieMenuOverlayWidgetImpl"]};
