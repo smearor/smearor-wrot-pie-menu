@@ -3,6 +3,7 @@ use crate::menu::MenuItem;
 use crate::menu_widget::menu_item::error::AddMenuItemError;
 use crate::menu_widget::menu_item::error::RemoveMenuItemError;
 use crate::menu_widget::menu_item::error::SetMenuItemEnabledError;
+use crate::menu_widget::menu_item::error::UpdateMenuItemError;
 use crate::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::prelude::ObjectSubclassExt;
@@ -72,6 +73,32 @@ impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
     fn redistribute(&self) {
         self.menu_items.redistribute_angles();
         self.obj().queue_draw();
+    }
+
+    fn get_menu_item(&self, id: &str) -> Option<MenuItem> {
+        self.menu_items.get(id).map(|entry| entry.value().clone())
+    }
+
+    fn update_menu_item(&self, menu_item: MenuItem) -> Result<(), UpdateMenuItemError> {
+        let previous = self.menu_items.get(&menu_item.id).map(|entry| entry.value().clone());
+        if previous.is_none() {
+            return Err(UpdateMenuItemError::NotFound { id: menu_item.id.clone() });
+        }
+        let previous = previous.unwrap();
+
+        self.menu_items.insert(menu_item.id.clone(), menu_item.clone());
+
+        let ring_radius = self.radius.load(Ordering::Relaxed);
+        if let Err(error) = self.menu_items.validate_no_overlap(&menu_item, ring_radius) {
+            self.menu_items.insert(previous.id.clone(), previous);
+            return Err(match error {
+                AddMenuItemError::ItemOverlap { id, overlapping_with } => UpdateMenuItemError::ItemOverlap { id, overlapping_with },
+                _ => UpdateMenuItemError::NotFound { id: menu_item.id.clone() },
+            });
+        }
+
+        self.obj().queue_draw();
+        Ok(())
     }
 }
 
@@ -360,5 +387,39 @@ mod tests {
             .fixed_position(true)
             .build();
         assert!(item.fixed_position);
+    }
+
+    #[test]
+    fn test_get_menu_item() {
+        let menu = Menu::new();
+        menu.insert("a".to_string(), make_item("a", 0.0));
+        let item = menu.get("a").map(|e| e.value().clone());
+        assert!(item.is_some());
+        assert_eq!(item.unwrap().id, "a");
+    }
+
+    #[test]
+    fn test_get_menu_item_not_found() {
+        let menu = Menu::new();
+        assert!(menu.get("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_update_menu_item_fields() {
+        let menu = Menu::new();
+        menu.insert("a".to_string(), make_item("a", 0.0));
+        let mut updated = menu.get("a").unwrap().value().clone();
+        updated.label = "Updated".to_string();
+        updated.icon_name = "new-icon".to_string();
+        menu.insert("a".to_string(), updated);
+        let item = menu.get("a").unwrap();
+        assert_eq!(item.label, "Updated");
+        assert_eq!(item.icon_name, "new-icon");
+    }
+
+    #[test]
+    fn test_update_menu_item_not_found() {
+        let menu = Menu::new();
+        assert!(menu.get("nonexistent").is_none());
     }
 }

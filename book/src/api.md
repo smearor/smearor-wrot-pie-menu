@@ -13,6 +13,8 @@ pub trait PieMenuMenuItemHandler {
     fn set_menu_item_enabled(&self, id: &str, enabled: bool) -> Result<(), SetMenuItemEnabledError>;
     fn add_menu_item_auto(&self, menu_item: MenuItem) -> Result<(), AddMenuItemError>;
     fn redistribute(&self);
+    fn get_menu_item(&self, id: &str) -> Option<MenuItem>;
+    fn update_menu_item(&self, menu_item: MenuItem) -> Result<(), UpdateMenuItemError>;
 }
 ```
 
@@ -91,6 +93,29 @@ Redistributes all non-fixed items proportionally in the gaps between fixed items
 ```rust
 overlay.remove_menu_item("shuffle")?;
 overlay.redistribute();
+```
+
+### `get_menu_item(&str) -> Option<MenuItem>`
+
+Returns a clone of the menu item with the given id, or `None` if not found.
+
+```rust
+if let Some(mut item) = overlay.get_menu_item("play-pause") {
+    item.label = "Pause";
+    item.icon_name = "media-playback-pause-symbolic";
+    overlay.update_menu_item(item)?;
+}
+```
+
+### `update_menu_item(MenuItem) -> Result<(), UpdateMenuItemError>`
+
+Replaces an existing menu item (matched by `id`) with the given item. All fields except `id` can be changed. If `angle` or `radius` changed, overlap validation is performed and the update is rolled back on failure. Triggers a redraw on success.
+
+```rust
+let mut item = overlay.get_menu_item("play-pause").unwrap();
+item.label = "Pause";
+item.icon_name = "media-playback-pause-symbolic";
+overlay.update_menu_item(item)?;
 ```
 
 ## PieMenuControlHandler Trait
@@ -223,6 +248,8 @@ pub enum PieMenuMessage {
 | `remove_all_menu_items` | `PieMenuMenuItemHandler` | — | Remove all items |
 | `menu_item_count` | `PieMenuMenuItemHandler` | — | Get item count |
 | `set_menu_item_enabled` | `PieMenuMenuItemHandler` | `&str, bool` | Enable/disable an item |
+| `get_menu_item` | `PieMenuMenuItemHandler` | `&str` | Get a clone of an item |
+| `update_menu_item` | `PieMenuMenuItemHandler` | `MenuItem` | Replace an item (all fields except `id`) |
 | `show_pie_menu` | `PieMenuControlHandler` | — | Show the menu |
 | `hide_pie_menu` | `PieMenuControlHandler` | — | Hide the menu |
 | `is_pie_menu_open` | `PieMenuControlHandler` | — | Check visibility |

@@ -356,6 +356,11 @@ fn build_ui(app: &Application) {
                                 *prog = 0.0;
                             }
                         }
+                        if let Some(mut item) = overlay_for_messages.get_menu_item("play-pause") {
+                            item.label = if *playing { "Pause".to_string() } else { "Play".to_string() };
+                            item.icon_name = if *playing { "media-playback-pause-symbolic".to_string() } else { "media-playback-start-symbolic".to_string() };
+                            let _ = overlay_for_messages.update_menu_item(item);
+                        }
                     }
                     "stop" => {
                         *is_playing_for_messages.borrow_mut() = false;
@@ -363,6 +368,11 @@ fn build_ui(app: &Application) {
                         progress_bar_for_messages.set_fraction(0.0);
                         let track = &PLAYLIST[*track_index_for_messages.borrow()];
                         progress_label_for_messages.set_label(&format!("0:00 / {}", format_time(track.duration_secs)));
+                        if let Some(mut item) = overlay_for_messages.get_menu_item("play-pause") {
+                            item.label = "Play".to_string();
+                            item.icon_name = "media-playback-start-symbolic".to_string();
+                            let _ = overlay_for_messages.update_menu_item(item);
+                        }
                     }
                     "next" => {
                         let mut idx = track_index_for_messages.borrow_mut();

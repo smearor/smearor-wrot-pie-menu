@@ -3,6 +3,7 @@ use crate::menu::MenuItem;
 use crate::menu_widget::menu_item::error::AddMenuItemError;
 use crate::menu_widget::menu_item::error::RemoveMenuItemError;
 use crate::menu_widget::menu_item::error::SetMenuItemEnabledError;
+use crate::menu_widget::menu_item::error::UpdateMenuItemError;
 use crate::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use glib::subclass::prelude::ObjectSubclassIsExt;
 
@@ -33,5 +34,13 @@ impl PieMenuMenuItemHandler for PieMenuWidget {
 
     fn redistribute(&self) {
         self.imp().redistribute();
+    }
+
+    fn get_menu_item(&self, id: &str) -> Option<MenuItem> {
+        self.imp().get_menu_item(id)
+    }
+
+    fn update_menu_item(&self, menu_item: MenuItem) -> Result<(), UpdateMenuItemError> {
+        self.imp().update_menu_item(menu_item)
     }
 }

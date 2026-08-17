@@ -3,6 +3,7 @@ use crate::menu::MenuItem;
 use crate::menu_widget::menu_item::error::AddMenuItemError;
 use crate::menu_widget::menu_item::error::RemoveMenuItemError;
 use crate::menu_widget::menu_item::error::SetMenuItemEnabledError;
+use crate::menu_widget::menu_item::error::UpdateMenuItemError;
 use crate::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 
 impl PieMenuMenuItemHandler for PieMenuOverlayWidgetImpl {
@@ -59,5 +60,18 @@ impl PieMenuMenuItemHandler for PieMenuOverlayWidgetImpl {
         if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
             pie_menu_widget.redistribute();
         }
+    }
+
+    fn get_menu_item(&self, id: &str) -> Option<MenuItem> {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        pie_menu_widget_borrow.as_ref().and_then(|widget| widget.get_menu_item(id))
+    }
+
+    fn update_menu_item(&self, menu_item: MenuItem) -> Result<(), UpdateMenuItemError> {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        let Some(pie_menu_widget) = pie_menu_widget_borrow.clone() else {
+            return Err(UpdateMenuItemError::NotFound { id: menu_item.id.clone() });
+        };
+        pie_menu_widget.update_menu_item(menu_item)
     }
 }

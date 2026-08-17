@@ -3,6 +3,7 @@ use crate::menu::MenuItem;
 use crate::menu_widget::menu_item::error::AddMenuItemError;
 use crate::menu_widget::menu_item::error::RemoveMenuItemError;
 use crate::menu_widget::menu_item::error::SetMenuItemEnabledError;
+use crate::menu_widget::menu_item::error::UpdateMenuItemError;
 use glib::subclass::prelude::ObjectSubclassIsExt;
 
 pub trait PieMenuMenuItemHandler {
@@ -32,6 +33,15 @@ pub trait PieMenuMenuItemHandler {
     /// Triggers a redraw. Useful after manual `remove_menu_item` calls to re-space
     /// the remaining items.
     fn redistribute(&self);
+
+    /// Returns a clone of the menu item with the given id, or `None` if not found.
+    fn get_menu_item(&self, id: &str) -> Option<MenuItem>;
+
+    /// Replaces an existing menu item (matched by `id`) with the given item.
+    /// All fields except `id` can be changed. If `angle` or `radius` changed,
+    /// overlap validation is performed and the update is rolled back on failure.
+    /// Triggers a redraw on success.
+    fn update_menu_item(&self, menu_item: MenuItem) -> Result<(), UpdateMenuItemError>;
 }
 
 impl PieMenuMenuItemHandler for PieMenuOverlayWidget {
@@ -61,5 +71,13 @@ impl PieMenuMenuItemHandler for PieMenuOverlayWidget {
 
     fn redistribute(&self) {
         self.imp().redistribute();
+    }
+
+    fn get_menu_item(&self, id: &str) -> Option<MenuItem> {
+        self.imp().get_menu_item(id)
+    }
+
+    fn update_menu_item(&self, menu_item: MenuItem) -> Result<(), UpdateMenuItemError> {
+        self.imp().update_menu_item(menu_item)
     }
 }
