@@ -90,17 +90,36 @@ fn build_ui(app: &Application) {
     button_box.append(&button_270);
     main_box.append(&button_box);
 
-    // --- Pie menu state switch ---
-    let pie_menu_state_box = gtk4::Box::builder()
+    // --- Controls row: Pie Menu switch + threshold sliders ---
+    let controls_box = gtk4::Box::builder()
         .orientation(Orientation::Horizontal)
-        .spacing(8)
-        .halign(Align::Center)
+        .spacing(12)
+        .halign(Align::Fill)
+        .margin_top(8)
+        .margin_start(12)
+        .margin_end(12)
         .build();
+
     let pie_menu_state_label = Label::new(Some("Pie Menu"));
     let pie_menu_state_switch = Switch::builder().active(false).build();
-    pie_menu_state_box.append(&pie_menu_state_label);
-    pie_menu_state_box.append(&pie_menu_state_switch);
-    main_box.append(&pie_menu_state_box);
+    controls_box.append(&pie_menu_state_label);
+    controls_box.append(&pie_menu_state_switch);
+
+    let activation_label = Label::new(Some("Activation: 3.50"));
+    let activation_scale = Scale::with_range(Orientation::Horizontal, 1.0, 10.0, 0.1);
+    activation_scale.set_value(3.5);
+    activation_scale.set_hexpand(true);
+    controls_box.append(&activation_label);
+    controls_box.append(&activation_scale);
+
+    let deactivation_label = Label::new(Some("Deactivation: 0.50"));
+    let deactivation_scale = Scale::with_range(Orientation::Horizontal, 0.1, 1.0, 0.05);
+    deactivation_scale.set_value(0.5);
+    deactivation_scale.set_hexpand(true);
+    controls_box.append(&deactivation_label);
+    controls_box.append(&deactivation_scale);
+
+    main_box.append(&controls_box);
 
     // --- RotationWidget with smearor.png ---
     let picture = Picture::for_filename("assets/smearor.png");
@@ -164,16 +183,22 @@ fn build_ui(app: &Application) {
     viewport_frame.set_child(Some(&pie_menu));
     main_box.append(&viewport_frame);
 
-    // --- Angle label + manual slider ---
-    let current_angle_label = Label::builder().label("Current Angle: 0.00°").margin_bottom(6).build();
-    main_box.append(&current_angle_label);
+    // --- Manual angle slider ---
+    let manual_box = gtk4::Box::builder()
+        .orientation(Orientation::Horizontal)
+        .spacing(8)
+        .halign(Align::Fill)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
 
-    let manual_label = Label::new(Some("Manual Angle:"));
+    let current_angle_label = Label::builder().label("Angle: 0.00°").build();
     let manual_scale = Scale::with_range(Orientation::Horizontal, 0.0, 360.0, 1.0);
     manual_scale.set_value(0.0);
     manual_scale.set_hexpand(true);
-    main_box.append(&manual_label);
-    main_box.append(&manual_scale);
+    manual_box.append(&current_angle_label);
+    manual_box.append(&manual_scale);
+    main_box.append(&manual_box);
 
     // --- Snap button connections ---
     button_0.connect_clicked(glib::clone!(
@@ -189,7 +214,7 @@ fn build_ui(app: &Application) {
             rotation_widget.set_rotation_with_animation(0.0);
             manual_scale.set_value(0.0);
             pie_menu.set_rotation(0.0);
-            current_angle_label.set_label("Current Angle: 0.00°");
+            current_angle_label.set_label("Angle: 0.00°");
         }
     ));
 
@@ -206,7 +231,7 @@ fn build_ui(app: &Application) {
             rotation_widget.set_rotation_with_animation(90.0);
             manual_scale.set_value(90.0);
             pie_menu.set_rotation(90.0);
-            current_angle_label.set_label("Current Angle: 90.00°");
+            current_angle_label.set_label("Angle: 90.00°");
         }
     ));
 
@@ -223,7 +248,7 @@ fn build_ui(app: &Application) {
             rotation_widget.set_rotation_with_animation(180.0);
             manual_scale.set_value(180.0);
             pie_menu.set_rotation(180.0);
-            current_angle_label.set_label("Current Angle: 180.00°");
+            current_angle_label.set_label("Angle: 180.00°");
         }
     ));
 
@@ -240,7 +265,7 @@ fn build_ui(app: &Application) {
             rotation_widget.set_rotation_with_animation(270.0);
             manual_scale.set_value(270.0);
             pie_menu.set_rotation(270.0);
-            current_angle_label.set_label("Current Angle: 270.00°");
+            current_angle_label.set_label("Angle: 270.00°");
         }
     ));
 
@@ -256,7 +281,32 @@ fn build_ui(app: &Application) {
             let angle = scale.value();
             rotation_widget.set_rotation(SmearorRotation::Deg(angle as f32));
             pie_menu.set_rotation(angle as f32);
-            current_angle_label.set_label(&format!("Current Angle: {:.2}°", angle));
+            current_angle_label.set_label(&format!("Angle: {:.2}°", angle));
+        }
+    ));
+
+    // --- Threshold slider connections ---
+    activation_scale.connect_value_changed(glib::clone!(
+        #[weak]
+        pie_menu,
+        #[weak]
+        activation_label,
+        move |scale| {
+            let value = scale.value();
+            pie_menu.set_activation_threshold(value);
+            activation_label.set_label(&format!("Activation Threshold: {:.2}", value));
+        }
+    ));
+
+    deactivation_scale.connect_value_changed(glib::clone!(
+        #[weak]
+        pie_menu,
+        #[weak]
+        deactivation_label,
+        move |scale| {
+            let value = scale.value();
+            pie_menu.set_deactivation_threshold(value);
+            deactivation_label.set_label(&format!("Deactivation Threshold: {:.2}", value));
         }
     ));
 
@@ -274,7 +324,7 @@ fn build_ui(app: &Application) {
             *last = current;
             pie_menu_clone.set_rotation(current);
             manual_scale_clone.set_value(current as f64);
-            angle_label_clone.set_label(&format!("Current Angle: {:.2}°", current));
+            angle_label_clone.set_label(&format!("Angle: {:.2}°", current));
         }
         glib::ControlFlow::Continue
     });
