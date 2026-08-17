@@ -167,6 +167,7 @@ fn build_ui(app: &Application) {
                 .color("#0044AA77")
                 .angle(0.0)
                 .fixed_position(true)
+                .close_on_click(false)
                 .event("next")
                 .build(),
         )
@@ -179,6 +180,7 @@ fn build_ui(app: &Application) {
                 .color("#0044AA77")
                 .angle(180.0)
                 .fixed_position(true)
+                .close_on_click(false)
                 .event("prev")
                 .build(),
         )

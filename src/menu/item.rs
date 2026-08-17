@@ -48,6 +48,9 @@ pub struct MenuItem {
     /// The remaining items are distributed in the gaps between fixed items.
     #[builder(default = false)]
     pub fixed_position: bool,
+    /// Whether the pie menu closes after this item is clicked. Defaults to `true`.
+    #[builder(default = true)]
+    pub close_on_click: bool,
 }
 
 impl MenuItem {
@@ -182,5 +185,24 @@ mod tests {
             .enabled(false)
             .build();
         assert!(!item.enabled);
+    }
+
+    #[test]
+    fn test_menu_item_close_on_click_default() {
+        let item = MenuItem::builder().id("test").label("Test").icon_name("icon").angle(0.0).event("event").build();
+        assert!(item.close_on_click);
+    }
+
+    #[test]
+    fn test_menu_item_close_on_click_false() {
+        let item = MenuItem::builder()
+            .id("test")
+            .label("Test")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("event")
+            .close_on_click(false)
+            .build();
+        assert!(!item.close_on_click);
     }
 }

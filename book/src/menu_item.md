@@ -16,6 +16,7 @@ The `MenuItem` struct represents a single item in the pie menu. It is constructe
 | `event` | `String` | Yes | — | Event name sent as `PieMenuMessage::Event` |
 | `enabled` | `bool` | No | `true` | Whether the item is clickable (disabled items render at reduced opacity) |
 | `fixed_position` | `bool` | No | `false` | When `true`, the item's angle is treated as a fixed semantic position that resists auto-redistribution |
+| `close_on_click` | `bool` | No | `true` | Whether the pie menu closes after this item is clicked |
 
 ## Construction
 
@@ -33,6 +34,7 @@ let item = MenuItem::builder()
     .event("rotate-cw")
     .enabled(true)
     .fixed_position(false)
+    .close_on_click(true)
     .build();
 ```
 

@@ -310,7 +310,9 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                         if item_distance <= item_radius {
                             debug!("Menu item '{}' clicked, sending event: {}", item.id, item.event);
                             gesture.set_state(EventSequenceState::Claimed);
-                            let _ = widget.hide_pie_menu();
+                            if item.close_on_click {
+                                let _ = widget.hide_pie_menu();
+                            }
 
                             // Send event message
                             widget.send_message(PieMenuMessage::Event(item.event.clone()));
