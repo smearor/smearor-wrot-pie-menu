@@ -2,6 +2,8 @@ use crate::PieMenuOverlayWidgetImpl;
 use crate::overlay_widget::control::error::HidePieMenuError;
 use crate::overlay_widget::control::error::ShowPieMenuError;
 use crate::overlay_widget::control::handler::PieMenuControlHandler;
+use crate::overlay_widget::message::PieMenuMessage;
+use crate::overlay_widget::message::handler::PieMenuMessageSender;
 use gtk4::prelude::WidgetExt;
 use std::sync::atomic::Ordering;
 
@@ -13,6 +15,7 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         };
         self.visible.store(true, Ordering::Relaxed);
         pie_menu_widget.set_visible(true);
+        self.send_message(PieMenuMessage::Opened);
         Ok(())
     }
 
@@ -23,6 +26,7 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         };
         self.visible.store(false, Ordering::Relaxed);
         pie_menu_widget.set_visible(false);
+        self.send_message(PieMenuMessage::Closed);
         Ok(())
     }
 

@@ -9,6 +9,7 @@ use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
 use smearor_wrot_pie_menu::RotationHandler;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
+use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
 use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
 use smearor_wrot_rotation::RotationControlHandler;
 use smearor_wrot_rotation::RotationWidget;
@@ -23,6 +24,7 @@ use gtk4::Label;
 use gtk4::Orientation;
 use gtk4::Picture;
 use gtk4::Scale;
+use gtk4::Switch;
 use gtk4::glib;
 use gtk4::prelude::*;
 use std::cell::RefCell;
@@ -87,6 +89,18 @@ fn build_ui(app: &Application) {
     button_box.append(&button_180);
     button_box.append(&button_270);
     main_box.append(&button_box);
+
+    // --- Pie menu state switch ---
+    let pie_menu_state_box = gtk4::Box::builder()
+        .orientation(Orientation::Horizontal)
+        .spacing(8)
+        .halign(Align::Center)
+        .build();
+    let pie_menu_state_label = Label::new(Some("Pie Menu"));
+    let pie_menu_state_switch = Switch::builder().active(false).build();
+    pie_menu_state_box.append(&pie_menu_state_label);
+    pie_menu_state_box.append(&pie_menu_state_switch);
+    main_box.append(&pie_menu_state_box);
 
     // --- RotationWidget with smearor.png ---
     let picture = Picture::for_filename("assets/smearor.png");
@@ -265,14 +279,34 @@ fn build_ui(app: &Application) {
         glib::ControlFlow::Continue
     });
 
+    // --- Pie menu state switch connection ---
+    {
+        let pie_menu_clone = pie_menu.clone();
+        pie_menu_state_switch.connect_state_set(move |_switch, is_active| {
+            if is_active {
+                let _ = pie_menu_clone.show_pie_menu();
+            } else {
+                let _ = pie_menu_clone.hide_pie_menu();
+            }
+            glib::Propagation::Proceed
+        });
+    }
+
     // --- Process pie menu messages ---
     let rotation_widget_for_messages = rotation_widget.clone();
+    let state_switch_clone = pie_menu_state_switch.clone();
 
     glib::idle_add_local(move || {
         let mut last_rotation_msg: Option<f32> = None;
 
         loop {
             match receiver.try_recv() {
+                Ok(PieMenuMessage::Opened) => {
+                    state_switch_clone.set_active(true);
+                }
+                Ok(PieMenuMessage::Closed) => {
+                    state_switch_clone.set_active(false);
+                }
                 Ok(PieMenuMessage::Rotate(degrees)) => {
                     last_rotation_msg = Some(degrees);
                 }
