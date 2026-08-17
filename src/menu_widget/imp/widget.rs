@@ -258,8 +258,8 @@ impl WidgetImpl for PieMenuWidgetImpl {
         let nearest_angle = ((rotation / 5.0).round() * 5.0) - marking_offset;
         let nearest_angle = nearest_angle.rem_euclid(360.0) as i32;
 
-        for angle in (0..360).step_by(5) {
-            let shifted_angle = (angle as i32).rem_euclid(360);
+        for angle in (0i32..360).step_by(5) {
+            let shifted_angle = angle.rem_euclid(360);
             let angle_rad = (angle as f32).to_radians();
             let is_zero_degree = shifted_angle == 90;
             let is_current_angle = shifted_angle == nearest_angle;

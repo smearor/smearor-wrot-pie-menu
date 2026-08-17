@@ -21,3 +21,9 @@ impl PieMenuWidget {
         self.imp().close_callback.replace(Some(Box::new(callback)));
     }
 }
+
+impl Default for PieMenuWidget {
+    fn default() -> Self {
+        Self::new()
+    }
+}
