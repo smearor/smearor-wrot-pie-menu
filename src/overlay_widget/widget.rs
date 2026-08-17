@@ -50,6 +50,20 @@ impl PieMenuOverlayWidget {
         self
     }
 
+    /// Enables or disables the rotation gesture and returns self for chaining.
+    /// Default: `true`.
+    pub fn with_rotation_gesture_enabled(self, enabled: bool) -> Self {
+        self.set_rotation_gesture_enabled(enabled);
+        self
+    }
+
+    /// Enables or disables ring markings and returns self for chaining.
+    /// Default: `true`.
+    pub fn with_markings_enabled(self, enabled: bool) -> Self {
+        self.set_markings_enabled(enabled);
+        self
+    }
+
     /// Adds a menu item and returns self for chaining.
     /// Returns `Err` if the item could not be added.
     pub fn with_menu_item(self, item: MenuItem) -> Result<Self, AddMenuItemError> {

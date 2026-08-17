@@ -16,6 +16,7 @@ use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
 use std::cell::RefCell;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use tracing::debug;
 
@@ -40,6 +41,9 @@ pub struct PieMenuWidgetImpl {
 
     /// Index of the currently hovered menu item (-1 if none).
     pub(crate) hovered_item_index: RefCell<i32>,
+
+    /// Whether inner and outer ring markings are drawn. Default: `true`.
+    pub(crate) markings_enabled: AtomicBool,
 }
 
 impl Default for PieMenuWidgetImpl {
@@ -51,6 +55,7 @@ impl Default for PieMenuWidgetImpl {
             center_radius: AtomicF32::new(DEFAULT_PIE_MENU_CENTER_RADIUS),
             close_callback: RefCell::new(None),
             hovered_item_index: RefCell::new(-1),
+            markings_enabled: AtomicBool::new(true),
         }
     }
 }
@@ -247,71 +252,73 @@ impl WidgetImpl for PieMenuWidgetImpl {
         );
 
         // Draw markings every 5 degrees on both edges of the ring
-        let marking_offset = -90.0;
-        let marking_color_outer_current_angle = RGBA::new(0.8, 0.8, 0.8, 0.5);
-        let marking_color_inner_zero_angle = RGBA::new(0.8, 0.8, 0.8, 0.5);
-        let marking_color_highlight_outer_zero_angle = RGBA::new(1.0, 0.6, 0.6, 1.0);
-        let marking_color_highlight_inner_current_angle = RGBA::new(0.6, 1.0, 0.6, 1.0);
-        let marking_length_outer_current_angle = 5.0;
-        let marking_length_inner_zero_angle = 5.0;
-        let marking_line_width = 2.0;
-        let marking_line_width_outer_current_angle = 6.0;
-        let marking_line_width_inner_zero_angle = 4.0;
-        let rotation = self.rotation.load(Ordering::Relaxed);
-        let nearest_angle = ((rotation / 5.0).round() * 5.0) - marking_offset;
-        let nearest_angle = nearest_angle.rem_euclid(360.0) as i32;
+        if self.markings_enabled.load(Ordering::Relaxed) {
+            let marking_offset = -90.0;
+            let marking_color_outer_current_angle = RGBA::new(0.8, 0.8, 0.8, 0.5);
+            let marking_color_inner_zero_angle = RGBA::new(0.8, 0.8, 0.8, 0.5);
+            let marking_color_highlight_outer_zero_angle = RGBA::new(1.0, 0.6, 0.6, 1.0);
+            let marking_color_highlight_inner_current_angle = RGBA::new(0.6, 1.0, 0.6, 1.0);
+            let marking_length_outer_current_angle = 5.0;
+            let marking_length_inner_zero_angle = 5.0;
+            let marking_line_width = 2.0;
+            let marking_line_width_outer_current_angle = 6.0;
+            let marking_line_width_inner_zero_angle = 4.0;
+            let rotation = self.rotation.load(Ordering::Relaxed);
+            let nearest_angle = ((rotation / 5.0).round() * 5.0) - marking_offset;
+            let nearest_angle = nearest_angle.rem_euclid(360.0) as i32;
 
-        for angle in (0i32..360).step_by(5) {
-            let shifted_angle = angle.rem_euclid(360);
-            let angle_rad = (angle as f32).to_radians();
-            let is_zero_degree = shifted_angle == 90;
-            let is_current_angle = shifted_angle == nearest_angle;
-            let (outer_color, marking_line_width_outer) = if is_current_angle {
-                (marking_color_highlight_outer_zero_angle, marking_line_width_outer_current_angle)
-            } else {
-                (marking_color_outer_current_angle, marking_line_width)
-            };
-            let (inner_color, marking_line_width_inner) = if is_zero_degree {
-                (marking_color_highlight_inner_current_angle, marking_line_width_inner_zero_angle)
-            } else {
-                (marking_color_inner_zero_angle, marking_line_width)
-            };
+            for angle in (0i32..360).step_by(5) {
+                let shifted_angle = angle.rem_euclid(360);
+                let angle_rad = (angle as f32).to_radians();
+                let is_zero_degree = shifted_angle == 90;
+                let is_current_angle = shifted_angle == nearest_angle;
+                let (outer_color, marking_line_width_outer) = if is_current_angle {
+                    (marking_color_highlight_outer_zero_angle, marking_line_width_outer_current_angle)
+                } else {
+                    (marking_color_outer_current_angle, marking_line_width)
+                };
+                let (inner_color, marking_line_width_inner) = if is_zero_degree {
+                    (marking_color_highlight_inner_current_angle, marking_line_width_inner_zero_angle)
+                } else {
+                    (marking_color_inner_zero_angle, marking_line_width)
+                };
 
-            // Draw outer edge marking
-            let outer_inner_radius = radius - marking_length_outer_current_angle;
-            let outer_outer_radius = radius;
+                // Draw outer edge marking
+                let outer_inner_radius = radius - marking_length_outer_current_angle;
+                let outer_outer_radius = radius;
 
-            let outer_start_x = center_x + outer_inner_radius * angle_rad.cos();
-            let outer_start_y = center_y + outer_inner_radius * angle_rad.sin();
-            let outer_end_x = center_x + outer_outer_radius * angle_rad.cos();
-            let outer_end_y = center_y + outer_outer_radius * angle_rad.sin();
+                let outer_start_x = center_x + outer_inner_radius * angle_rad.cos();
+                let outer_start_y = center_y + outer_inner_radius * angle_rad.sin();
+                let outer_end_x = center_x + outer_outer_radius * angle_rad.cos();
+                let outer_end_y = center_y + outer_outer_radius * angle_rad.sin();
 
-            let builder = gtk4::gsk::PathBuilder::new();
-            builder.move_to(outer_start_x, outer_start_y);
-            builder.line_to(outer_end_x, outer_end_y);
-            let path = builder.to_path();
+                let builder = gtk4::gsk::PathBuilder::new();
+                builder.move_to(outer_start_x, outer_start_y);
+                builder.line_to(outer_end_x, outer_end_y);
+                let path = builder.to_path();
 
-            let stroke = gtk4::gsk::Stroke::new(marking_line_width_outer);
-            snapshot.append_stroke(&path, &stroke, &outer_color);
+                let stroke = gtk4::gsk::Stroke::new(marking_line_width_outer);
+                snapshot.append_stroke(&path, &stroke, &outer_color);
 
-            // Draw inner edge marking
-            let inner_inner_radius = center_radius;
-            let inner_outer_radius = center_radius + marking_length_inner_zero_angle;
+                // Draw inner edge marking
+                let inner_inner_radius = center_radius;
+                let inner_outer_radius = center_radius + marking_length_inner_zero_angle;
 
-            let inner_start_x = center_x + inner_inner_radius * angle_rad.cos();
-            let inner_start_y = center_y + inner_inner_radius * angle_rad.sin();
-            let inner_end_x = center_x + inner_outer_radius * angle_rad.cos();
-            let inner_end_y = center_y + inner_outer_radius * angle_rad.sin();
+                let inner_start_x = center_x + inner_inner_radius * angle_rad.cos();
+                let inner_start_y = center_y + inner_inner_radius * angle_rad.sin();
+                let inner_end_x = center_x + inner_outer_radius * angle_rad.cos();
+                let inner_end_y = center_y + inner_outer_radius * angle_rad.sin();
 
-            let builder = gtk4::gsk::PathBuilder::new();
-            builder.move_to(inner_start_x, inner_start_y);
-            builder.line_to(inner_end_x, inner_end_y);
-            let path = builder.to_path();
+                let builder = gtk4::gsk::PathBuilder::new();
+                builder.move_to(inner_start_x, inner_start_y);
+                builder.line_to(inner_end_x, inner_end_y);
+                let path = builder.to_path();
 
-            let stroke = gtk4::gsk::Stroke::new(marking_line_width_inner);
-            snapshot.append_stroke(&path, &stroke, &inner_color);
+                let stroke = gtk4::gsk::Stroke::new(marking_line_width_inner);
+                snapshot.append_stroke(&path, &stroke, &inner_color);
+            }
+            debug!("Drew 5-degree markings on both edges of the ring with highlights at 0° and {}°", nearest_angle);
         }
-        debug!("Drew 5-degree markings on both edges of the ring with highlights at 0° and {}°", nearest_angle);
 
         // Draw menu items in ring layout
         let Some(display) = Display::default() else {

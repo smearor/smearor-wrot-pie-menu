@@ -50,6 +50,26 @@ overlay.set_deactivation_threshold(0.3);
 
 See the [Thresholds](thresholds.md) page for details.
 
+## Optional Rotation Gesture
+
+The rotation gesture (two-finger rotate) can be enabled or disabled at runtime. When disabled, the gesture controller's propagation phase is set to `None`, effectively ignoring rotation input. Default: `true`.
+
+```rust
+use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+overlay.set_rotation_gesture_enabled(false);
+```
+
+## Optional Ring Markings
+
+The inner and outer ring markings (5-degree tick marks) can be toggled at runtime. Default: `true`.
+
+```rust
+use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+overlay.set_markings_enabled(false);
+```
+
 ## Message Channel
 
 Set up an `mpsc` channel to receive messages from the pie menu:

@@ -60,6 +60,12 @@ pub struct PieMenuOverlayWidgetImpl {
     /// Pinch-out scale threshold below which the pie menu closes.
     /// Configurable via `set_deactivation_threshold()`. Default: `0.5`.
     pub(crate) deactivation_threshold: AtomicF64,
+
+    /// Whether the rotation gesture is active when the pie menu is open. Default: `true`.
+    pub(crate) rotation_gesture_enabled: AtomicBool,
+
+    /// Reference to the rotate gesture controller for propagation phase toggling.
+    pub(crate) rotate_gesture: RefCell<Option<GestureRotate>>,
 }
 
 /// Default activation threshold for pinch-to-zoom (scale must exceed this to open the menu)
@@ -81,6 +87,8 @@ impl Default for PieMenuOverlayWidgetImpl {
             last_sent_rotation: RefCell::new(None),
             activation_threshold: AtomicF64::new(DEFAULT_ACTIVATION_THRESHOLD),
             deactivation_threshold: AtomicF64::new(DEFAULT_DEACTIVATION_THRESHOLD),
+            rotation_gesture_enabled: AtomicBool::new(true),
+            rotate_gesture: RefCell::new(None),
         }
     }
 }
@@ -234,7 +242,8 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
             debug!("Rotation gesture ended");
         });
 
-        widget.add_controller(rotate_gesture.upcast::<EventController>());
+        widget.add_controller(rotate_gesture.clone().upcast::<EventController>());
+        *self.rotate_gesture.borrow_mut() = Some(rotate_gesture);
 
         // Add click controller for center circle to close menu
         let click_controller = gtk4::GestureClick::new();
@@ -365,5 +374,31 @@ mod tests {
         let threshold = AtomicF64::new(DEFAULT_DEACTIVATION_THRESHOLD);
         threshold.store(0.3, Ordering::Relaxed);
         assert_eq!(threshold.load(Ordering::Relaxed), 0.3);
+    }
+
+    #[test]
+    fn test_default_rotation_gesture_enabled() {
+        let enabled = AtomicBool::new(true);
+        assert!(enabled.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn test_set_rotation_gesture_enabled() {
+        let enabled = AtomicBool::new(true);
+        enabled.store(false, Ordering::Relaxed);
+        assert!(!enabled.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn test_default_markings_enabled() {
+        let enabled = AtomicBool::new(true);
+        assert!(enabled.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn test_set_markings_enabled() {
+        let enabled = AtomicBool::new(true);
+        enabled.store(false, Ordering::Relaxed);
+        assert!(!enabled.load(Ordering::Relaxed));
     }
 }

@@ -4,6 +4,8 @@ use crate::overlay_widget::control::error::ShowPieMenuError;
 use crate::overlay_widget::control::handler::PieMenuControlHandler;
 use crate::overlay_widget::message::PieMenuMessage;
 use crate::overlay_widget::message::handler::PieMenuMessageSender;
+use gtk4::PropagationPhase;
+use gtk4::prelude::EventControllerExt;
 use gtk4::prelude::WidgetExt;
 use std::sync::atomic::Ordering;
 
@@ -48,5 +50,33 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
 
     fn deactivation_threshold(&self) -> f64 {
         self.deactivation_threshold.load(Ordering::Relaxed)
+    }
+
+    fn set_rotation_gesture_enabled(&self, enabled: bool) {
+        self.rotation_gesture_enabled.store(enabled, Ordering::Relaxed);
+        let phase = if enabled { PropagationPhase::Capture } else { PropagationPhase::None };
+        if let Some(ref gesture) = *self.rotate_gesture.borrow() {
+            gesture.set_propagation_phase(phase);
+        }
+    }
+
+    fn rotation_gesture_enabled(&self) -> bool {
+        self.rotation_gesture_enabled.load(Ordering::Relaxed)
+    }
+
+    fn set_markings_enabled(&self, enabled: bool) {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
+            pie_menu_widget.set_markings_enabled(enabled);
+        }
+    }
+
+    fn markings_enabled(&self) -> bool {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
+            pie_menu_widget.markings_enabled()
+        } else {
+            true
+        }
     }
 }

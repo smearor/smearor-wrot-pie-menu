@@ -106,6 +106,10 @@ pub trait PieMenuControlHandler {
     fn activation_threshold(&self) -> f64;
     fn set_deactivation_threshold(&self, threshold: f64);
     fn deactivation_threshold(&self) -> f64;
+    fn set_rotation_gesture_enabled(&self, enabled: bool);
+    fn rotation_gesture_enabled(&self) -> bool;
+    fn set_markings_enabled(&self, enabled: bool);
+    fn markings_enabled(&self) -> bool;
 }
 ```
 
@@ -128,6 +132,14 @@ Sets/gets the pinch-to-zoom activation threshold. Default: `3.5`.
 ### `set_deactivation_threshold(f64)` / `deactivation_threshold() -> f64`
 
 Sets/gets the pinch-out deactivation threshold. Default: `0.5`.
+
+### `set_rotation_gesture_enabled(bool)` / `rotation_gesture_enabled() -> bool`
+
+Enables or disables the rotation gesture when the pie menu is open. When disabled, the gesture controller's propagation phase is set to `None`, effectively ignoring rotation input. Default: `true`.
+
+### `set_markings_enabled(bool)` / `markings_enabled() -> bool`
+
+Enables or disables drawing of inner and outer ring markings. Default: `true`.
 
 ## PieMenuMessageSender Trait
 
@@ -218,11 +230,19 @@ pub enum PieMenuMessage {
 | `activation_threshold` | `PieMenuControlHandler` | — | Get activation threshold |
 | `set_deactivation_threshold` | `PieMenuControlHandler` | `f64` | Set deactivation threshold |
 | `deactivation_threshold` | `PieMenuControlHandler` | — | Get deactivation threshold |
+| `set_rotation_gesture_enabled` | `PieMenuControlHandler` | `bool` | Enable/disable rotation gesture |
+| `rotation_gesture_enabled` | `PieMenuControlHandler` | — | Get rotation gesture state |
+| `set_markings_enabled` | `PieMenuControlHandler` | `bool` | Enable/disable ring markings |
+| `markings_enabled` | `PieMenuControlHandler` | — | Get markings state |
 | `set_message_sender` | `PieMenuMessageSender` | `Sender<PieMenuMessage>` | Set channel |
 | `send_message` | `PieMenuMessageSender` | `PieMenuMessage` | Send message |
 | `set_rotation` | `RotationHandler` | `f32` | Set rotation |
 | `set_close_callback` | `PieMenuWidget` | `Fn() + 'static` | Center click callback |
+| `set_markings_enabled` | `PieMenuWidget` | `bool` | Enable/disable ring markings |
+| `markings_enabled` | `PieMenuWidget` | — | Get markings state |
 | `with_message_sender` | `PieMenuOverlayWidget` | `Sender<PieMenuMessage>` | Builder: set sender |
 | `with_activation_threshold` | `PieMenuOverlayWidget` | `f64` | Builder: set activation threshold |
 | `with_deactivation_threshold` | `PieMenuOverlayWidget` | `f64` | Builder: set deactivation threshold |
+| `with_rotation_gesture_enabled` | `PieMenuOverlayWidget` | `bool` | Builder: enable/disable rotation gesture |
+| `with_markings_enabled` | `PieMenuOverlayWidget` | `bool` | Builder: enable/disable markings |
 | `with_menu_item` | `PieMenuOverlayWidget` | `MenuItem` | Builder: add item |

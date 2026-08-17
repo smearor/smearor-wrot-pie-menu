@@ -39,11 +39,36 @@ struct Track {
 }
 
 const PLAYLIST: &[Track] = &[
-    Track { title: "Neon Horizon", artist: "Synthwave Collective", album: "Midnight Drive", duration_secs: 214.0 },
-    Track { title: "Echoes of Tomorrow", artist: "Aurora Falls", album: "Parallel Worlds", duration_secs: 187.0 },
-    Track { title: "Gravity Pulse", artist: "Quantum Beats", album: "Event Horizon", duration_secs: 243.0 },
-    Track { title: "Velvet Storm", artist: "The Crimson Hours", album: "Afterglow", duration_secs: 198.0 },
-    Track { title: "Solar Drift", artist: "Lumina Path", album: "Lightyears", duration_secs: 256.0 },
+    Track {
+        title: "Neon Horizon",
+        artist: "Synthwave Collective",
+        album: "Midnight Drive",
+        duration_secs: 214.0,
+    },
+    Track {
+        title: "Echoes of Tomorrow",
+        artist: "Aurora Falls",
+        album: "Parallel Worlds",
+        duration_secs: 187.0,
+    },
+    Track {
+        title: "Gravity Pulse",
+        artist: "Quantum Beats",
+        album: "Event Horizon",
+        duration_secs: 243.0,
+    },
+    Track {
+        title: "Velvet Storm",
+        artist: "The Crimson Hours",
+        album: "Afterglow",
+        duration_secs: 198.0,
+    },
+    Track {
+        title: "Solar Drift",
+        artist: "Lumina Path",
+        album: "Lightyears",
+        duration_secs: 256.0,
+    },
 ];
 
 fn main() -> glib::ExitCode {
@@ -91,17 +116,10 @@ fn build_ui(app: &Application) {
     main_box.append(&hint_label);
 
     // --- Now playing info ---
-    let track_title_label = Label::builder()
-        .label(PLAYLIST[0].title)
-        .css_classes(["title-2"])
-        .halign(Align::Center)
-        .build();
+    let track_title_label = Label::builder().label(PLAYLIST[0].title).css_classes(["title-2"]).halign(Align::Center).build();
     main_box.append(&track_title_label);
 
-    let artist_label = Label::builder()
-        .label(PLAYLIST[0].artist)
-        .halign(Align::Center)
-        .build();
+    let artist_label = Label::builder().label(PLAYLIST[0].artist).halign(Align::Center).build();
     main_box.append(&artist_label);
 
     let album_label = Label::builder()
@@ -112,18 +130,10 @@ fn build_ui(app: &Application) {
     main_box.append(&album_label);
 
     // --- Progress bar ---
-    let progress_bar = ProgressBar::builder()
-        .hexpand(true)
-        .margin_top(12)
-        .margin_start(24)
-        .margin_end(24)
-        .build();
+    let progress_bar = ProgressBar::builder().hexpand(true).margin_top(12).margin_start(24).margin_end(24).build();
     main_box.append(&progress_bar);
 
-    let progress_label = Label::builder()
-        .label("0:00 / 0:00")
-        .halign(Align::Center)
-        .build();
+    let progress_label = Label::builder().label("0:00 / 0:00").halign(Align::Center).build();
     main_box.append(&progress_label);
 
     // --- Dynamic menu item pool ---
@@ -147,6 +157,8 @@ fn build_ui(app: &Application) {
         .with_message_sender(sender)
         .with_activation_threshold(2.0)
         .with_deactivation_threshold(0.4)
+        .with_rotation_gesture_enabled(false)
+        .with_markings_enabled(false)
         .with_menu_item(
             MenuItem::builder()
                 .id("next")
@@ -274,12 +286,7 @@ fn build_ui(app: &Application) {
     }
 
     // --- Update now-playing labels ---
-    fn update_now_playing(
-        track_title_label: &Label,
-        artist_label: &Label,
-        album_label: &Label,
-        index: usize,
-    ) {
+    fn update_now_playing(track_title_label: &Label, artist_label: &Label, album_label: &Label, index: usize) {
         let track = &PLAYLIST[index];
         track_title_label.set_label(track.title);
         artist_label.set_label(track.artist);
@@ -314,11 +321,7 @@ fn build_ui(app: &Application) {
                 *prog = 0.0;
             }
             progress_bar_clone.set_fraction(*prog / track.duration_secs);
-            progress_label_clone.set_label(&format!(
-                "{} / {}",
-                format_time(*prog),
-                format_time(track.duration_secs)
-            ));
+            progress_label_clone.set_label(&format!("{} / {}", format_time(*prog), format_time(track.duration_secs)));
         }
         glib::ControlFlow::Continue
     });
@@ -357,10 +360,7 @@ fn build_ui(app: &Application) {
                         *progress_for_messages.borrow_mut() = 0.0;
                         progress_bar_for_messages.set_fraction(0.0);
                         let track = &PLAYLIST[*track_index_for_messages.borrow()];
-                        progress_label_for_messages.set_label(&format!(
-                            "0:00 / {}",
-                            format_time(track.duration_secs)
-                        ));
+                        progress_label_for_messages.set_label(&format!("0:00 / {}", format_time(track.duration_secs)));
                     }
                     "next" => {
                         let mut idx = track_index_for_messages.borrow_mut();
@@ -369,19 +369,11 @@ fn build_ui(app: &Application) {
                             let new_index = *idx;
                             drop(idx);
                             *progress_for_messages.borrow_mut() = 0.0;
-                            update_now_playing(
-                                &track_title_label_clone,
-                                &artist_label_clone,
-                                &album_label_clone,
-                                new_index,
-                            );
+                            update_now_playing(&track_title_label_clone, &artist_label_clone, &album_label_clone, new_index);
                             update_disabled_state(&overlay_for_messages, new_index);
                             let track = &PLAYLIST[new_index];
                             progress_bar_for_messages.set_fraction(0.0);
-                            progress_label_for_messages.set_label(&format!(
-                                "0:00 / {}",
-                                format_time(track.duration_secs)
-                            ));
+                            progress_label_for_messages.set_label(&format!("0:00 / {}", format_time(track.duration_secs)));
                         }
                     }
                     "prev" => {
@@ -391,19 +383,11 @@ fn build_ui(app: &Application) {
                             let new_index = *idx;
                             drop(idx);
                             *progress_for_messages.borrow_mut() = 0.0;
-                            update_now_playing(
-                                &track_title_label_clone,
-                                &artist_label_clone,
-                                &album_label_clone,
-                                new_index,
-                            );
+                            update_now_playing(&track_title_label_clone, &artist_label_clone, &album_label_clone, new_index);
                             update_disabled_state(&overlay_for_messages, new_index);
                             let track = &PLAYLIST[new_index];
                             progress_bar_for_messages.set_fraction(0.0);
-                            progress_label_for_messages.set_label(&format!(
-                                "0:00 / {}",
-                                format_time(track.duration_secs)
-                            ));
+                            progress_label_for_messages.set_label(&format!("0:00 / {}", format_time(track.duration_secs)));
                         }
                     }
                     "exit" => {

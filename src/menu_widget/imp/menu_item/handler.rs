@@ -36,10 +36,7 @@ impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
     }
 
     fn set_menu_item_enabled(&self, id: &str, enabled: bool) -> Result<(), SetMenuItemEnabledError> {
-        let mut item = self
-            .menu_items
-            .get_mut(id)
-            .ok_or(SetMenuItemEnabledError::NotFound { id: id.to_string() })?;
+        let mut item = self.menu_items.get_mut(id).ok_or(SetMenuItemEnabledError::NotFound { id: id.to_string() })?;
         item.enabled = enabled;
         drop(item);
         self.obj().queue_draw();
@@ -48,11 +45,7 @@ impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
 
     fn add_menu_item_auto(&self, menu_item: MenuItem) -> Result<(), AddMenuItemError> {
         let previous_item = self.menu_items.get(&menu_item.id).map(|entry| entry.value().clone());
-        let angle_snapshot: Vec<(String, f32)> = self
-            .menu_items
-            .iter()
-            .map(|entry| (entry.key().clone(), entry.value().angle))
-            .collect();
+        let angle_snapshot: Vec<(String, f32)> = self.menu_items.iter().map(|entry| (entry.key().clone(), entry.value().angle)).collect();
 
         self.menu_items.insert(menu_item.id.clone(), menu_item.clone());
         self.menu_items.redistribute_angles();
@@ -89,13 +82,7 @@ mod tests {
     use crate::menu_widget::menu_item::error::AddMenuItemError;
 
     fn make_item(id: &str, angle: f32) -> MenuItem {
-        MenuItem::builder()
-            .id(id)
-            .label(id)
-            .icon_name("icon")
-            .angle(angle)
-            .event(id)
-            .build()
+        MenuItem::builder().id(id).label(id).icon_name("icon").angle(angle).event(id).build()
     }
 
     #[test]
@@ -269,8 +256,22 @@ mod tests {
     #[test]
     fn test_redistribute_angles_with_fixed() {
         let menu = Menu::new();
-        let fixed_a = MenuItem::builder().id("fixed_a").label("F").icon_name("icon").angle(0.0).event("e").fixed_position(true).build();
-        let fixed_b = MenuItem::builder().id("fixed_b").label("F").icon_name("icon").angle(180.0).event("e").fixed_position(true).build();
+        let fixed_a = MenuItem::builder()
+            .id("fixed_a")
+            .label("F")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("e")
+            .fixed_position(true)
+            .build();
+        let fixed_b = MenuItem::builder()
+            .id("fixed_b")
+            .label("F")
+            .icon_name("icon")
+            .angle(180.0)
+            .event("e")
+            .fixed_position(true)
+            .build();
         let flex_a = make_item("flex_a", 999.0);
         let flex_b = make_item("flex_b", 999.0);
         menu.insert("fixed_a".to_string(), fixed_a);
@@ -296,8 +297,22 @@ mod tests {
     #[test]
     fn test_redistribute_angles_all_fixed_same_angle() {
         let menu = Menu::new();
-        let fixed_a = MenuItem::builder().id("fixed_a").label("F").icon_name("icon").angle(0.0).event("e").fixed_position(true).build();
-        let fixed_b = MenuItem::builder().id("fixed_b").label("F").icon_name("icon").angle(0.0).event("e").fixed_position(true).build();
+        let fixed_a = MenuItem::builder()
+            .id("fixed_a")
+            .label("F")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("e")
+            .fixed_position(true)
+            .build();
+        let fixed_b = MenuItem::builder()
+            .id("fixed_b")
+            .label("F")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("e")
+            .fixed_position(true)
+            .build();
         let flex = make_item("flex", 999.0);
         menu.insert("fixed_a".to_string(), fixed_a);
         menu.insert("fixed_b".to_string(), fixed_b);

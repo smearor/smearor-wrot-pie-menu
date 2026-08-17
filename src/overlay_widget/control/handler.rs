@@ -27,6 +27,21 @@ pub trait PieMenuControlHandler {
 
     /// Returns the current deactivation threshold.
     fn deactivation_threshold(&self) -> f64;
+
+    /// Enables or disables the rotation gesture when the pie menu is open.
+    /// When disabled, the rotation gesture controller is set to `PropagationPhase::None`.
+    /// Default: `true`.
+    fn set_rotation_gesture_enabled(&self, enabled: bool);
+
+    /// Returns whether the rotation gesture is currently enabled.
+    fn rotation_gesture_enabled(&self) -> bool;
+
+    /// Enables or disables drawing of inner and outer ring markings.
+    /// Default: `true`.
+    fn set_markings_enabled(&self, enabled: bool);
+
+    /// Returns whether ring markings are currently enabled.
+    fn markings_enabled(&self) -> bool;
 }
 
 impl PieMenuControlHandler for PieMenuOverlayWidget {
@@ -56,6 +71,22 @@ impl PieMenuControlHandler for PieMenuOverlayWidget {
 
     fn deactivation_threshold(&self) -> f64 {
         self.imp().deactivation_threshold()
+    }
+
+    fn set_rotation_gesture_enabled(&self, enabled: bool) {
+        self.imp().set_rotation_gesture_enabled(enabled);
+    }
+
+    fn rotation_gesture_enabled(&self) -> bool {
+        self.imp().rotation_gesture_enabled()
+    }
+
+    fn set_markings_enabled(&self, enabled: bool) {
+        self.imp().set_markings_enabled(enabled);
+    }
+
+    fn markings_enabled(&self) -> bool {
+        self.imp().markings_enabled()
     }
 }
 

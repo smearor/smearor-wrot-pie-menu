@@ -1,5 +1,5 @@
-use crate::menu::item::MenuItem;
 use crate::menu::item::DEFAULT_MENU_ITEM_RADIUS;
+use crate::menu::item::MenuItem;
 use crate::menu_widget::menu_item::error::AddMenuItemError;
 use dashmap::DashMap;
 use serde::Deserialize;
@@ -43,12 +43,8 @@ impl Menu {
             }
             let existing_angle_rad = existing_item.angle.to_radians();
             let existing_position = (existing_angle_rad.cos(), existing_angle_rad.sin());
-            let distance = ((new_position.0 - existing_position.0).powi(2)
-                + (new_position.1 - existing_position.1).powi(2))
-                .sqrt();
-            let min_distance = (new_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS)
-                + existing_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS))
-                / ring_radius;
+            let distance = ((new_position.0 - existing_position.0).powi(2) + (new_position.1 - existing_position.1).powi(2)).sqrt();
+            let min_distance = (new_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS) + existing_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS)) / ring_radius;
             if distance < min_distance {
                 return Err(AddMenuItemError::ItemOverlap {
                     id: new_item.id.clone(),
@@ -131,8 +127,7 @@ impl Menu {
                 .enumerate()
                 .map(|(index, (start, end))| {
                     let width = end - start;
-                    let fractional = flexible_count as f32 * width / total_width
-                        - (flexible_count as f32 * width / total_width).floor();
+                    let fractional = flexible_count as f32 * width / total_width - (flexible_count as f32 * width / total_width).floor();
                     (index, fractional)
                 })
                 .collect();
