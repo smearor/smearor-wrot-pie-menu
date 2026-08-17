@@ -60,6 +60,14 @@ fn build_ui(app: &Application) {
         .default_height(600)
         .build();
 
+    window.connect_close_request({
+        let app = app.clone();
+        move |_| {
+            app.quit();
+            glib::Propagation::Proceed
+        }
+    });
+
     let main_box = Box::builder()
         .orientation(Orientation::Vertical)
         .spacing(12)
