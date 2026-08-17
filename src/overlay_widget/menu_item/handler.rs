@@ -30,4 +30,8 @@ impl PieMenuMenuItemHandler for PieMenuWidget {
     fn add_menu_item_auto(&self, menu_item: MenuItem) -> Result<(), AddMenuItemError> {
         self.imp().add_menu_item_auto(menu_item)
     }
+
+    fn redistribute(&self) {
+        self.imp().redistribute();
+    }
 }

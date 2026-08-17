@@ -75,6 +75,11 @@ impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
         self.obj().queue_draw();
         Ok(())
     }
+
+    fn redistribute(&self) {
+        self.menu_items.redistribute_angles();
+        self.obj().queue_draw();
+    }
 }
 
 #[cfg(test)]
@@ -277,9 +282,15 @@ mod tests {
         assert!((menu.get("fixed_b").unwrap().angle - 180.0).abs() < 0.01);
         let flex_a_angle = menu.get("flex_a").unwrap().angle;
         let flex_b_angle = menu.get("flex_b").unwrap().angle;
-        // One flexible item in each segment (0-180 and 180-360)
-        assert!(flex_a_angle > 0.0 && flex_a_angle < 180.0);
-        assert!(flex_b_angle > 180.0 && flex_b_angle < 360.0);
+        // One flexible item in each segment (0-180 and 180-360),
+        // but DashMap iteration order is non-deterministic, so check both assignments
+        let (smaller, larger) = if flex_a_angle < flex_b_angle {
+            (flex_a_angle, flex_b_angle)
+        } else {
+            (flex_b_angle, flex_a_angle)
+        };
+        assert!(smaller > 0.0 && smaller < 180.0);
+        assert!(larger > 180.0 && larger < 360.0);
     }
 
     #[test]

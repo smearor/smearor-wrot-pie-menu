@@ -82,3 +82,14 @@ If overlap validation fails after redistribution, the entire operation is rolled
 1. The new item is removed (or the previous item is restored on overwrite)
 2. All angle changes to existing items are reverted to their pre-redistribution values
 3. `AddMenuItemError::ItemOverlap` is returned
+
+## Manual Redistribution
+
+After removing items with `remove_menu_item()`, the remaining flexible items are not automatically re-spaced. Call `redistribute()` to trigger redistribution:
+
+```rust
+overlay.remove_menu_item("shuffle")?;
+overlay.redistribute();
+```
+
+This re-runs the proportional distribution algorithm, keeping fixed-position items in place and re-spacing flexible items in the gaps between them.

@@ -53,4 +53,11 @@ impl PieMenuMenuItemHandler for PieMenuOverlayWidgetImpl {
         };
         pie_menu_widget.add_menu_item_auto(menu_item)
     }
+
+    fn redistribute(&self) {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
+            pie_menu_widget.redistribute();
+        }
+    }
 }

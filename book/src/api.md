@@ -12,6 +12,7 @@ pub trait PieMenuMenuItemHandler {
     fn menu_item_count(&self) -> usize;
     fn set_menu_item_enabled(&self, id: &str, enabled: bool) -> Result<(), SetMenuItemEnabledError>;
     fn add_menu_item_auto(&self, menu_item: MenuItem) -> Result<(), AddMenuItemError>;
+    fn redistribute(&self);
 }
 ```
 
@@ -81,6 +82,15 @@ overlay.add_menu_item_auto(
         .event("save")
         .build(),
 )?;
+```
+
+### `redistribute()`
+
+Redistributes all non-fixed items proportionally in the gaps between fixed items. Triggers a redraw. Useful after `remove_menu_item()` to re-space remaining items.
+
+```rust
+overlay.remove_menu_item("shuffle")?;
+overlay.redistribute();
 ```
 
 ## PieMenuControlHandler Trait
@@ -196,6 +206,7 @@ pub enum PieMenuMessage {
 |--------|-------|-----------|-------------|
 | `add_menu_item` | `PieMenuMenuItemHandler` | `MenuItem` | Add a menu item |
 | `add_menu_item_auto` | `PieMenuMenuItemHandler` | `MenuItem` | Add with auto-calculated angle |
+| `redistribute` | `PieMenuMenuItemHandler` | — | Redistribute flexible item angles |
 | `remove_menu_item` | `PieMenuMenuItemHandler` | `&str` | Remove by id |
 | `remove_all_menu_items` | `PieMenuMenuItemHandler` | — | Remove all items |
 | `menu_item_count` | `PieMenuMenuItemHandler` | — | Get item count |
