@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8203b32f.js";
+            window.path_to_searchindex_js = "searchindex-b2bcdacb.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-f3f75a96.js"></script>
+        <script src="toc-51b810c4.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -355,6 +355,13 @@ overlay.set_message_sender(sender);
 <li><strong>Center circle click</strong>: Closes the menu</li>
 <li><strong>Menu item click</strong>: Sends <code>Event</code> message with the item’s event name</li>
 </ul>
+<h3 id="additional-input-methods"><a class="header" href="#additional-input-methods">Additional Input Methods</a></h3>
+<p>Optional input methods are available via feature flags. See <a href="#input-handling">Input Handling</a> for details:</p>
+<ul>
+<li><strong>Keyboard</strong> (<code>keyboard</code> feature, enabled by default): Navigate with arrow keys, confirm with <code>Enter</code></li>
+<li><strong>Mouse scroll</strong> (<code>mouse-scroll</code> feature, enabled by default): Rotate the ring with the mouse wheel</li>
+<li><strong>Controller</strong> (<code>controller-sdl2</code> or <code>controller-evdev</code> feature): Navigate with analog sticks</li>
+</ul>
 <h2 id="rotation"><a class="header" href="#rotation">Rotation</a></h2>
 <p>Use the <code>RotationHandler</code> trait to set the menu rotation programmatically:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -587,6 +594,15 @@ overlay.update_menu_item(item)?;
     fn rotation_gesture_enabled(&amp;self) -&gt; bool;
     fn set_markings_enabled(&amp;self, enabled: bool);
     fn markings_enabled(&amp;self) -&gt; bool;
+    fn set_scroll_rotation_step(&amp;self, sensitivity: f64);
+    fn scroll_rotation_step(&amp;self) -&gt; f32;
+    fn cycle_selection(&amp;self, direction: i32);
+    fn select_first_item(&amp;self);
+    fn confirm_selection(&amp;self);
+    fn handle_left_stick_x(&amp;self, x: f32);
+    fn handle_right_stick(&amp;self, x: f32, y: f32);
+    fn find_nearest_item(&amp;self, target_angle: f32) -&gt; Option&lt;String&gt;;
+    fn set_keyboard_selection(&amp;self, id: String);
 }
 <span class="boring">}</span></code></pre>
 <h3 id="show_pie_menu"><a class="header" href="#show_pie_menu"><code>show_pie_menu()</code></a></h3>
@@ -603,6 +619,22 @@ overlay.update_menu_item(item)?;
 <p>Enables or disables the rotation gesture when the pie menu is open. When disabled, the gesture controller’s propagation phase is set to <code>None</code>, effectively ignoring rotation input. Default: <code>true</code>.</p>
 <h3 id="set_markings_enabledbool--markings_enabled---bool"><a class="header" href="#set_markings_enabledbool--markings_enabled---bool"><code>set_markings_enabled(bool)</code> / <code>markings_enabled() -&gt; bool</code></a></h3>
 <p>Enables or disables drawing of inner and outer ring markings. Default: <code>true</code>.</p>
+<h3 id="set_scroll_rotation_stepf64--scroll_rotation_step---f32"><a class="header" href="#set_scroll_rotation_stepf64--scroll_rotation_step---f32"><code>set_scroll_rotation_step(f64)</code> / <code>scroll_rotation_step() -&gt; f32</code></a></h3>
+<p>Sets/gets the scroll rotation sensitivity multiplier. The rotation delta is computed as <code>dy * sensitivity</code>. Default: <code>5.0</code>. See <a href="#input-handling">Input Handling</a>.</p>
+<h3 id="cycle_selectioni32"><a class="header" href="#cycle_selectioni32"><code>cycle_selection(i32)</code></a></h3>
+<p>Cycles the keyboard selection by <code>direction</code> (-1 for CCW, +1 for CW). Items are sorted by angle for deterministic navigation order. Disabled items are skipped.</p>
+<h3 id="select_first_item"><a class="header" href="#select_first_item"><code>select_first_item()</code></a></h3>
+<p>Selects the first enabled item (smallest angle, typically 0°). Disabled items are skipped.</p>
+<h3 id="confirm_selection"><a class="header" href="#confirm_selection"><code>confirm_selection()</code></a></h3>
+<p>Confirms the current keyboard selection by sending <code>PieMenuMessage::Event</code> for the selected item. Does nothing if no item is selected or if the selected item is disabled.</p>
+<h3 id="handle_left_stick_xf32"><a class="header" href="#handle_left_stick_xf32"><code>handle_left_stick_x(f32)</code></a></h3>
+<p>Updates the stored left stick X-axis value for continuous rotation. Must be called on the GTK main thread. See <a href="#input-handling">Input Handling</a>.</p>
+<h3 id="handle_right_stickf32-f32"><a class="header" href="#handle_right_stickf32-f32"><code>handle_right_stick(f32, f32)</code></a></h3>
+<p>Selects the nearest menu item based on the right stick direction. Must be called on the GTK main thread. See <a href="#input-handling">Input Handling</a>.</p>
+<h3 id="find_nearest_itemf32---optionstring"><a class="header" href="#find_nearest_itemf32---optionstring"><code>find_nearest_item(f32) -&gt; Option&lt;String&gt;</code></a></h3>
+<p>Finds the enabled menu item whose angle is closest to <code>target_angle</code> (in degrees). Returns the item ID, or <code>None</code> if the menu has no enabled items. Disabled items are skipped.</p>
+<h3 id="set_keyboard_selectionstring"><a class="header" href="#set_keyboard_selectionstring"><code>set_keyboard_selection(String)</code></a></h3>
+<p>Sets the keyboard selection to the given item ID and triggers a redraw.</p>
 <h2 id="piemenumessagesender-trait"><a class="header" href="#piemenumessagesender-trait">PieMenuMessageSender Trait</a></h2>
 <p>The <code>PieMenuMessageSender</code> trait provides the message channel interface:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -622,10 +654,13 @@ overlay.update_menu_item(item)?;
 </span><span class="boring">fn main() {
 </span>pub trait RotationHandler {
     fn set_rotation(&amp;self, rotation: f32);
+    fn rotation(&amp;self) -&gt; f32;
 }
 <span class="boring">}</span></code></pre>
 <h3 id="set_rotationf32"><a class="header" href="#set_rotationf32"><code>set_rotation(f32)</code></a></h3>
 <p>Sets the menu rotation in degrees. The menu ring is redrawn at the new angle.</p>
+<h3 id="rotation---f32"><a class="header" href="#rotation---f32"><code>rotation() -&gt; f32</code></a></h3>
+<p>Returns the current rotation in degrees.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use smearor_wrot_pie_menu::RotationHandler;
@@ -687,9 +722,19 @@ overlay.set_rotation(45.0);
 <tr><td><code>rotation_gesture_enabled</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get rotation gesture state</td></tr>
 <tr><td><code>set_markings_enabled</code></td><td><code>PieMenuControlHandler</code></td><td><code>bool</code></td><td>Enable/disable ring markings</td></tr>
 <tr><td><code>markings_enabled</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get markings state</td></tr>
+<tr><td><code>set_scroll_rotation_step</code></td><td><code>PieMenuControlHandler</code></td><td><code>f64</code></td><td>Set scroll rotation sensitivity</td></tr>
+<tr><td><code>scroll_rotation_step</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get scroll rotation sensitivity</td></tr>
+<tr><td><code>cycle_selection</code></td><td><code>PieMenuControlHandler</code></td><td><code>i32</code></td><td>Cycle keyboard selection</td></tr>
+<tr><td><code>select_first_item</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Select first item</td></tr>
+<tr><td><code>confirm_selection</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Confirm keyboard selection</td></tr>
+<tr><td><code>handle_left_stick_x</code></td><td><code>PieMenuControlHandler</code></td><td><code>f32</code></td><td>Update left stick X value</td></tr>
+<tr><td><code>handle_right_stick</code></td><td><code>PieMenuControlHandler</code></td><td><code>f32, f32</code></td><td>Select nearest item by stick direction</td></tr>
+<tr><td><code>find_nearest_item</code></td><td><code>PieMenuControlHandler</code></td><td><code>f32</code></td><td>Find nearest item by angle</td></tr>
+<tr><td><code>set_keyboard_selection</code></td><td><code>PieMenuControlHandler</code></td><td><code>String</code></td><td>Set keyboard selection by ID</td></tr>
 <tr><td><code>set_message_sender</code></td><td><code>PieMenuMessageSender</code></td><td><code>Sender&lt;PieMenuMessage&gt;</code></td><td>Set channel</td></tr>
 <tr><td><code>send_message</code></td><td><code>PieMenuMessageSender</code></td><td><code>PieMenuMessage</code></td><td>Send message</td></tr>
 <tr><td><code>set_rotation</code></td><td><code>RotationHandler</code></td><td><code>f32</code></td><td>Set rotation</td></tr>
+<tr><td><code>rotation</code></td><td><code>RotationHandler</code></td><td>—</td><td>Get rotation</td></tr>
 <tr><td><code>set_close_callback</code></td><td><code>PieMenuWidget</code></td><td><code>Fn() + 'static</code></td><td>Center click callback</td></tr>
 <tr><td><code>set_markings_enabled</code></td><td><code>PieMenuWidget</code></td><td><code>bool</code></td><td>Enable/disable ring markings</td></tr>
 <tr><td><code>markings_enabled</code></td><td><code>PieMenuWidget</code></td><td>—</td><td>Get markings state</td></tr>
@@ -698,6 +743,7 @@ overlay.set_rotation(45.0);
 <tr><td><code>with_deactivation_threshold</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f64</code></td><td>Builder: set deactivation threshold</td></tr>
 <tr><td><code>with_rotation_gesture_enabled</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>bool</code></td><td>Builder: enable/disable rotation gesture</td></tr>
 <tr><td><code>with_markings_enabled</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>bool</code></td><td>Builder: enable/disable markings</td></tr>
+<tr><td><code>with_scroll_rotation_step</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f64</code></td><td>Builder: set scroll rotation sensitivity</td></tr>
 <tr><td><code>with_menu_item</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>MenuItem</code></td><td>Builder: add item</td></tr>
 </tbody>
 </table>
@@ -930,6 +976,127 @@ overlay.redistribute();
 <li><strong>Zero ring radius</strong>: Returns <code>Ok(())</code> (e.g. during initialization when the widget has no size yet)</li>
 <li><strong>Self-overlap</strong>: An item is never compared against itself (matched by id)</li>
 </ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="input-handling"><a class="header" href="#input-handling">Input Handling</a></h1>
+<p>The pie menu supports three additional input methods beyond the default touch gestures: keyboard navigation, mouse scroll rotation, and game controller input. Keyboard and mouse scroll are enabled by default; controller support is opt-in via feature flags.</p>
+<h2 id="feature-flags"><a class="header" href="#feature-flags">Feature Flags</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>Description</th><th>Extra Dependencies</th></tr>
+</thead>
+<tbody>
+<tr><td><code>keyboard</code></td><td>Keyboard navigation</td><td>None</td></tr>
+<tr><td><code>mouse-scroll</code></td><td>Mouse wheel ring rotation</td><td>None</td></tr>
+<tr><td><code>controller-sdl2</code></td><td>Game controller via SDL2</td><td><code>sdl2</code></td></tr>
+<tr><td><code>controller-evdev</code></td><td>Game controller via evdev (Linux-only)</td><td><code>evdev</code></td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-toml">[dependencies]
+smearor-wrot-pie-menu = "0.1"
+</code></pre>
+<p>To opt out of keyboard or mouse scroll, use <code>default-features = false</code>:</p>
+<pre><code class="language-toml">[dependencies]
+smearor-wrot-pie-menu = { version = "0.1", default-features = false }
+</code></pre>
+<p>To add controller support:</p>
+<pre><code class="language-toml">[dependencies]
+smearor-wrot-pie-menu = { version = "0.1", features = ["controller-sdl2"] }
+</code></pre>
+<h2 id="keyboard-navigation"><a class="header" href="#keyboard-navigation">Keyboard Navigation</a></h2>
+<p>When the <code>keyboard</code> feature is enabled, an <code>EventControllerKey</code> is registered on the root window (in <code>WidgetImpl::root()</code>) with <code>PropagationPhase::Capture</code>. This ensures key events are intercepted globally, regardless of which child widget currently holds keyboard focus. When the menu is closed, all keys except <code>Ctrl+Space</code> and <code>Menu</code> pass through to the focused child.</p>
+<h3 id="key-bindings"><a class="header" href="#key-bindings">Key Bindings</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Key</th><th>Action</th><th>Condition</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Ctrl+Space</code></td><td>Open the pie menu</td><td>Menu closed</td></tr>
+<tr><td><code>Menu</code></td><td>Open the pie menu</td><td>Menu closed</td></tr>
+<tr><td><code>Escape</code></td><td>Close the pie menu</td><td>Menu open</td></tr>
+<tr><td><code>Enter</code> / <code>Space</code></td><td>Confirm selection</td><td>Menu open</td></tr>
+<tr><td><code>Arrow Left</code> / <code>Arrow Down</code></td><td>Cycle selection CCW</td><td>Menu open</td></tr>
+<tr><td><code>Arrow Right</code> / <code>Arrow Up</code></td><td>Cycle selection CW</td><td>Menu open</td></tr>
+<tr><td><code>Tab</code></td><td>Cycle selection CW</td><td>Menu open</td></tr>
+<tr><td><code>Home</code></td><td>Select first item</td><td>Menu open</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="id-based-selection"><a class="header" href="#id-based-selection">ID-based Selection</a></h3>
+<p>Keyboard selection uses item IDs (strings) rather than indices. This ensures selection remains stable across <code>DashMap</code> insertion/removal order changes. The selection state is stored as <code>RefCell&lt;Option&lt;String&gt;&gt;</code> in <code>PieMenuWidgetImpl</code>.</p>
+<h3 id="cycle-selection"><a class="header" href="#cycle-selection">Cycle Selection</a></h3>
+<p>The <code>cycle_selection(direction)</code> method filters out disabled items, sorts the remaining by angle using <code>total_cmp</code> for deterministic ordering, then advances the selection by <code>direction</code> (-1 for CCW, +1 for CW), wrapping around. Disabled items are skipped during navigation.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+// Cycle forward (CW)
+overlay.cycle_selection(1);
+
+// Cycle backward (CCW)
+overlay.cycle_selection(-1);
+
+// Select first item (smallest angle)
+overlay.select_first_item();
+
+// Confirm the current selection
+overlay.confirm_selection();
+<span class="boring">}</span></code></pre>
+<h2 id="mouse-scroll-rotation"><a class="header" href="#mouse-scroll-rotation">Mouse Scroll Rotation</a></h2>
+<p>When the <code>mouse-scroll</code> feature is enabled, an <code>EventControllerScroll</code> (vertical-only) is added with <code>PropagationPhase::Capture</code>. Scrolling rotates the menu ring proportionally to <code>dy</code>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+// Set scroll sensitivity (default: 5.0)
+overlay.set_scroll_rotation_step(10.0);
+
+// Get current sensitivity
+let step = overlay.scroll_rotation_step();
+<span class="boring">}</span></code></pre>
+<p>The rotation delta is computed as <code>dy * scroll_rotation_step</code>. With the default sensitivity of <code>5.0</code>, a single mouse wheel tick (<code>dy ≈ 1.0</code>) rotates the ring by ~5°.</p>
+<h2 id="controller-support"><a class="header" href="#controller-support">Controller Support</a></h2>
+<p>Controller input is available via two mutually exclusive backends:</p>
+<ul>
+<li><code>controller-sdl2</code>: Uses the SDL2 game controller API (cross-platform)</li>
+<li><code>controller-evdev</code>: Uses the Linux evdev API (Linux-only)</li>
+</ul>
+<h3 id="analog-stick-handling"><a class="header" href="#analog-stick-handling">Analog Stick Handling</a></h3>
+<p>The left stick X-axis drives continuous ring rotation via a <code>add_tick_callback</code>. The stick value is stored in a <code>Cell&lt;f32&gt;</code> on <code>PieMenuOverlayWidgetImpl</code> and applied per-frame.</p>
+<p>A deadzone of <code>0.15</code> prevents drift when the stick is at rest.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+// Update left stick X value (call from main thread)
+overlay.handle_left_stick_x(0.8);
+<span class="boring">}</span></code></pre>
+<p>The right stick selects the nearest menu item based on stick direction. The stick angle is computed as <code>atan2(-y, x)</code> and converted to degrees. A deadzone of <code>0.3</code> prevents accidental selection.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Update right stick (call from main thread)
+overlay.handle_right_stick(0.7, -0.5);
+<span class="boring">}</span></code></pre>
+<h3 id="thread-safety"><a class="header" href="#thread-safety">Thread Safety</a></h3>
+<p><code>Cell&lt;f32&gt;</code> is <code>!Sync</code>. All writes to <code>left_stick_x</code> must occur on the GTK main thread. If polling controller events from a background thread, marshal updates via <code>glib::idle_add_local</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let widget_clone = overlay.clone();
+glib::idle_add_local(move || {
+    widget_clone.handle_left_stick_x(0.5);
+    glib::ControlFlow::Break
+});
+<span class="boring">}</span></code></pre>
+<h3 id="finding-nearest-item"><a class="header" href="#finding-nearest-item">Finding Nearest Item</a></h3>
+<p>The <code>find_nearest_item(target_angle)</code> method returns the ID of the enabled menu item whose angle is closest to <code>target_angle</code> (in degrees), accounting for wraparound at 360°. Disabled items are skipped.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>if let Some(id) = overlay.find_nearest_item(45.0) {
+    overlay.set_keyboard_selection(id);
+}
+<span class="boring">}</span></code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
 <p><code>PieMenuOverlayWidget</code> achieves its pie menu functionality through three core components working together within the GTK4 layout and rendering pipeline.</p>
