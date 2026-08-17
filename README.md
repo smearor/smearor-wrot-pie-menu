@@ -1,5 +1,12 @@
 # smearor-wrot-pie-menu
 
+[![crates.io](https://img.shields.io/badge/crates.io-0.1.0-dc0073.svg)](https://crates.io/crates/smearor-wrot-pie-menu)
+[![Rust Edition](https://img.shields.io/badge/rust-2024-f5b700.svg)](https://doc.rust-lang.org/edition-guide/rust-2024/index.html)
+[![GTK4](https://img.shields.io/badge/GTK4-v4__20-f5b700.svg)](https://gtk-rs.org/gtk4-rs/stable/latest/docs/gtk4/)
+[![License](https://img.shields.io/badge/license-MIT-89fc00.svg)](LICENSE.md)
+[![Book](https://img.shields.io/badge/book-main-00a1e4.svg)](https://smearor.github.io/smearor-wrot-pie-menu/book/)
+[![Docs](https://img.shields.io/badge/docs-main-00a1e4.svg)](https://smearor.github.io/smearor-wrot-pie-menu/docs/)
+
 A GTK4 pie menu widget with touch gesture activation for circular menu selection.
 
 ## Overview
