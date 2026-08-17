@@ -713,7 +713,6 @@ dependencies = [
  "dashmap",
  "glib",
  "gtk4",
- "gtk4-layer-shell",
  "serde",
  "smearor-wrot-rotation",
  "thiserror",

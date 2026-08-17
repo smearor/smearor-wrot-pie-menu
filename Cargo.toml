@@ -15,7 +15,6 @@ atomic_float = "1.1.0"
 dashmap = "6"
 glib = "0.22"
 gtk4 = { version = "0.11", features = ["v4_20"] }
-gtk4-layer-shell = { version = "0.8.1", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "2.0"
 tracing = "0.1"
@@ -24,12 +23,8 @@ typed-builder = "0.23.2"
 [dev-dependencies]
 smearor-wrot-rotation = { version = "0.2.0" }
 
-[features]
-default = ["layer-shell"]
-layer-shell = ["dep:gtk4-layer-shell"]
-
 [workspace.lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)', 'cfg(fn_traits)', 'cfg(unboxed_closures)', 'cfg(feature, values("layer-shell"))'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)', 'cfg(fn_traits)', 'cfg(unboxed_closures)'] }
 
 [workspace.lints.clippy]
 non_std_lazy_statics = "warn"
