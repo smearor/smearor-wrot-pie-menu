@@ -228,7 +228,14 @@ mod tests {
     }
 
     fn make_disabled_item(id: &str, angle: f32) -> MenuItem {
-        MenuItem::builder().id(id).label(id).icon_name("icon").angle(angle).event(id).enabled(false).build()
+        MenuItem::builder()
+            .id(id)
+            .label(id)
+            .icon_name("icon")
+            .angle(angle)
+            .event(id)
+            .enabled(false)
+            .build()
     }
 
     #[test]
