@@ -172,6 +172,12 @@ pub trait PieMenuControlHandler {
     fn markings_enabled(&self) -> bool;
     fn set_scroll_rotation_step(&self, sensitivity: f64);
     fn scroll_rotation_step(&self) -> f32;
+    fn set_pie_menu_radius(&self, radius: f32);
+    fn pie_menu_radius(&self) -> f32;
+    fn set_pie_menu_center_radius(&self, radius: f32);
+    fn pie_menu_center_radius(&self) -> f32;
+    fn set_submenu_radius(&self, level: u32, radius: f32);
+    fn set_submenu_radius_step(&self, step: f32);
     fn cycle_selection(&self, direction: i32);
     fn select_first_item(&self);
     fn confirm_selection(&self);
@@ -213,6 +219,22 @@ Enables or disables drawing of inner and outer ring markings. Default: `true`.
 ### `set_scroll_rotation_step(f64)` / `scroll_rotation_step() -> f32`
 
 Sets/gets the scroll rotation sensitivity multiplier. The rotation delta is computed as `dy * sensitivity`. Default: `5.0`. See [Input Handling](input_handling.md).
+
+### `set_pie_menu_radius(f32)` / `pie_menu_radius() -> f32`
+
+Sets/gets the radius of the main pie menu ring in pixels. Default: `160.0`. Increasing this enlarges the ring to accommodate larger item widgets.
+
+### `set_pie_menu_center_radius(f32)` / `pie_menu_center_radius() -> f32`
+
+Sets/gets the inner radius of the pie menu ring (the transparent center) in pixels. Default: `64.0`. Items are positioned at `0.7 * radius` from center; to center items in the ring, set `center_radius = 2 * (0.7 * radius) - radius`.
+
+### `set_submenu_radius(u32, f32)`
+
+Sets the radius for a specific submenu level. Level 0 is the main ring, level 1 is the first submenu, etc. This overrides the computed `main_radius + level * step` value for that level.
+
+### `set_submenu_radius_step(f32)`
+
+Sets the global step width between consecutive ring levels. Each submenu level's radius is computed as `main_radius + level * step`. Default: `80.0`.
 
 ### `cycle_selection(i32)`
 
@@ -352,6 +374,12 @@ pub enum PieMenuMessage {
 | `markings_enabled` | `PieMenuControlHandler` | — | Get markings state |
 | `set_scroll_rotation_step` | `PieMenuControlHandler` | `f64` | Set scroll rotation sensitivity |
 | `scroll_rotation_step` | `PieMenuControlHandler` | — | Get scroll rotation sensitivity |
+| `set_pie_menu_radius` | `PieMenuControlHandler` | `f32` | Set main ring radius |
+| `pie_menu_radius` | `PieMenuControlHandler` | — | Get main ring radius |
+| `set_pie_menu_center_radius` | `PieMenuControlHandler` | `f32` | Set inner ring radius (transparent center) |
+| `pie_menu_center_radius` | `PieMenuControlHandler` | — | Get inner ring radius |
+| `set_submenu_radius` | `PieMenuControlHandler` | `u32, f32` | Set radius for a specific submenu level |
+| `set_submenu_radius_step` | `PieMenuControlHandler` | `f32` | Set step between consecutive ring levels |
 | `cycle_selection` | `PieMenuControlHandler` | `i32` | Cycle keyboard selection |
 | `select_first_item` | `PieMenuControlHandler` | — | Select first item |
 | `confirm_selection` | `PieMenuControlHandler` | — | Confirm keyboard selection |
@@ -372,5 +400,9 @@ pub enum PieMenuMessage {
 | `with_rotation_gesture_enabled` | `PieMenuOverlayWidget` | `bool` | Builder: enable/disable rotation gesture |
 | `with_markings_enabled` | `PieMenuOverlayWidget` | `bool` | Builder: enable/disable markings |
 | `with_scroll_rotation_step` | `PieMenuOverlayWidget` | `f64` | Builder: set scroll rotation sensitivity |
+| `with_pie_menu_radius` | `PieMenuOverlayWidget` | `f32` | Builder: set main ring radius |
+| `with_pie_menu_center_radius` | `PieMenuOverlayWidget` | `f32` | Builder: set inner ring radius |
+| `with_submenu_radius_step` | `PieMenuOverlayWidget` | `f32` | Builder: set step between ring levels |
+| `with_submenu_radius` | `PieMenuOverlayWidget` | `u32, f32` | Builder: set radius for a specific submenu level |
 | `with_menu_item` | `PieMenuOverlayWidget` | `MenuItem` | Builder: add item |
 | `register_widget_factory` | `PieMenuOverlayWidget` | `Box<dyn MenuItemWidgetFactoryErased>` | Register a custom widget factory |

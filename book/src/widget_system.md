@@ -14,13 +14,14 @@ The widget system consists of:
 
 ### Standard Implementations
 
-The library ships three standard widget types:
+The library ships four standard widget types:
 
 | Type | Factory | Config | Description |
 |------|---------|--------|-------------|
 | `"circle"` | `CircleWidgetFactory` | `CircleConfig` | Circular item with icon + label |
 | `"square"` | `SquareWidgetFactory` | `SquareConfig` | Square item with icon + label |
 | `"button"` | `ButtonWidgetFactory` | `ButtonConfig` | Simple GTK4 Button (debug) |
+| `"gauge"` | `GaugeWidgetFactory` | `GaugeConfig` | Tachometer-style gauge with color-coded zones |
 
 When `widget_type` is `None`, `"circle"` is used as the default.
 
@@ -64,6 +65,54 @@ use smearor_wrot_pie_menu::ButtonConfig;
 let config = ButtonConfig::builder()
     .label("Click me")
     .build();
+```
+
+### GaugeConfig
+
+The `GaugeConfig` defines a tachometer-style gauge with an 80% arc (288° sweep), color-coded zones (green / orange / red), and centered label + value text.
+
+```rust
+use smearor_wrot_pie_menu::GaugeConfig;
+
+let config = GaugeConfig::builder()
+    .label("CPU")
+    .value(42.0)
+    .unit("%")
+    .min(0.0)
+    .warning(80.0)
+    .critical(90.0)
+    .max(100.0)
+    .build();
+```
+
+Fields:
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `label` | `String` | No | `""` | Display label shown above the value |
+| `value` | `f64` | No | `0.0` | Current value |
+| `unit` | `String` | No | `""` | Unit suffix shown after the value |
+| `min` | `f64` | No | `0.0` | Minimum value (arc start) |
+| `warning` | `f64` | No | `0.0` | Threshold where the arc turns orange |
+| `critical` | `f64` | No | `0.0` | Threshold where the arc turns red |
+| `max` | `f64` | No | `100.0` | Maximum value (arc end) |
+
+The arc is drawn from `min` to `max`. Between `warning` and `critical` the arc is orange; above `critical` it is red. Below `warning` it is green.
+
+#### Dynamic Updates
+
+To update a gauge value at runtime, use `set_widget_config`:
+
+```rust
+use smearor_wrot_pie_menu::GaugeConfig;
+
+if let Some(item) = overlay.get_menu_item("cpu")
+    && let Some(config_value) = &item.widget_config
+    && let Ok(mut config) = serde_json::from_value::<GaugeConfig>(config_value.clone())
+{
+    config.value = 72.5;
+    let _ = overlay.set_widget_config("cpu", serde_json::to_value(&config).unwrap_or(serde_json::Value::Null));
+}
 ```
 
 ## Using Widgets in Menu Items

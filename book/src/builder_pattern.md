@@ -9,6 +9,13 @@
 | `with_message_sender(sender)` | `Self` | Sets the message channel sender |
 | `with_activation_threshold(f64)` | `Self` | Sets the pinch-to-zoom activation threshold |
 | `with_deactivation_threshold(f64)` | `Self` | Sets the pinch-out deactivation threshold |
+| `with_rotation_gesture_enabled(bool)` | `Self` | Enables/disables the rotation gesture |
+| `with_markings_enabled(bool)` | `Self` | Enables/disables ring markings |
+| `with_scroll_rotation_step(f64)` | `Self` | Sets the scroll rotation sensitivity |
+| `with_pie_menu_radius(f32)` | `Self` | Sets the main pie menu ring radius (default: 160.0) |
+| `with_pie_menu_center_radius(f32)` | `Self` | Sets the inner ring radius / transparent center (default: 64.0) |
+| `with_submenu_radius_step(f32)` | `Self` | Sets the step between consecutive submenu ring levels (default: 80.0) |
+| `with_submenu_radius(u32, f32)` | `Self` | Sets the radius for a specific submenu level |
 | `with_menu_item(MenuItem)` | `Result<Self, AddMenuItemError>` | Adds a menu item |
 
 ## Example
@@ -36,3 +43,31 @@ let overlay = PieMenuOverlayWidget::new(Some(&child))
 ## Error Handling
 
 `with_menu_item()` returns `Result<Self, AddMenuItemError>`. If the item overlaps with an existing item, the error is propagated and the chain stops. Use `?` to short-circuit on failure.
+
+## Ring Radius Configuration
+
+The pie menu ring size can be controlled with `with_pie_menu_radius` and `with_pie_menu_center_radius`. Items are positioned at `0.7 * radius` from center. To center items in the ring, set `center_radius = 2 * (0.7 * radius) - radius`.
+
+```rust
+let overlay = PieMenuOverlayWidget::new(Some(&child))
+    .with_pie_menu_radius(250.0)
+    .with_pie_menu_center_radius(100.0)
+    .with_menu_item(
+        MenuItem::builder()
+            .id("gauge")
+            .angle(0.0)
+            .event("gauge")
+            .radius(70.0)
+            .widget_type("gauge")
+            .config(GaugeConfig::builder()
+                .label("CPU")
+                .value(42.0)
+                .unit("%")
+                .min(0.0)
+                .warning(80.0)
+                .critical(90.0)
+                .max(100.0)
+                .build())
+            .build(),
+    )?;
+```
