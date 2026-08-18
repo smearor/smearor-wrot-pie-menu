@@ -1,6 +1,6 @@
 [package]
 name = "smearor-wrot-pie-menu"
-version = "0.2.0"
+version = "0.3.0"
 description = "GTK4 pie menu widget with touch gesture activation for circular menu selection"
 authors = ["Andreas Schaeffer <hanack@nooblounge.net>"]
 edition = "2024"
