@@ -1,6 +1,6 @@
 # smearor-wrot-pie-menu
 
-[![crates.io](https://img.shields.io/badge/crates.io-0.1.0-dc0073.svg)](https://crates.io/crates/smearor-wrot-pie-menu)
+[![crates.io](https://img.shields.io/badge/crates.io-0.3.0-dc0073.svg)](https://crates.io/crates/smearor-wrot-pie-menu)
 [![Rust Edition](https://img.shields.io/badge/rust-2024-f5b700.svg)](https://doc.rust-lang.org/edition-guide/rust-2024/index.html)
 [![GTK4](https://img.shields.io/badge/GTK4-v4__20-f5b700.svg)](https://gtk-rs.org/gtk4-rs/stable/latest/docs/gtk4/)
 [![License](https://img.shields.io/badge/license-MIT-89fc00.svg)](LICENSE.md)
