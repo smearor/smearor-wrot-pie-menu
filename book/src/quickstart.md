@@ -15,6 +15,7 @@ gtk4 = { version = "0.11", features = ["v4_20"] }
 The following example creates a GTK4 application window containing a `PieMenuOverlayWidget` with a label as child and two menu items:
 
 ```rust
+use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
@@ -46,9 +47,12 @@ fn main() -> glib::ExitCode {
             .with_menu_item(
                 MenuItem::builder()
                     .id("red")
-                    .label("Red")
-                    .icon_name("media-playback-stop-symbolic")
-                    .color("#FF000077")
+                    .widget_type("circle")
+                    .config(CircleConfig::builder()
+                        .icon_name("media-playback-stop-symbolic")
+                        .label("Red")
+                        .color("#FF000077")
+                        .build())
                     .angle(0.0)
                     .fixed_position(true)
                     .event("red")
@@ -58,9 +62,12 @@ fn main() -> glib::ExitCode {
             .with_menu_item(
                 MenuItem::builder()
                     .id("green")
-                    .label("Green")
-                    .icon_name("media-playback-stop-symbolic")
-                    .color("#00FF0077")
+                    .widget_type("circle")
+                    .config(CircleConfig::builder()
+                        .icon_name("media-playback-stop-symbolic")
+                        .label("Green")
+                        .color("#00FF0077")
+                        .build())
                     .angle(180.0)
                     .fixed_position(true)
                     .event("green")

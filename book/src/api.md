@@ -15,6 +15,8 @@ pub trait PieMenuMenuItemHandler {
     fn redistribute(&self);
     fn get_menu_item(&self, id: &str) -> Option<MenuItem>;
     fn update_menu_item(&self, menu_item: MenuItem) -> Result<(), UpdateMenuItemError>;
+    fn refresh_widgets(&self);
+    fn set_widget_config(&self, id: &str, config: serde_json::Value) -> Result<(), SetWidgetConfigError>;
 }
 ```
 
@@ -23,15 +25,19 @@ pub trait PieMenuMenuItemHandler {
 Adds a menu item to the pie menu. The item is inserted into the internal `DashMap` keyed by its `id`.
 
 ```rust
+use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 
 overlay.add_menu_item(
     MenuItem::builder()
         .id("exit")
-        .label("Exit")
-        .icon_name("window-close-symbolic")
-        .color("#55222277")
+        .widget_type("circle")
+        .config(CircleConfig::builder()
+            .icon_name("window-close-symbolic")
+            .label("Exit")
+            .color("#55222277")
+            .build())
         .angle(135.0)
         .event("exit")
         .build(),
@@ -75,11 +81,18 @@ overlay.set_menu_item_enabled("exit", false)?;
 Adds a menu item with an automatically calculated angle. See [Auto Distribution](auto_distribution.md).
 
 ```rust
+use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
+use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
+
 overlay.add_menu_item_auto(
     MenuItem::builder()
         .id("save")
-        .label("Save")
-        .icon_name("document-save-symbolic")
+        .widget_type("circle")
+        .config(CircleConfig::builder()
+            .icon_name("document-save-symbolic")
+            .label("Save")
+            .build())
         .angle(0.0)
         .event("save")
         .build(),
@@ -101,8 +114,10 @@ Returns a clone of the menu item with the given id, or `None` if not found.
 
 ```rust
 if let Some(mut item) = overlay.get_menu_item("play-pause") {
-    item.label = "Pause";
-    item.icon_name = "media-playback-pause-symbolic";
+    item.widget_config = Some(serde_json::to_value(&CircleConfig::builder()
+        .icon_name("media-playback-pause-symbolic")
+        .label("Pause")
+        .build()).unwrap());
     overlay.update_menu_item(item)?;
 }
 ```
@@ -113,9 +128,29 @@ Replaces an existing menu item (matched by `id`) with the given item. All fields
 
 ```rust
 let mut item = overlay.get_menu_item("play-pause").unwrap();
-item.label = "Pause";
-item.icon_name = "media-playback-pause-symbolic";
+item.widget_config = Some(serde_json::to_value(&CircleConfig::builder()
+    .icon_name("media-playback-pause-symbolic")
+    .label("Pause")
+    .build()).unwrap());
 overlay.update_menu_item(item)?;
+```
+
+### `refresh_widgets()`
+
+Clears the widget cache and rebuilds all item widgets on the next layout pass. Use this after registering new widget factories or changing `widget_type` on existing items.
+
+```rust
+overlay.refresh_widgets();
+```
+
+### `set_widget_config(&str, serde_json::Value) -> Result<(), SetWidgetConfigError>`
+
+Replaces the `widget_config` for a single menu item and clears its cached widget, forcing a rebuild on the next layout pass. Returns `SetWidgetConfigError::NotFound` if no item with the given id exists.
+
+```rust
+use serde_json::json;
+
+overlay.set_widget_config("cpu", json!({ "value": 0.72 }))?;
 ```
 
 ## PieMenuControlHandler Trait
@@ -253,20 +288,26 @@ overlay.set_rotation(45.0);
 
 ## MenuItem
 
-A single menu item with `TypedBuilder` construction:
+A single menu item with `TypedBuilder` construction. Visual properties (icon, label, colors) are defined in widget-specific config structs (`CircleConfig`, `SquareConfig`, `ButtonConfig`). See [Widget System](widget_system.md) for details.
 
 ```rust
+use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
+
 MenuItem::builder()
-    .id("unique-id")          // required
-    .label("Display Label")    // required
-    .icon_name("icon-name")    // required, GTK icon theme name
-    .angle(45.0)               // required, degrees
-    .event("event-name")       // required, sent as PieMenuMessage::Event
-    .color("#RRGGBBAA")        // optional, default: grey
-    .label_color("#RRGGBBAA")  // optional, default: white
-    .radius(30.0)              // optional, default: 40.0
-    .enabled(true)             // optional, default: true
-    .fixed_position(false)     // optional, default: false
+    .id("unique-id")              // required
+    .angle(45.0)                   // required, degrees
+    .event("event-name")          // required, sent as PieMenuMessage::Event
+    .widget_type("circle")        // optional, default: "circle"
+    .config(CircleConfig::builder() // optional, typed widget config
+        .icon_name("icon-name")
+        .label("Display Label")
+        .color("#RRGGBBAA")
+        .build())
+    .radius(30.0)                  // optional, default: 40.0
+    .enabled(true)                 // optional, default: true
+    .fixed_position(false)         // optional, default: false
+    .content_rotates(true)         // optional, default: true
     .build()
 ```
 
@@ -296,6 +337,8 @@ pub enum PieMenuMessage {
 | `set_menu_item_enabled` | `PieMenuMenuItemHandler` | `&str, bool` | Enable/disable an item |
 | `get_menu_item` | `PieMenuMenuItemHandler` | `&str` | Get a clone of an item |
 | `update_menu_item` | `PieMenuMenuItemHandler` | `MenuItem` | Replace an item (all fields except `id`) |
+| `refresh_widgets` | `PieMenuMenuItemHandler` | — | Rebuild all item widgets |
+| `set_widget_config` | `PieMenuMenuItemHandler` | `&str, serde_json::Value` | Replace widget config for one item |
 | `show_pie_menu` | `PieMenuControlHandler` | — | Show the menu |
 | `hide_pie_menu` | `PieMenuControlHandler` | — | Hide the menu |
 | `is_pie_menu_open` | `PieMenuControlHandler` | — | Check visibility |
@@ -330,3 +373,4 @@ pub enum PieMenuMessage {
 | `with_markings_enabled` | `PieMenuOverlayWidget` | `bool` | Builder: enable/disable markings |
 | `with_scroll_rotation_step` | `PieMenuOverlayWidget` | `f64` | Builder: set scroll rotation sensitivity |
 | `with_menu_item` | `PieMenuOverlayWidget` | `MenuItem` | Builder: add item |
+| `register_widget_factory` | `PieMenuOverlayWidget` | `Box<dyn MenuItemWidgetFactoryErased>` | Register a custom widget factory |

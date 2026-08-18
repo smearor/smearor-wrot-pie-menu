@@ -9,30 +9,37 @@ Each `MenuItem` can optionally carry a `submenu: Option<Vec<MenuItem>>` field. W
 ## Building Submenu Items
 
 ```rust
+use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 
 let sub_item_a = MenuItem::builder()
     .id("sub-a")
-    .label("Sub A")
-    .icon_name("icon")
     .angle(0.0)
     .event("sub-a-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Sub A")
+        .build())
     .build();
 
 let sub_item_b = MenuItem::builder()
     .id("sub-b")
-    .label("Sub B")
-    .icon_name("icon")
     .angle(180.0)
     .event("sub-b-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Sub B")
+        .build())
     .build();
 
 let parent = MenuItem::builder()
     .id("parent")
-    .label("Parent")
-    .icon_name("icon")
     .angle(90.0)
     .event("parent-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Parent")
+        .build())
     .submenu(vec![sub_item_a, sub_item_b])
     .build();
 ```

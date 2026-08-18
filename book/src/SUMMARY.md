@@ -13,5 +13,6 @@
     - [Overlap Validation](overlap_validation.md)
     - [Submenus](submenus.md)
     - [Input Handling](input_handling.md)
+    - [Widget System](widget_system.md)
 - [Architecture](architecture.md)
 - [Examples](examples.md)

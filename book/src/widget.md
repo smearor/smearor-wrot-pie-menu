@@ -19,15 +19,19 @@ let overlay = PieMenuOverlayWidget::new(Some(&label));
 Menu items are added programmatically via the `PieMenuMenuItemHandler` trait:
 
 ```rust
+use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 
 overlay.add_menu_item(
     MenuItem::builder()
         .id("rotate-cw")
-        .label("Rotate CW")
-        .icon_name("object-rotate-right-symbolic")
-        .color("#00000077")
+        .widget_type("circle")
+        .config(CircleConfig::builder()
+            .icon_name("object-rotate-right-symbolic")
+            .label("Rotate CW")
+            .color("#00000077")
+            .build())
         .angle(0.0)
         .radius(30.0)
         .event("rotate-cw")
@@ -118,4 +122,4 @@ use smearor_wrot_pie_menu::RotationHandler;
 overlay.set_rotation(45.0);
 ```
 
-For the complete API including all traits and methods, see the [API Reference](api.md) page.
+For the complete API including all traits and methods, see the [API Reference](api.md) page. For the widget system (custom widgets, registry, config types), see [Widget System](widget_system.md).

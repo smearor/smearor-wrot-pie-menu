@@ -9,10 +9,12 @@ Menu items can be individually disabled. A disabled item is rendered at reduced 
 ```rust
 let item = MenuItem::builder()
     .id("save")
-    .label("Save")
-    .icon_name("document-save-symbolic")
     .angle(0.0)
     .event("save")
+    .config(CircleConfig::builder()
+        .icon_name("document-save-symbolic")
+        .label("Save")
+        .build())
     .enabled(false) // disabled by default
     .build();
 ```
