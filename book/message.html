@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b2bcdacb.js";
+            window.path_to_searchindex_js = "searchindex-39a78894.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-51b810c4.js"></script>
+        <script src="toc-d2f469de.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -182,12 +182,18 @@
 </span>pub enum PieMenuMessage {
     Rotate(f32),
     Event(String),
+    SubmenuOpened(String),
+    SubmenuClosed(String),
 }
 <span class="boring">}</span></code></pre>
 <h3 id="rotatef32"><a class="header" href="#rotatef32"><code>Rotate(f32)</code></a></h3>
 <p>Sent when the user performs a rotation gesture on the open pie menu. The value is the absolute rotation in degrees (0–360), rounded to the nearest degree. Messages are only sent when the rotation changes by at least 1 degree from the last sent value.</p>
 <h3 id="eventstring"><a class="header" href="#eventstring"><code>Event(String)</code></a></h3>
 <p>Sent when the user clicks a menu item. The string is the <code>event</code> field of the clicked <code>MenuItem</code>. The pie menu is automatically closed after a menu item click.</p>
+<h3 id="submenuopenedstring"><a class="header" href="#submenuopenedstring"><code>SubmenuOpened(String)</code></a></h3>
+<p>Sent when a submenu is opened. The string is the id of the parent item whose submenu was opened.</p>
+<h3 id="submenuclosedstring"><a class="header" href="#submenuclosedstring"><code>SubmenuClosed(String)</code></a></h3>
+<p>Sent when a submenu is closed, returning to the parent ring. The string is the id of the parent item whose submenu was closed.</p>
 <h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -216,6 +222,12 @@ match receiver.try_recv() {
             "settings" =&gt; open_settings(),
             _ =&gt; {}
         }
+    }
+    Ok(PieMenuMessage::SubmenuOpened(parent_id)) =&gt; {
+        println!("Submenu opened for item: {}", parent_id);
+    }
+    Ok(PieMenuMessage::SubmenuClosed(parent_id)) =&gt; {
+        println!("Submenu closed for item: {}", parent_id);
     }
     Err(_) =&gt; {}
 }

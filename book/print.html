@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b2bcdacb.js";
+            window.path_to_searchindex_js = "searchindex-39a78894.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-51b810c4.js"></script>
+        <script src="toc-d2f469de.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -198,7 +198,8 @@ gtk4 = { version = "0.11", features = ["v4_20"] }
 </code></pre>
 <h2 id="minimal-example"><a class="header" href="#minimal-example">Minimal Example</a></h2>
 <p>The following example creates a GTK4 application window containing a <code>PieMenuOverlayWidget</code> with a label as child and two menu items:</p>
-<pre class="playground"><code class="language-rust">use smearor_wrot_pie_menu::MenuItem;
+<pre class="playground"><code class="language-rust">use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
 use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
@@ -229,9 +230,12 @@ fn main() -&gt; glib::ExitCode {
             .with_menu_item(
                 MenuItem::builder()
                     .id("red")
-                    .label("Red")
-                    .icon_name("media-playback-stop-symbolic")
-                    .color("#FF000077")
+                    .widget_type("circle")
+                    .config(CircleConfig::builder()
+                        .icon_name("media-playback-stop-symbolic")
+                        .label("Red")
+                        .color("#FF000077")
+                        .build())
                     .angle(0.0)
                     .fixed_position(true)
                     .event("red")
@@ -241,9 +245,12 @@ fn main() -&gt; glib::ExitCode {
             .with_menu_item(
                 MenuItem::builder()
                     .id("green")
-                    .label("Green")
-                    .icon_name("media-playback-stop-symbolic")
-                    .color("#00FF0077")
+                    .widget_type("circle")
+                    .config(CircleConfig::builder()
+                        .icon_name("media-playback-stop-symbolic")
+                        .label("Green")
+                        .color("#00FF0077")
+                        .build())
                     .angle(180.0)
                     .fixed_position(true)
                     .event("green")
@@ -284,15 +291,19 @@ let overlay = PieMenuOverlayWidget::new(Some(&amp;label));
 <p>Menu items are added programmatically via the <code>PieMenuMenuItemHandler</code> trait:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use smearor_wrot_pie_menu::MenuItem;
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 
 overlay.add_menu_item(
     MenuItem::builder()
         .id("rotate-cw")
-        .label("Rotate CW")
-        .icon_name("object-rotate-right-symbolic")
-        .color("#00000077")
+        .widget_type("circle")
+        .config(CircleConfig::builder()
+            .icon_name("object-rotate-right-symbolic")
+            .label("Rotate CW")
+            .color("#00000077")
+            .build())
         .angle(0.0)
         .radius(30.0)
         .event("rotate-cw")
@@ -370,7 +381,7 @@ overlay.set_message_sender(sender);
 
 overlay.set_rotation(45.0);
 <span class="boring">}</span></code></pre>
-<p>For the complete API including all traits and methods, see the <a href="#api-reference">API Reference</a> page.</p>
+<p>For the complete API including all traits and methods, see the <a href="#api-reference">API Reference</a> page. For the widget system (custom widgets, registry, config types), see <a href="#widget-system">Widget System</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="menuitem"><a class="header" href="#menuitem">MenuItem</a></h1>
 <p>The <code>MenuItem</code> struct represents a single item in the pie menu. It is constructed using the <code>TypedBuilder</code> pattern.</p>
@@ -382,52 +393,105 @@ overlay.set_rotation(45.0);
 </thead>
 <tbody>
 <tr><td><code>id</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>Unique identifier</td></tr>
-<tr><td><code>label</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>Display text below the icon</td></tr>
-<tr><td><code>label_color</code></td><td><code>RgbaColor</code></td><td>No</td><td>White (<code>#FFFFFFFF</code>)</td><td>Color of the label text</td></tr>
-<tr><td><code>icon_name</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>GTK icon theme name</td></tr>
-<tr><td><code>color</code></td><td><code>RgbaColor</code></td><td>No</td><td>Grey (<code>#77777777</code>)</td><td>Background circle color</td></tr>
 <tr><td><code>angle</code></td><td><code>f32</code></td><td>Yes</td><td>—</td><td>Position in degrees (0 = right, 90 = down)</td></tr>
-<tr><td><code>radius</code></td><td><code>Option&lt;f32&gt;</code></td><td>No</td><td><code>40.0</code></td><td>Item circle radius in pixels</td></tr>
 <tr><td><code>event</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>Event name sent as <code>PieMenuMessage::Event</code></td></tr>
+<tr><td><code>radius</code></td><td><code>Option&lt;f32&gt;</code></td><td>No</td><td><code>40.0</code></td><td>Item circle radius in pixels</td></tr>
 <tr><td><code>enabled</code></td><td><code>bool</code></td><td>No</td><td><code>true</code></td><td>Whether the item is clickable (disabled items render at reduced opacity)</td></tr>
 <tr><td><code>fixed_position</code></td><td><code>bool</code></td><td>No</td><td><code>false</code></td><td>When <code>true</code>, the item’s angle is treated as a fixed semantic position that resists auto-redistribution</td></tr>
 <tr><td><code>close_on_click</code></td><td><code>bool</code></td><td>No</td><td><code>true</code></td><td>Whether the pie menu closes after this item is clicked</td></tr>
+<tr><td><code>submenu</code></td><td><code>Option&lt;Vec&lt;MenuItem&gt;&gt;</code></td><td>No</td><td><code>None</code></td><td>Optional nested submenu items</td></tr>
+<tr><td><code>widget_type</code></td><td><code>Option&lt;String&gt;</code></td><td>No</td><td><code>None</code> (<code>"circle"</code>)</td><td>Widget type name for registry lookup</td></tr>
+<tr><td><code>widget_config</code></td><td><code>Option&lt;serde_json::Value&gt;</code></td><td>No</td><td><code>None</code></td><td>Type-specific widget configuration</td></tr>
+<tr><td><code>content_size</code></td><td><code>Option&lt;ItemSize&gt;</code></td><td>No</td><td><code>None</code></td><td>Non-square allocation size</td></tr>
+<tr><td><code>content_rotates</code></td><td><code>bool</code></td><td>No</td><td><code>true</code></td><td>Whether the widget rotates with the ring</td></tr>
 </tbody>
 </table>
 </div>
+<p>Visual properties (icon, label, colors) are defined in widget-specific config structs, not on <code>MenuItem</code>. See <a href="#widget-system">Widget System</a> for details.</p>
 <h2 id="construction-1"><a class="header" href="#construction-1">Construction</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use smearor_wrot_pie_menu::MenuItem;
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
 
 let item = MenuItem::builder()
     .id("rotate-cw")
-    .label("Rotate CW")
-    .icon_name("object-rotate-right-symbolic")
-    .color("#00000077")
-    .label_color("#FFFFFFFF")
     .angle(0.0)
-    .radius(30.0)
     .event("rotate-cw")
-    .enabled(true)
-    .fixed_position(false)
-    .close_on_click(true)
+    .widget_type("circle")
+    .config(CircleConfig::builder()
+        .icon_name("object-rotate-right-symbolic")
+        .label("Rotate CW")
+        .color("#00000077")
+        .build())
     .build();
 <span class="boring">}</span></code></pre>
-<h2 id="colors"><a class="header" href="#colors">Colors</a></h2>
-<p>Colors accept any type that implements <code>Into&lt;RgbaColor&gt;</code>:</p>
-<ul>
-<li><code>&amp;str</code> / <code>String</code> — hex string like <code>"#RRGGBBAA"</code> or <code>"#RRGGBB"</code></li>
-<li><code>RgbColor</code> — RGB only (alpha defaults to 1.0)</li>
-<li><code>RgbaColor</code> — full RGBA</li>
-</ul>
+<p>The <code>.config()</code> builder method accepts any <code>Serialize</code> type and serializes it to <code>serde_json::Value</code> internally.</p>
+<h2 id="widget-configuration"><a class="header" href="#widget-configuration">Widget Configuration</a></h2>
+<h3 id="widget_type"><a class="header" href="#widget_type">widget_type</a></h3>
+<p>Resolves the factory from the registry. When <code>None</code>, defaults to <code>"circle"</code>. Standard types: <code>"circle"</code>, <code>"square"</code>, <code>"button"</code>. Custom types can be registered via <code>register_widget_factory()</code>.</p>
+<h3 id="widget_config"><a class="header" href="#widget_config">widget_config</a></h3>
+<p>Type-specific configuration stored as <code>serde_json::Value</code>. The factory’s <code>Config</code> type defines the schema. When <code>None</code>, the factory’s <code>Config::default()</code> is used.</p>
+<h3 id="content_size"><a class="header" href="#content_size">content_size</a></h3>
+<p>Optional non-square allocation for widgets that need dimensions other than <code>2 * radius</code>. See <a href="#widget-system">Widget System</a>.</p>
+<h3 id="content_rotates"><a class="header" href="#content_rotates">content_rotates</a></h3>
+<p>When <code>true</code> (default), the widget rotates with the ring. When <code>false</code>, the widget stays upright.</p>
 <h2 id="equality"><a class="header" href="#equality">Equality</a></h2>
 <p><code>MenuItem</code> implements <code>Hash</code>, <code>PartialEq</code>, and <code>Eq</code> based <strong>only</strong> on the <code>id</code> field. This allows items with the same id to be treated as equal regardless of other fields.</p>
 <h2 id="default-constants"><a class="header" href="#default-constants">Default Constants</a></h2>
 <ul>
 <li><code>DEFAULT_MENU_ITEM_RADIUS: f32 = 40.0</code></li>
-<li><code>DEFAULT_LABEL_COLOR: RgbaColor = white</code></li>
-<li><code>DEFAULT_ICON_COLOR: RgbaColor = grey</code></li>
+<li><code>DEFAULT_LABEL_COLOR: RgbaColor = white</code> — used by factories when <code>label_color</code> is <code>None</code></li>
+<li><code>DEFAULT_ICON_COLOR: RgbaColor = grey</code> — used by factories when <code>color</code> is <code>None</code></li>
+</ul>
+<h2 id="submenus"><a class="header" href="#submenus">Submenus</a></h2>
+<p>A <code>MenuItem</code> can optionally contain a nested submenu via the <code>submenu</code> field. When a user clicks an item that has a submenu, the menu opens a new ring at a larger radius instead of sending an event.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
+
+let child = MenuItem::builder()
+    .id("child")
+    .angle(0.0)
+    .event("child-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Child")
+        .build())
+    .build();
+
+let parent = MenuItem::builder()
+    .id("parent")
+    .angle(0.0)
+    .event("parent-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Parent")
+        .build())
+    .submenu(vec![child])
+    .build();
+<span class="boring">}</span></code></pre>
+<h3 id="submenu-ids"><a class="header" href="#submenu-ids">Submenu IDs</a></h3>
+<p>IDs must be <strong>globally unique</strong> across the entire menu tree, including all submenu levels. Duplicate IDs at any level are undefined behavior.</p>
+<h3 id="submenu-navigation"><a class="header" href="#submenu-navigation">Submenu Navigation</a></h3>
+<ul>
+<li><strong>Open</strong>: Click an item with a submenu, or press <code>Enter</code>/<code>Space</code> on a keyboard-selected item with a submenu.</li>
+<li><strong>Close</strong>: Press <code>Escape</code> or click the center circle. If a submenu is open, the first <code>Escape</code>/center-click closes the submenu and returns to the parent ring. A second <code>Escape</code>/center-click closes the entire menu.</li>
+<li><strong>Maximum depth</strong>: <code>MAX_SUBMENU_DEPTH = 3</code>. Attempting to open a deeper submenu returns <code>SubmenuError::MaxDepthReached</code>.</li>
+</ul>
+<h3 id="submenu-messages"><a class="header" href="#submenu-messages">Submenu Messages</a></h3>
+<ul>
+<li><code>PieMenuMessage::SubmenuOpened(String)</code> — sent when a submenu is opened, containing the parent item’s id.</li>
+<li><code>PieMenuMessage::SubmenuClosed(String)</code> — sent when a submenu is closed, containing the parent item’s id.</li>
+</ul>
+<h3 id="submenu-radii"><a class="header" href="#submenu-radii">Submenu Radii</a></h3>
+<p>Each submenu level renders at an increasing radius. The radius for level <em>n</em> is computed as:</p>
+<pre><code>radius = main_radius + n * submenu_radius_step
+</code></pre>
+<ul>
+<li><code>submenu_radius_step</code> defaults to <code>80.0</code> pixels and can be changed via <code>set_submenu_radius_step</code>.</li>
+<li>Individual level overrides can be set via <code>set_submenu_radius(level, radius)</code>.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="piemenumessage"><a class="header" href="#piemenumessage">PieMenuMessage</a></h1>
@@ -438,12 +502,18 @@ let item = MenuItem::builder()
 </span>pub enum PieMenuMessage {
     Rotate(f32),
     Event(String),
+    SubmenuOpened(String),
+    SubmenuClosed(String),
 }
 <span class="boring">}</span></code></pre>
 <h3 id="rotatef32"><a class="header" href="#rotatef32"><code>Rotate(f32)</code></a></h3>
 <p>Sent when the user performs a rotation gesture on the open pie menu. The value is the absolute rotation in degrees (0–360), rounded to the nearest degree. Messages are only sent when the rotation changes by at least 1 degree from the last sent value.</p>
 <h3 id="eventstring"><a class="header" href="#eventstring"><code>Event(String)</code></a></h3>
 <p>Sent when the user clicks a menu item. The string is the <code>event</code> field of the clicked <code>MenuItem</code>. The pie menu is automatically closed after a menu item click.</p>
+<h3 id="submenuopenedstring"><a class="header" href="#submenuopenedstring"><code>SubmenuOpened(String)</code></a></h3>
+<p>Sent when a submenu is opened. The string is the id of the parent item whose submenu was opened.</p>
+<h3 id="submenuclosedstring"><a class="header" href="#submenuclosedstring"><code>SubmenuClosed(String)</code></a></h3>
+<p>Sent when a submenu is closed, returning to the parent ring. The string is the id of the parent item whose submenu was closed.</p>
 <h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -473,6 +543,12 @@ match receiver.try_recv() {
             _ =&gt; {}
         }
     }
+    Ok(PieMenuMessage::SubmenuOpened(parent_id)) =&gt; {
+        println!("Submenu opened for item: {}", parent_id);
+    }
+    Ok(PieMenuMessage::SubmenuClosed(parent_id)) =&gt; {
+        println!("Submenu closed for item: {}", parent_id);
+    }
     Err(_) =&gt; {}
 }
 <span class="boring">}</span></code></pre>
@@ -494,21 +570,27 @@ match receiver.try_recv() {
     fn redistribute(&amp;self);
     fn get_menu_item(&amp;self, id: &amp;str) -&gt; Option&lt;MenuItem&gt;;
     fn update_menu_item(&amp;self, menu_item: MenuItem) -&gt; Result&lt;(), UpdateMenuItemError&gt;;
+    fn refresh_widgets(&amp;self);
+    fn set_widget_config(&amp;self, id: &amp;str, config: serde_json::Value) -&gt; Result&lt;(), SetWidgetConfigError&gt;;
 }
 <span class="boring">}</span></code></pre>
 <h3 id="add_menu_itemmenuitem"><a class="header" href="#add_menu_itemmenuitem"><code>add_menu_item(MenuItem)</code></a></h3>
 <p>Adds a menu item to the pie menu. The item is inserted into the internal <code>DashMap</code> keyed by its <code>id</code>.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use smearor_wrot_pie_menu::MenuItem;
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 
 overlay.add_menu_item(
     MenuItem::builder()
         .id("exit")
-        .label("Exit")
-        .icon_name("window-close-symbolic")
-        .color("#55222277")
+        .widget_type("circle")
+        .config(CircleConfig::builder()
+            .icon_name("window-close-symbolic")
+            .label("Exit")
+            .color("#55222277")
+            .build())
         .angle(135.0)
         .event("exit")
         .build(),
@@ -542,11 +624,18 @@ overlay.add_menu_item(
 <p>Adds a menu item with an automatically calculated angle. See <a href="#auto-distribution">Auto Distribution</a>.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>overlay.add_menu_item_auto(
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
+use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
+
+overlay.add_menu_item_auto(
     MenuItem::builder()
         .id("save")
-        .label("Save")
-        .icon_name("document-save-symbolic")
+        .widget_type("circle")
+        .config(CircleConfig::builder()
+            .icon_name("document-save-symbolic")
+            .label("Save")
+            .build())
         .angle(0.0)
         .event("save")
         .build(),
@@ -564,8 +653,10 @@ overlay.redistribute();
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>if let Some(mut item) = overlay.get_menu_item("play-pause") {
-    item.label = "Pause";
-    item.icon_name = "media-playback-pause-symbolic";
+    item.widget_config = Some(serde_json::to_value(&amp;CircleConfig::builder()
+        .icon_name("media-playback-pause-symbolic")
+        .label("Pause")
+        .build()).unwrap());
     overlay.update_menu_item(item)?;
 }
 <span class="boring">}</span></code></pre>
@@ -574,9 +665,25 @@ overlay.redistribute();
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>let mut item = overlay.get_menu_item("play-pause").unwrap();
-item.label = "Pause";
-item.icon_name = "media-playback-pause-symbolic";
+item.widget_config = Some(serde_json::to_value(&amp;CircleConfig::builder()
+    .icon_name("media-playback-pause-symbolic")
+    .label("Pause")
+    .build()).unwrap());
 overlay.update_menu_item(item)?;
+<span class="boring">}</span></code></pre>
+<h3 id="refresh_widgets"><a class="header" href="#refresh_widgets"><code>refresh_widgets()</code></a></h3>
+<p>Clears the widget cache and rebuilds all item widgets on the next layout pass. Use this after registering new widget factories or changing <code>widget_type</code> on existing items.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.refresh_widgets();
+<span class="boring">}</span></code></pre>
+<h3 id="set_widget_configstr-serde_jsonvalue---result-setwidgetconfigerror"><a class="header" href="#set_widget_configstr-serde_jsonvalue---result-setwidgetconfigerror"><code>set_widget_config(&amp;str, serde_json::Value) -&gt; Result&lt;(), SetWidgetConfigError&gt;</code></a></h3>
+<p>Replaces the <code>widget_config</code> for a single menu item and clears its cached widget, forcing a rebuild on the next layout pass. Returns <code>SetWidgetConfigError::NotFound</code> if no item with the given id exists.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use serde_json::json;
+
+overlay.set_widget_config("cpu", json!({ "value": 0.72 }))?;
 <span class="boring">}</span></code></pre>
 <h2 id="piemenucontrolhandler-trait"><a class="header" href="#piemenucontrolhandler-trait">PieMenuControlHandler Trait</a></h2>
 <p>The <code>PieMenuControlHandler</code> trait provides methods for showing and hiding the pie menu:</p>
@@ -668,20 +775,26 @@ overlay.update_menu_item(item)?;
 overlay.set_rotation(45.0);
 <span class="boring">}</span></code></pre>
 <h2 id="menuitem-1"><a class="header" href="#menuitem-1">MenuItem</a></h2>
-<p>A single menu item with <code>TypedBuilder</code> construction:</p>
+<p>A single menu item with <code>TypedBuilder</code> construction. Visual properties (icon, label, colors) are defined in widget-specific config structs (<code>CircleConfig</code>, <code>SquareConfig</code>, <code>ButtonConfig</code>). See <a href="#widget-system">Widget System</a> for details.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>MenuItem::builder()
-    .id("unique-id")          // required
-    .label("Display Label")    // required
-    .icon_name("icon-name")    // required, GTK icon theme name
-    .angle(45.0)               // required, degrees
-    .event("event-name")       // required, sent as PieMenuMessage::Event
-    .color("#RRGGBBAA")        // optional, default: grey
-    .label_color("#RRGGBBAA")  // optional, default: white
-    .radius(30.0)              // optional, default: 40.0
-    .enabled(true)             // optional, default: true
-    .fixed_position(false)     // optional, default: false
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
+
+MenuItem::builder()
+    .id("unique-id")              // required
+    .angle(45.0)                   // required, degrees
+    .event("event-name")          // required, sent as PieMenuMessage::Event
+    .widget_type("circle")        // optional, default: "circle"
+    .config(CircleConfig::builder() // optional, typed widget config
+        .icon_name("icon-name")
+        .label("Display Label")
+        .color("#RRGGBBAA")
+        .build())
+    .radius(30.0)                  // optional, default: 40.0
+    .enabled(true)                 // optional, default: true
+    .fixed_position(false)         // optional, default: false
+    .content_rotates(true)         // optional, default: true
     .build()
 <span class="boring">}</span></code></pre>
 <h2 id="piemenumessage-1"><a class="header" href="#piemenumessage-1">PieMenuMessage</a></h2>
@@ -711,6 +824,8 @@ overlay.set_rotation(45.0);
 <tr><td><code>set_menu_item_enabled</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>&amp;str, bool</code></td><td>Enable/disable an item</td></tr>
 <tr><td><code>get_menu_item</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>&amp;str</code></td><td>Get a clone of an item</td></tr>
 <tr><td><code>update_menu_item</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>MenuItem</code></td><td>Replace an item (all fields except <code>id</code>)</td></tr>
+<tr><td><code>refresh_widgets</code></td><td><code>PieMenuMenuItemHandler</code></td><td>—</td><td>Rebuild all item widgets</td></tr>
+<tr><td><code>set_widget_config</code></td><td><code>PieMenuMenuItemHandler</code></td><td><code>&amp;str, serde_json::Value</code></td><td>Replace widget config for one item</td></tr>
 <tr><td><code>show_pie_menu</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Show the menu</td></tr>
 <tr><td><code>hide_pie_menu</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Hide the menu</td></tr>
 <tr><td><code>is_pie_menu_open</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Check visibility</td></tr>
@@ -745,6 +860,7 @@ overlay.set_rotation(45.0);
 <tr><td><code>with_markings_enabled</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>bool</code></td><td>Builder: enable/disable markings</td></tr>
 <tr><td><code>with_scroll_rotation_step</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f64</code></td><td>Builder: set scroll rotation sensitivity</td></tr>
 <tr><td><code>with_menu_item</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>MenuItem</code></td><td>Builder: add item</td></tr>
+<tr><td><code>register_widget_factory</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>Box&lt;dyn MenuItemWidgetFactoryErased&gt;</code></td><td>Register a custom widget factory</td></tr>
 </tbody>
 </table>
 </div>
@@ -801,10 +917,12 @@ let inactive = overlay.deactivation_threshold();
 </span><span class="boring">fn main() {
 </span>let item = MenuItem::builder()
     .id("save")
-    .label("Save")
-    .icon_name("document-save-symbolic")
     .angle(0.0)
     .event("save")
+    .config(CircleConfig::builder()
+        .icon_name("document-save-symbolic")
+        .label("Save")
+        .build())
     .enabled(false) // disabled by default
     .build();
 <span class="boring">}</span></code></pre>
@@ -848,8 +966,11 @@ overlay.set_menu_item_enabled("save", true)?;
     .with_menu_item(
         MenuItem::builder()
             .id("rotate-cw")
-            .label("Rotate CW")
-            .icon_name("object-rotate-right-symbolic")
+            .widget_type("circle")
+            .config(CircleConfig::builder()
+                .icon_name("object-rotate-right-symbolic")
+                .label("Rotate CW")
+                .build())
             .angle(0.0)
             .fixed_position(true)
             .event("rotate-cw")
@@ -869,10 +990,12 @@ overlay.set_menu_item_enabled("save", true)?;
 overlay.add_menu_item_auto(
     MenuItem::builder()
         .id("item-a")
-        .label("A")
-        .icon_name("icon-a")
         .angle(0.0) // ignored for flexible items
         .event("a")
+        .config(CircleConfig::builder()
+            .icon_name("icon-a")
+            .label("A")
+            .build())
         .build(),
 )?;
 <span class="boring">}</span></code></pre>
@@ -890,20 +1013,24 @@ overlay.add_menu_item_auto(
 </span>// Fixed items define anchor points
 let rotate_cw = MenuItem::builder()
     .id("rotate-cw")
-    .label("Rotate CW")
-    .icon_name("object-rotate-right-symbolic")
     .angle(0.0)
     .fixed_position(true)
     .event("rotate-cw")
+    .config(CircleConfig::builder()
+        .icon_name("object-rotate-right-symbolic")
+        .label("Rotate CW")
+        .build())
     .build();
 
 let rotate_ccw = MenuItem::builder()
     .id("rotate-ccw")
-    .label("Rotate CCW")
-    .icon_name("object-rotate-left-symbolic")
     .angle(180.0)
     .fixed_position(true)
     .event("rotate-ccw")
+    .config(CircleConfig::builder()
+        .icon_name("object-rotate-left-symbolic")
+        .label("Rotate CCW")
+        .build())
     .build();
 <span class="boring">}</span></code></pre>
 <p>With two fixed items at 0° and 180°, two flexible items are placed at 90° and 270°.</p>
@@ -975,6 +1102,107 @@ overlay.redistribute();
 <ul>
 <li><strong>Zero ring radius</strong>: Returns <code>Ok(())</code> (e.g. during initialization when the widget has no size yet)</li>
 <li><strong>Self-overlap</strong>: An item is never compared against itself (matched by id)</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="submenus-1"><a class="header" href="#submenus-1">Submenus</a></h1>
+<p>The pie menu supports hierarchical submenus — nested rings that appear at increasing radii when a parent item is activated.</p>
+<h2 id="concept"><a class="header" href="#concept">Concept</a></h2>
+<p>Each <code>MenuItem</code> can optionally carry a <code>submenu: Option&lt;Vec&lt;MenuItem&gt;&gt;</code> field. When a user clicks (or confirms via keyboard) an item that has a submenu, a new ring is rendered at a larger radius instead of sending an event. The user can navigate back by pressing <code>Escape</code> or clicking the center circle.</p>
+<h2 id="building-submenu-items"><a class="header" href="#building-submenu-items">Building Submenu Items</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
+
+let sub_item_a = MenuItem::builder()
+    .id("sub-a")
+    .angle(0.0)
+    .event("sub-a-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Sub A")
+        .build())
+    .build();
+
+let sub_item_b = MenuItem::builder()
+    .id("sub-b")
+    .angle(180.0)
+    .event("sub-b-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Sub B")
+        .build())
+    .build();
+
+let parent = MenuItem::builder()
+    .id("parent")
+    .angle(90.0)
+    .event("parent-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Parent")
+        .build())
+    .submenu(vec![sub_item_a, sub_item_b])
+    .build();
+<span class="boring">}</span></code></pre>
+<h2 id="navigation-api"><a class="header" href="#navigation-api">Navigation API</a></h2>
+<p>The <code>PieMenuControlHandler</code> trait provides the following submenu methods:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>open_submenu(parent_id)</code></td><td><code>Result&lt;(), SubmenuError&gt;</code></td><td>Opens the submenu of the item with the given id</td></tr>
+<tr><td><code>close_submenu()</code></td><td><code>Result&lt;(), SubmenuError&gt;</code></td><td>Closes the current submenu and returns to the parent ring</td></tr>
+<tr><td><code>submenu_depth()</code></td><td><code>u32</code></td><td>Returns the current submenu depth (0 = main ring)</td></tr>
+<tr><td><code>get_submenu_items(parent_id)</code></td><td><code>Vec&lt;MenuItem&gt;</code></td><td>Returns the submenu items of the given parent</td></tr>
+<tr><td><code>redistribute_submenu(parent_id)</code></td><td><code>()</code></td><td>Redistributes submenu item angles</td></tr>
+<tr><td><code>set_submenu_items(parent_id, items)</code></td><td><code>Result&lt;(), SubmenuError&gt;</code></td><td>Replaces submenu items and redistributes angles</td></tr>
+<tr><td><code>set_submenu_radius(level, radius)</code></td><td><code>()</code></td><td>Sets a per-level radius override</td></tr>
+<tr><td><code>set_submenu_radius_step(step)</code></td><td><code>()</code></td><td>Sets the global step width between ring levels</td></tr>
+<tr><td><code>max_submenu_depth()</code></td><td><code>u32</code></td><td>Returns the maximum allowed nesting depth</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="rendering-1"><a class="header" href="#rendering-1">Rendering</a></h2>
+<ul>
+<li>The main ring renders at <code>radius</code> (default: 160px).</li>
+<li>Each submenu level <em>n</em> renders at <code>main_radius + n * submenu_radius_step</code>.</li>
+<li><code>submenu_radius_step</code> defaults to <code>80.0</code> pixels.</li>
+<li>Inactive (parent) rings are rendered at reduced opacity.</li>
+<li>A yellow indicator dot is drawn on the parent item to show which submenu is open.</li>
+<li>Breadcrumb dots are drawn between rings to indicate depth.</li>
+</ul>
+<h2 id="input-behavior"><a class="header" href="#input-behavior">Input Behavior</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Input</th><th>Submenu open</th><th>No submenu open</th></tr>
+</thead>
+<tbody>
+<tr><td>Click item with submenu</td><td>Opens submenu</td><td>Opens submenu</td></tr>
+<tr><td>Click item without submenu</td><td>Sends event</td><td>Sends event</td></tr>
+<tr><td>Click center circle</td><td>Closes submenu</td><td>Closes menu</td></tr>
+<tr><td><code>Escape</code></td><td>Closes submenu</td><td>Closes menu</td></tr>
+<tr><td><code>Enter</code> / <code>Space</code> on item with submenu</td><td>Opens submenu</td><td>Opens submenu</td></tr>
+<tr><td><code>Enter</code> / <code>Space</code> on item without submenu</td><td>Sends event</td><td>Sends event</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="error-handling-1"><a class="header" href="#error-handling-1">Error Handling</a></h2>
+<p><code>SubmenuError</code> covers the following cases:</p>
+<ul>
+<li><code>NotFound</code> — no menu item with the given id exists</li>
+<li><code>NoSubmenu</code> — the item exists but has no submenu</li>
+<li><code>MaxDepthReached</code> — the maximum nesting depth (<code>3</code>) has been reached</li>
+<li><code>NoSubmenuOpen</code> — <code>close_submenu</code> was called but no submenu is open</li>
+<li><code>ItemOverlap</code> — submenu items overlap after angle redistribution</li>
+</ul>
+<h2 id="constants"><a class="header" href="#constants">Constants</a></h2>
+<ul>
+<li><code>MAX_SUBMENU_DEPTH: u32 = 3</code></li>
+<li><code>DEFAULT_SUBMENU_RADIUS_STEP: f64 = 80.0</code></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="input-handling"><a class="header" href="#input-handling">Input Handling</a></h1>
@@ -1098,9 +1326,176 @@ glib::idle_add_local(move || {
 }
 <span class="boring">}</span></code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="widget-system"><a class="header" href="#widget-system">Widget System</a></h1>
+<p>All menu items are rendered as GTK4 child widgets, resolved by type name from a registry. This replaces the previous snapshot-based rendering with a unified widget-child pipeline.</p>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>The widget system consists of:</p>
+<ul>
+<li><strong><code>MenuItemWidgetFactory</code></strong> — typed factory trait that builds GTK4 widgets</li>
+<li><strong><code>MenuItemWidgetFactoryErased</code></strong> — type-erased counterpart for registry storage</li>
+<li><strong><code>MenuItemWidgetRegistry</code></strong> — maps type names to factories, pre-populated with standard implementations</li>
+<li><strong><code>MenuItemContext</code></strong> — provides event trigger callback to factories</li>
+<li><strong><code>ItemSize</code></strong> — optional non-square allocation for widgets</li>
+</ul>
+<h3 id="standard-implementations"><a class="header" href="#standard-implementations">Standard Implementations</a></h3>
+<p>The library ships three standard widget types:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Type</th><th>Factory</th><th>Config</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>"circle"</code></td><td><code>CircleWidgetFactory</code></td><td><code>CircleConfig</code></td><td>Circular item with icon + label</td></tr>
+<tr><td><code>"square"</code></td><td><code>SquareWidgetFactory</code></td><td><code>SquareConfig</code></td><td>Square item with icon + label</td></tr>
+<tr><td><code>"button"</code></td><td><code>ButtonWidgetFactory</code></td><td><code>ButtonConfig</code></td><td>Simple GTK4 Button (debug)</td></tr>
+</tbody>
+</table>
+</div>
+<p>When <code>widget_type</code> is <code>None</code>, <code>"circle"</code> is used as the default.</p>
+<h2 id="config-types"><a class="header" href="#config-types">Config Types</a></h2>
+<p>Each factory defines its own typed config struct with <code>TypedBuilder</code>. Visual properties (icon, label, colors) live in the config, not on <code>MenuItem</code>.</p>
+<h3 id="circleconfig--squareconfig"><a class="header" href="#circleconfig--squareconfig">CircleConfig / SquareConfig</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::CircleConfig;
+
+let config = CircleConfig::builder()
+    .icon_name("media-playback-start-symbolic")
+    .label("Play")
+    .color("#00AA0077")        // optional, &amp;str or RgbaColor
+    .label_color("#FFFFFFFF")  // optional
+    .icon_size(Some(48))       // optional
+    .show_label(Some(true))    // optional, default: true
+    .build();
+<span class="boring">}</span></code></pre>
+<p>Fields:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>icon_name</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>GTK icon theme name</td></tr>
+<tr><td><code>label</code></td><td><code>String</code></td><td>No</td><td><code>""</code></td><td>Display text</td></tr>
+<tr><td><code>color</code></td><td><code>Option&lt;RgbaColor&gt;</code></td><td>No</td><td><code>None</code> (factory default)</td><td>Background color</td></tr>
+<tr><td><code>label_color</code></td><td><code>Option&lt;RgbaColor&gt;</code></td><td>No</td><td><code>None</code> (factory default)</td><td>Label text color</td></tr>
+<tr><td><code>icon_size</code></td><td><code>Option&lt;u32&gt;</code></td><td>No</td><td><code>None</code></td><td>Icon size in pixels</td></tr>
+<tr><td><code>show_label</code></td><td><code>Option&lt;bool&gt;</code></td><td>No</td><td><code>None</code> (default: <code>true</code>)</td><td>Whether to show the label</td></tr>
+</tbody>
+</table>
+</div>
+<p>When <code>color</code> or <code>label_color</code> is <code>None</code>, the factory uses <code>DEFAULT_ICON_COLOR</code> or <code>DEFAULT_LABEL_COLOR</code> respectively.</p>
+<h3 id="buttonconfig"><a class="header" href="#buttonconfig">ButtonConfig</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::ButtonConfig;
+
+let config = ButtonConfig::builder()
+    .label("Click me")
+    .build();
+<span class="boring">}</span></code></pre>
+<h2 id="using-widgets-in-menu-items"><a class="header" href="#using-widgets-in-menu-items">Using Widgets in Menu Items</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
+
+let item = MenuItem::builder()
+    .id("play")
+    .angle(0.0)
+    .event("play")
+    .widget_type("circle")
+    .config(CircleConfig::builder()
+        .icon_name("media-playback-start-symbolic")
+        .label("Play")
+        .color("#00AA0077")
+        .build())
+    .build();
+<span class="boring">}</span></code></pre>
+<p>The <code>.config()</code> builder method accepts any type that implements <code>Serialize</code>. It serializes the config to <code>serde_json::Value</code> internally. This is the typed equivalent of <code>.widget_config(serde_json::to_value(&amp;config).unwrap())</code>.</p>
+<h3 id="non-square-allocation"><a class="header" href="#non-square-allocation">Non-Square Allocation</a></h3>
+<p>For widgets that need non-square dimensions (e.g., sliders, gauges):</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::ItemSize;
+
+let item = MenuItem::builder()
+    .id("volume")
+    .angle(180.0)
+    .event("volume")
+    .widget_type("slider")
+    .content_size(ItemSize::builder().width(40.0).height(100.0).build())
+    .content_rotates(false)
+    .build();
+<span class="boring">}</span></code></pre>
+<p>When <code>content_size</code> is <code>None</code>, the item’s <code>radius</code> is used for a square allocation of <code>2 * radius</code> pixels.</p>
+<h3 id="rotation-behavior"><a class="header" href="#rotation-behavior">Rotation Behavior</a></h3>
+<ul>
+<li><code>content_rotates = true</code> (default): The widget rotates with the ring.</li>
+<li><code>content_rotates = false</code>: The widget stays upright while its position on the ring rotates.</li>
+</ul>
+<h2 id="registering-custom-widgets"><a class="header" href="#registering-custom-widgets">Registering Custom Widgets</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::menu::context::MenuItemContext;
+use smearor_wrot_pie_menu::menu::widget_factory::MenuItemWidgetFactory;
+use smearor_wrot_pie_menu::MenuItem;
+use gtk4::LevelBar;
+use gtk4::Widget;
+use serde::Deserialize;
+use serde::Serialize;
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct CpuGaugeConfig {
+    value: f64,
+}
+
+struct CpuGaugeFactory;
+
+impl MenuItemWidgetFactory for CpuGaugeFactory {
+    type Config = CpuGaugeConfig;
+
+    fn type_name(&amp;self) -&gt; &amp;str { "cpu-gauge" }
+
+    fn build(&amp;self, _item: &amp;MenuItem, config: &amp;CpuGaugeConfig, _context: &amp;MenuItemContext) -&gt; Widget {
+        let bar = LevelBar::builder()
+            .value(config.value)
+            .min_value(0.0)
+            .max_value(1.0)
+            .width_request(80)
+            .height_request(80)
+            .build();
+        bar.upcast::&lt;Widget&gt;()
+    }
+}
+
+overlay.register_widget_factory(Box::new(CpuGaugeFactory));
+<span class="boring">}</span></code></pre>
+<h2 id="dynamic-updates"><a class="header" href="#dynamic-updates">Dynamic Updates</a></h2>
+<h3 id="refresh_widgets-1"><a class="header" href="#refresh_widgets-1">refresh_widgets</a></h3>
+<p>Clears the widget cache and rebuilds all item widgets on the next layout pass. Use this after registering new widget factories or changing <code>widget_type</code> on existing items.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.refresh_widgets();
+<span class="boring">}</span></code></pre>
+<h3 id="set_widget_config"><a class="header" href="#set_widget_config">set_widget_config</a></h3>
+<p>Replaces the widget configuration for a single item and forces a rebuild of that item’s widget.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use serde_json::json;
+
+overlay.set_widget_config("cpu", json!({ "value": 0.72 }))?;
+<span class="boring">}</span></code></pre>
+<h2 id="widget-caching"><a class="header" href="#widget-caching">Widget Caching</a></h2>
+<p>Widgets are built once by the factory, registered as children of <code>PieMenuWidget</code> via <code>set_parent</code>, and cached in an <code>item_widgets</code> map. On subsequent layout passes, cached widgets are repositioned without calling the factory again.</p>
+<p>All mutations of the widget cache (<code>refresh_widgets</code>, <code>set_widget_config</code>) are deferred to the next event loop iteration via <code>glib::idle_add_local</code> to prevent <code>RefCell</code> reentrancy panics during render or allocation passes.</p>
+<h2 id="serialization"><a class="header" href="#serialization">Serialization</a></h2>
+<p><code>widget_type</code> (<code>Option&lt;String&gt;</code>) and <code>widget_config</code> (<code>Option&lt;serde_json::Value&gt;</code>) are serializable with <code>#[serde(default)]</code>. This allows storing widget configuration in JSON/TOML files.</p>
+<p>The registry itself is not serializable — it is rebuilt at runtime with standard implementations and consumer-registered factories.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
 <p><code>PieMenuOverlayWidget</code> achieves its pie menu functionality through three core components working together within the GTK4 layout and rendering pipeline.</p>
-<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<h2 id="overview-1"><a class="header" href="#overview-1">Overview</a></h2>
 <p>The pie menu is composed of two widgets:</p>
 <ul>
 <li><strong><code>PieMenuOverlayWidget</code></strong> — The outer overlay that wraps a child widget and handles gestures</li>

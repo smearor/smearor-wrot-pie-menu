@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b2bcdacb.js";
+            window.path_to_searchindex_js = "searchindex-39a78894.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-51b810c4.js"></script>
+        <script src="toc-d2f469de.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,52 +184,105 @@
 </thead>
 <tbody>
 <tr><td><code>id</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>Unique identifier</td></tr>
-<tr><td><code>label</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>Display text below the icon</td></tr>
-<tr><td><code>label_color</code></td><td><code>RgbaColor</code></td><td>No</td><td>White (<code>#FFFFFFFF</code>)</td><td>Color of the label text</td></tr>
-<tr><td><code>icon_name</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>GTK icon theme name</td></tr>
-<tr><td><code>color</code></td><td><code>RgbaColor</code></td><td>No</td><td>Grey (<code>#77777777</code>)</td><td>Background circle color</td></tr>
 <tr><td><code>angle</code></td><td><code>f32</code></td><td>Yes</td><td>—</td><td>Position in degrees (0 = right, 90 = down)</td></tr>
-<tr><td><code>radius</code></td><td><code>Option&lt;f32&gt;</code></td><td>No</td><td><code>40.0</code></td><td>Item circle radius in pixels</td></tr>
 <tr><td><code>event</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>Event name sent as <code>PieMenuMessage::Event</code></td></tr>
+<tr><td><code>radius</code></td><td><code>Option&lt;f32&gt;</code></td><td>No</td><td><code>40.0</code></td><td>Item circle radius in pixels</td></tr>
 <tr><td><code>enabled</code></td><td><code>bool</code></td><td>No</td><td><code>true</code></td><td>Whether the item is clickable (disabled items render at reduced opacity)</td></tr>
 <tr><td><code>fixed_position</code></td><td><code>bool</code></td><td>No</td><td><code>false</code></td><td>When <code>true</code>, the item’s angle is treated as a fixed semantic position that resists auto-redistribution</td></tr>
 <tr><td><code>close_on_click</code></td><td><code>bool</code></td><td>No</td><td><code>true</code></td><td>Whether the pie menu closes after this item is clicked</td></tr>
+<tr><td><code>submenu</code></td><td><code>Option&lt;Vec&lt;MenuItem&gt;&gt;</code></td><td>No</td><td><code>None</code></td><td>Optional nested submenu items</td></tr>
+<tr><td><code>widget_type</code></td><td><code>Option&lt;String&gt;</code></td><td>No</td><td><code>None</code> (<code>"circle"</code>)</td><td>Widget type name for registry lookup</td></tr>
+<tr><td><code>widget_config</code></td><td><code>Option&lt;serde_json::Value&gt;</code></td><td>No</td><td><code>None</code></td><td>Type-specific widget configuration</td></tr>
+<tr><td><code>content_size</code></td><td><code>Option&lt;ItemSize&gt;</code></td><td>No</td><td><code>None</code></td><td>Non-square allocation size</td></tr>
+<tr><td><code>content_rotates</code></td><td><code>bool</code></td><td>No</td><td><code>true</code></td><td>Whether the widget rotates with the ring</td></tr>
 </tbody>
 </table>
 </div>
+<p>Visual properties (icon, label, colors) are defined in widget-specific config structs, not on <code>MenuItem</code>. See <a href="widget_system.html">Widget System</a> for details.</p>
 <h2 id="construction"><a class="header" href="#construction">Construction</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use smearor_wrot_pie_menu::MenuItem;
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
 
 let item = MenuItem::builder()
     .id("rotate-cw")
-    .label("Rotate CW")
-    .icon_name("object-rotate-right-symbolic")
-    .color("#00000077")
-    .label_color("#FFFFFFFF")
     .angle(0.0)
-    .radius(30.0)
     .event("rotate-cw")
-    .enabled(true)
-    .fixed_position(false)
-    .close_on_click(true)
+    .widget_type("circle")
+    .config(CircleConfig::builder()
+        .icon_name("object-rotate-right-symbolic")
+        .label("Rotate CW")
+        .color("#00000077")
+        .build())
     .build();
 <span class="boring">}</span></code></pre>
-<h2 id="colors"><a class="header" href="#colors">Colors</a></h2>
-<p>Colors accept any type that implements <code>Into&lt;RgbaColor&gt;</code>:</p>
-<ul>
-<li><code>&amp;str</code> / <code>String</code> — hex string like <code>"#RRGGBBAA"</code> or <code>"#RRGGBB"</code></li>
-<li><code>RgbColor</code> — RGB only (alpha defaults to 1.0)</li>
-<li><code>RgbaColor</code> — full RGBA</li>
-</ul>
+<p>The <code>.config()</code> builder method accepts any <code>Serialize</code> type and serializes it to <code>serde_json::Value</code> internally.</p>
+<h2 id="widget-configuration"><a class="header" href="#widget-configuration">Widget Configuration</a></h2>
+<h3 id="widget_type"><a class="header" href="#widget_type">widget_type</a></h3>
+<p>Resolves the factory from the registry. When <code>None</code>, defaults to <code>"circle"</code>. Standard types: <code>"circle"</code>, <code>"square"</code>, <code>"button"</code>. Custom types can be registered via <code>register_widget_factory()</code>.</p>
+<h3 id="widget_config"><a class="header" href="#widget_config">widget_config</a></h3>
+<p>Type-specific configuration stored as <code>serde_json::Value</code>. The factory’s <code>Config</code> type defines the schema. When <code>None</code>, the factory’s <code>Config::default()</code> is used.</p>
+<h3 id="content_size"><a class="header" href="#content_size">content_size</a></h3>
+<p>Optional non-square allocation for widgets that need dimensions other than <code>2 * radius</code>. See <a href="widget_system.html">Widget System</a>.</p>
+<h3 id="content_rotates"><a class="header" href="#content_rotates">content_rotates</a></h3>
+<p>When <code>true</code> (default), the widget rotates with the ring. When <code>false</code>, the widget stays upright.</p>
 <h2 id="equality"><a class="header" href="#equality">Equality</a></h2>
 <p><code>MenuItem</code> implements <code>Hash</code>, <code>PartialEq</code>, and <code>Eq</code> based <strong>only</strong> on the <code>id</code> field. This allows items with the same id to be treated as equal regardless of other fields.</p>
 <h2 id="default-constants"><a class="header" href="#default-constants">Default Constants</a></h2>
 <ul>
 <li><code>DEFAULT_MENU_ITEM_RADIUS: f32 = 40.0</code></li>
-<li><code>DEFAULT_LABEL_COLOR: RgbaColor = white</code></li>
-<li><code>DEFAULT_ICON_COLOR: RgbaColor = grey</code></li>
+<li><code>DEFAULT_LABEL_COLOR: RgbaColor = white</code> — used by factories when <code>label_color</code> is <code>None</code></li>
+<li><code>DEFAULT_ICON_COLOR: RgbaColor = grey</code> — used by factories when <code>color</code> is <code>None</code></li>
+</ul>
+<h2 id="submenus"><a class="header" href="#submenus">Submenus</a></h2>
+<p>A <code>MenuItem</code> can optionally contain a nested submenu via the <code>submenu</code> field. When a user clicks an item that has a submenu, the menu opens a new ring at a larger radius instead of sending an event.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
+
+let child = MenuItem::builder()
+    .id("child")
+    .angle(0.0)
+    .event("child-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Child")
+        .build())
+    .build();
+
+let parent = MenuItem::builder()
+    .id("parent")
+    .angle(0.0)
+    .event("parent-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Parent")
+        .build())
+    .submenu(vec![child])
+    .build();
+<span class="boring">}</span></code></pre>
+<h3 id="submenu-ids"><a class="header" href="#submenu-ids">Submenu IDs</a></h3>
+<p>IDs must be <strong>globally unique</strong> across the entire menu tree, including all submenu levels. Duplicate IDs at any level are undefined behavior.</p>
+<h3 id="submenu-navigation"><a class="header" href="#submenu-navigation">Submenu Navigation</a></h3>
+<ul>
+<li><strong>Open</strong>: Click an item with a submenu, or press <code>Enter</code>/<code>Space</code> on a keyboard-selected item with a submenu.</li>
+<li><strong>Close</strong>: Press <code>Escape</code> or click the center circle. If a submenu is open, the first <code>Escape</code>/center-click closes the submenu and returns to the parent ring. A second <code>Escape</code>/center-click closes the entire menu.</li>
+<li><strong>Maximum depth</strong>: <code>MAX_SUBMENU_DEPTH = 3</code>. Attempting to open a deeper submenu returns <code>SubmenuError::MaxDepthReached</code>.</li>
+</ul>
+<h3 id="submenu-messages"><a class="header" href="#submenu-messages">Submenu Messages</a></h3>
+<ul>
+<li><code>PieMenuMessage::SubmenuOpened(String)</code> — sent when a submenu is opened, containing the parent item’s id.</li>
+<li><code>PieMenuMessage::SubmenuClosed(String)</code> — sent when a submenu is closed, containing the parent item’s id.</li>
+</ul>
+<h3 id="submenu-radii"><a class="header" href="#submenu-radii">Submenu Radii</a></h3>
+<p>Each submenu level renders at an increasing radius. The radius for level <em>n</em> is computed as:</p>
+<pre><code>radius = main_radius + n * submenu_radius_step
+</code></pre>
+<ul>
+<li><code>submenu_radius_step</code> defaults to <code>80.0</code> pixels and can be changed via <code>set_submenu_radius_step</code>.</li>
+<li>Individual level overrides can be set via <code>set_submenu_radius(level, radius)</code>.</li>
 </ul>
 
                     </main>

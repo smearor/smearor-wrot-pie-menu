@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b2bcdacb.js";
+            window.path_to_searchindex_js = "searchindex-39a78894.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-51b810c4.js"></script>
+        <script src="toc-d2f469de.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -182,10 +182,12 @@
 </span><span class="boring">fn main() {
 </span>let item = MenuItem::builder()
     .id("save")
-    .label("Save")
-    .icon_name("document-save-symbolic")
     .angle(0.0)
     .event("save")
+    .config(CircleConfig::builder()
+        .icon_name("document-save-symbolic")
+        .label("Save")
+        .build())
     .enabled(false) // disabled by default
     .build();
 <span class="boring">}</span></code></pre>

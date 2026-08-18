@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b2bcdacb.js";
+            window.path_to_searchindex_js = "searchindex-39a78894.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-51b810c4.js"></script>
+        <script src="toc-d2f469de.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -183,7 +183,8 @@ gtk4 = { version = "0.11", features = ["v4_20"] }
 </code></pre>
 <h2 id="minimal-example"><a class="header" href="#minimal-example">Minimal Example</a></h2>
 <p>The following example creates a GTK4 application window containing a <code>PieMenuOverlayWidget</code> with a label as child and two menu items:</p>
-<pre class="playground"><code class="language-rust">use smearor_wrot_pie_menu::MenuItem;
+<pre class="playground"><code class="language-rust">use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
 use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
@@ -214,9 +215,12 @@ fn main() -&gt; glib::ExitCode {
             .with_menu_item(
                 MenuItem::builder()
                     .id("red")
-                    .label("Red")
-                    .icon_name("media-playback-stop-symbolic")
-                    .color("#FF000077")
+                    .widget_type("circle")
+                    .config(CircleConfig::builder()
+                        .icon_name("media-playback-stop-symbolic")
+                        .label("Red")
+                        .color("#FF000077")
+                        .build())
                     .angle(0.0)
                     .fixed_position(true)
                     .event("red")
@@ -226,9 +230,12 @@ fn main() -&gt; glib::ExitCode {
             .with_menu_item(
                 MenuItem::builder()
                     .id("green")
-                    .label("Green")
-                    .icon_name("media-playback-stop-symbolic")
-                    .color("#00FF0077")
+                    .widget_type("circle")
+                    .config(CircleConfig::builder()
+                        .icon_name("media-playback-stop-symbolic")
+                        .label("Green")
+                        .color("#00FF0077")
+                        .build())
                     .angle(180.0)
                     .fixed_position(true)
                     .event("green")

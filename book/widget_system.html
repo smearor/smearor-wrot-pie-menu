@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Builder Pattern - smearor-wrot-pie-menu Documentation</title>
+        <title>Widget System - smearor-wrot-pie-menu Documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -174,55 +174,182 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="builder-pattern"><a class="header" href="#builder-pattern">Builder Pattern</a></h1>
-<p><code>PieMenuOverlayWidget</code> supports a fluent builder API for ergonomic construction. Each <code>with_*</code> method takes ownership of <code>self</code>, applies the setting, and returns <code>Self</code> for chaining.</p>
-<h2 id="available-methods"><a class="header" href="#available-methods">Available Methods</a></h2>
+                        <h1 id="widget-system"><a class="header" href="#widget-system">Widget System</a></h1>
+<p>All menu items are rendered as GTK4 child widgets, resolved by type name from a registry. This replaces the previous snapshot-based rendering with a unified widget-child pipeline.</p>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>The widget system consists of:</p>
+<ul>
+<li><strong><code>MenuItemWidgetFactory</code></strong> — typed factory trait that builds GTK4 widgets</li>
+<li><strong><code>MenuItemWidgetFactoryErased</code></strong> — type-erased counterpart for registry storage</li>
+<li><strong><code>MenuItemWidgetRegistry</code></strong> — maps type names to factories, pre-populated with standard implementations</li>
+<li><strong><code>MenuItemContext</code></strong> — provides event trigger callback to factories</li>
+<li><strong><code>ItemSize</code></strong> — optional non-square allocation for widgets</li>
+</ul>
+<h3 id="standard-implementations"><a class="header" href="#standard-implementations">Standard Implementations</a></h3>
+<p>The library ships three standard widget types:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+<tr><th>Type</th><th>Factory</th><th>Config</th><th>Description</th></tr>
 </thead>
 <tbody>
-<tr><td><code>with_message_sender(sender)</code></td><td><code>Self</code></td><td>Sets the message channel sender</td></tr>
-<tr><td><code>with_activation_threshold(f64)</code></td><td><code>Self</code></td><td>Sets the pinch-to-zoom activation threshold</td></tr>
-<tr><td><code>with_deactivation_threshold(f64)</code></td><td><code>Self</code></td><td>Sets the pinch-out deactivation threshold</td></tr>
-<tr><td><code>with_menu_item(MenuItem)</code></td><td><code>Result&lt;Self, AddMenuItemError&gt;</code></td><td>Adds a menu item</td></tr>
+<tr><td><code>"circle"</code></td><td><code>CircleWidgetFactory</code></td><td><code>CircleConfig</code></td><td>Circular item with icon + label</td></tr>
+<tr><td><code>"square"</code></td><td><code>SquareWidgetFactory</code></td><td><code>SquareConfig</code></td><td>Square item with icon + label</td></tr>
+<tr><td><code>"button"</code></td><td><code>ButtonWidgetFactory</code></td><td><code>ButtonConfig</code></td><td>Simple GTK4 Button (debug)</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<p>When <code>widget_type</code> is <code>None</code>, <code>"circle"</code> is used as the default.</p>
+<h2 id="config-types"><a class="header" href="#config-types">Config Types</a></h2>
+<p>Each factory defines its own typed config struct with <code>TypedBuilder</code>. Visual properties (icon, label, colors) live in the config, not on <code>MenuItem</code>.</p>
+<h3 id="circleconfig--squareconfig"><a class="header" href="#circleconfig--squareconfig">CircleConfig / SquareConfig</a></h3>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let overlay = PieMenuOverlayWidget::new(Some(&amp;child))
-    .with_message_sender(sender)
-    .with_activation_threshold(2.5)
-    .with_deactivation_threshold(0.3)
-    .with_menu_item(
-        MenuItem::builder()
-            .id("rotate-cw")
-            .widget_type("circle")
-            .config(CircleConfig::builder()
-                .icon_name("object-rotate-right-symbolic")
-                .label("Rotate CW")
-                .build())
-            .angle(0.0)
-            .fixed_position(true)
-            .event("rotate-cw")
-            .build(),
-    )?;
+</span>use smearor_wrot_pie_menu::CircleConfig;
+
+let config = CircleConfig::builder()
+    .icon_name("media-playback-start-symbolic")
+    .label("Play")
+    .color("#00AA0077")        // optional, &amp;str or RgbaColor
+    .label_color("#FFFFFFFF")  // optional
+    .icon_size(Some(48))       // optional
+    .show_label(Some(true))    // optional, default: true
+    .build();
 <span class="boring">}</span></code></pre>
-<h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
-<p><code>with_menu_item()</code> returns <code>Result&lt;Self, AddMenuItemError&gt;</code>. If the item overlaps with an existing item, the error is propagated and the chain stops. Use <code>?</code> to short-circuit on failure.</p>
+<p>Fields:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>icon_name</code></td><td><code>String</code></td><td>Yes</td><td>—</td><td>GTK icon theme name</td></tr>
+<tr><td><code>label</code></td><td><code>String</code></td><td>No</td><td><code>""</code></td><td>Display text</td></tr>
+<tr><td><code>color</code></td><td><code>Option&lt;RgbaColor&gt;</code></td><td>No</td><td><code>None</code> (factory default)</td><td>Background color</td></tr>
+<tr><td><code>label_color</code></td><td><code>Option&lt;RgbaColor&gt;</code></td><td>No</td><td><code>None</code> (factory default)</td><td>Label text color</td></tr>
+<tr><td><code>icon_size</code></td><td><code>Option&lt;u32&gt;</code></td><td>No</td><td><code>None</code></td><td>Icon size in pixels</td></tr>
+<tr><td><code>show_label</code></td><td><code>Option&lt;bool&gt;</code></td><td>No</td><td><code>None</code> (default: <code>true</code>)</td><td>Whether to show the label</td></tr>
+</tbody>
+</table>
+</div>
+<p>When <code>color</code> or <code>label_color</code> is <code>None</code>, the factory uses <code>DEFAULT_ICON_COLOR</code> or <code>DEFAULT_LABEL_COLOR</code> respectively.</p>
+<h3 id="buttonconfig"><a class="header" href="#buttonconfig">ButtonConfig</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::ButtonConfig;
+
+let config = ButtonConfig::builder()
+    .label("Click me")
+    .build();
+<span class="boring">}</span></code></pre>
+<h2 id="using-widgets-in-menu-items"><a class="header" href="#using-widgets-in-menu-items">Using Widgets in Menu Items</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::CircleConfig;
+use smearor_wrot_pie_menu::MenuItem;
+
+let item = MenuItem::builder()
+    .id("play")
+    .angle(0.0)
+    .event("play")
+    .widget_type("circle")
+    .config(CircleConfig::builder()
+        .icon_name("media-playback-start-symbolic")
+        .label("Play")
+        .color("#00AA0077")
+        .build())
+    .build();
+<span class="boring">}</span></code></pre>
+<p>The <code>.config()</code> builder method accepts any type that implements <code>Serialize</code>. It serializes the config to <code>serde_json::Value</code> internally. This is the typed equivalent of <code>.widget_config(serde_json::to_value(&amp;config).unwrap())</code>.</p>
+<h3 id="non-square-allocation"><a class="header" href="#non-square-allocation">Non-Square Allocation</a></h3>
+<p>For widgets that need non-square dimensions (e.g., sliders, gauges):</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::ItemSize;
+
+let item = MenuItem::builder()
+    .id("volume")
+    .angle(180.0)
+    .event("volume")
+    .widget_type("slider")
+    .content_size(ItemSize::builder().width(40.0).height(100.0).build())
+    .content_rotates(false)
+    .build();
+<span class="boring">}</span></code></pre>
+<p>When <code>content_size</code> is <code>None</code>, the item’s <code>radius</code> is used for a square allocation of <code>2 * radius</code> pixels.</p>
+<h3 id="rotation-behavior"><a class="header" href="#rotation-behavior">Rotation Behavior</a></h3>
+<ul>
+<li><code>content_rotates = true</code> (default): The widget rotates with the ring.</li>
+<li><code>content_rotates = false</code>: The widget stays upright while its position on the ring rotates.</li>
+</ul>
+<h2 id="registering-custom-widgets"><a class="header" href="#registering-custom-widgets">Registering Custom Widgets</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::menu::context::MenuItemContext;
+use smearor_wrot_pie_menu::menu::widget_factory::MenuItemWidgetFactory;
+use smearor_wrot_pie_menu::MenuItem;
+use gtk4::LevelBar;
+use gtk4::Widget;
+use serde::Deserialize;
+use serde::Serialize;
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct CpuGaugeConfig {
+    value: f64,
+}
+
+struct CpuGaugeFactory;
+
+impl MenuItemWidgetFactory for CpuGaugeFactory {
+    type Config = CpuGaugeConfig;
+
+    fn type_name(&amp;self) -&gt; &amp;str { "cpu-gauge" }
+
+    fn build(&amp;self, _item: &amp;MenuItem, config: &amp;CpuGaugeConfig, _context: &amp;MenuItemContext) -&gt; Widget {
+        let bar = LevelBar::builder()
+            .value(config.value)
+            .min_value(0.0)
+            .max_value(1.0)
+            .width_request(80)
+            .height_request(80)
+            .build();
+        bar.upcast::&lt;Widget&gt;()
+    }
+}
+
+overlay.register_widget_factory(Box::new(CpuGaugeFactory));
+<span class="boring">}</span></code></pre>
+<h2 id="dynamic-updates"><a class="header" href="#dynamic-updates">Dynamic Updates</a></h2>
+<h3 id="refresh_widgets"><a class="header" href="#refresh_widgets">refresh_widgets</a></h3>
+<p>Clears the widget cache and rebuilds all item widgets on the next layout pass. Use this after registering new widget factories or changing <code>widget_type</code> on existing items.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.refresh_widgets();
+<span class="boring">}</span></code></pre>
+<h3 id="set_widget_config"><a class="header" href="#set_widget_config">set_widget_config</a></h3>
+<p>Replaces the widget configuration for a single item and forces a rebuild of that item’s widget.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use serde_json::json;
+
+overlay.set_widget_config("cpu", json!({ "value": 0.72 }))?;
+<span class="boring">}</span></code></pre>
+<h2 id="widget-caching"><a class="header" href="#widget-caching">Widget Caching</a></h2>
+<p>Widgets are built once by the factory, registered as children of <code>PieMenuWidget</code> via <code>set_parent</code>, and cached in an <code>item_widgets</code> map. On subsequent layout passes, cached widgets are repositioned without calling the factory again.</p>
+<p>All mutations of the widget cache (<code>refresh_widgets</code>, <code>set_widget_config</code>) are deferred to the next event loop iteration via <code>glib::idle_add_local</code> to prevent <code>RefCell</code> reentrancy panics during render or allocation passes.</p>
+<h2 id="serialization"><a class="header" href="#serialization">Serialization</a></h2>
+<p><code>widget_type</code> (<code>Option&lt;String&gt;</code>) and <code>widget_config</code> (<code>Option&lt;serde_json::Value&gt;</code>) are serializable with <code>#[serde(default)]</code>. This allows storing widget configuration in JSON/TOML files.</p>
+<p>The registry itself is not serializable — it is rebuilt at runtime with standard implementations and consumer-registered factories.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="disabled_state.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="input_handling.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="auto_distribution.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="architecture.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -232,11 +359,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="disabled_state.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="input_handling.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="auto_distribution.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="architecture.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

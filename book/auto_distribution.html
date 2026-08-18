@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b2bcdacb.js";
+            window.path_to_searchindex_js = "searchindex-39a78894.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-51b810c4.js"></script>
+        <script src="toc-d2f469de.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,10 +184,12 @@
 overlay.add_menu_item_auto(
     MenuItem::builder()
         .id("item-a")
-        .label("A")
-        .icon_name("icon-a")
         .angle(0.0) // ignored for flexible items
         .event("a")
+        .config(CircleConfig::builder()
+            .icon_name("icon-a")
+            .label("A")
+            .build())
         .build(),
 )?;
 <span class="boring">}</span></code></pre>
@@ -205,20 +207,24 @@ overlay.add_menu_item_auto(
 </span>// Fixed items define anchor points
 let rotate_cw = MenuItem::builder()
     .id("rotate-cw")
-    .label("Rotate CW")
-    .icon_name("object-rotate-right-symbolic")
     .angle(0.0)
     .fixed_position(true)
     .event("rotate-cw")
+    .config(CircleConfig::builder()
+        .icon_name("object-rotate-right-symbolic")
+        .label("Rotate CW")
+        .build())
     .build();
 
 let rotate_ccw = MenuItem::builder()
     .id("rotate-ccw")
-    .label("Rotate CCW")
-    .icon_name("object-rotate-left-symbolic")
     .angle(180.0)
     .fixed_position(true)
     .event("rotate-ccw")
+    .config(CircleConfig::builder()
+        .icon_name("object-rotate-left-symbolic")
+        .label("Rotate CCW")
+        .build())
     .build();
 <span class="boring">}</span></code></pre>
 <p>With two fixed items at 0° and 180°, two flexible items are placed at 90° and 270°.</p>
