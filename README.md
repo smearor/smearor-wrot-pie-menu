@@ -31,7 +31,8 @@ via the [`MenuItem`] API and receive events via [`PieMenuMessage`].
 - **Overlap validation**: Prevents visually overlapping items with automatic rollback on failure
 - **Hover detection**: Mouse hover highlights the nearest enabled menu item
 - **Click-to-select**: Click an enabled menu item to trigger its event
-- **Center close button**: Click the center circle to close the menu (or close the current submenu if one is open)
+- **Optional center widget**: Place any GTK4 widget in the center of the ring - rotates with the menu, handles its own events (e.g. close-on-click, gauges, labels)
+- **Center close button**: Click the center circle to close the menu (or close the current submenu if one is open) - default behavior when no center widget is set
 - **Submenus**: Hierarchical nested rings with configurable radii, tiered Escape/center-click navigation, and automatic angle redistribution
 - **Registry-based widget system**: All menu items are GTK4 child widgets resolved by type name from a registry
 - **Standard widget implementations**: `"circle"`, `"square"`, and `"button"` item types with icon + label rendering
