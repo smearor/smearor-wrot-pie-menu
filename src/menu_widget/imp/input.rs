@@ -101,7 +101,7 @@ impl PieMenuWidgetImpl {
 
         // If new widgets were created, trigger a new allocate pass so
         // `size_allocate` positions them. `queue_resize` is insufficient
-        // here because the widget's own size request does not change —
+        // here because the widget's own size request does not change -
         // `queue_allocate` forces a reallocation regardless.
         if created_any {
             pie_widget.queue_allocate();
@@ -354,7 +354,7 @@ mod tests {
         let imp = PieMenuWidgetImpl::default();
         imp.menu_items.insert("a".to_string(), make_item("a", 10.0));
         imp.menu_items.insert("b".to_string(), make_item("b", 350.0));
-        // At 0°, both are 10° away — the result depends on iteration order (DashMap).
+        // At 0°, both are 10° away - the result depends on iteration order (DashMap).
         // Test with non-ambiguous angles instead:
         assert_eq!(imp.find_nearest_item(5.0), Some("a".to_string()));
         assert_eq!(imp.find_nearest_item(355.0), Some("b".to_string()));

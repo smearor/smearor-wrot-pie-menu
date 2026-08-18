@@ -71,16 +71,16 @@ impl PieMenuWidget {
     pub fn set_center_widget(&self, widget: Option<&Widget>) {
         let imp = self.imp();
 
-        // Take old widget out of RefCell — borrow guard drops immediately
+        // Take old widget out of RefCell - borrow guard drops immediately
         let old_widget = imp.center_widget.borrow_mut().take();
 
-        // Unparent OUTSIDE the borrow — safe even if GTK signals
+        // Unparent OUTSIDE the borrow - safe even if GTK signals
         // trigger reentrant access to center_widget
         if let Some(existing) = old_widget {
             existing.unparent();
         }
 
-        // Parent new widget BEFORE storing it in RefCell —
+        // Parent new widget BEFORE storing it in RefCell -
         // set_parent emits hierarchy-changed which could trigger
         // consumer callbacks; the RefCell must not be borrowed
         // when those fire

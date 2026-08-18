@@ -197,7 +197,7 @@ fn build_ui(app: &Application) {
         update_gauge(&overlay_clone, "cpu", cpu_usage);
         center_gauge_clone.set_value(cpu_usage);
 
-        // CPU temperature — find first component with a valid temperature
+        // CPU temperature - find first component with a valid temperature
         let temp = components_clone
             .borrow()
             .iter()

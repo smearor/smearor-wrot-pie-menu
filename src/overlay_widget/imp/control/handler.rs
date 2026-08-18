@@ -204,7 +204,7 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         self.submenu_stack.borrow_mut().push(parent_id.to_string());
         pie_menu_widget.imp().set_submenu_stack(self.submenu_stack.borrow().clone());
 
-        // Do not auto-select first submenu item — selection should only
+        // Do not auto-select first submenu item - selection should only
         // be set when keyboard navigation is actively used.
         *pie_menu_widget.imp().keyboard_selection.borrow_mut() = None;
 
@@ -219,7 +219,7 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
         if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
             pie_menu_widget.imp().set_submenu_stack(self.submenu_stack.borrow().clone());
-            // Do not auto-select parent item — selection should only
+            // Do not auto-select parent item - selection should only
             // be set when keyboard navigation is actively used.
             *pie_menu_widget.imp().keyboard_selection.borrow_mut() = None;
             pie_menu_widget.queue_draw();
