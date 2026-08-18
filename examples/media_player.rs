@@ -343,8 +343,6 @@ fn build_ui(app: &Application) {
     glib::idle_add_local(move || {
         loop {
             match receiver.try_recv() {
-                Ok(PieMenuMessage::Opened) | Ok(PieMenuMessage::Closed) => {}
-                Ok(PieMenuMessage::Rotate(_)) => {}
                 Ok(PieMenuMessage::Event(event)) => match event.as_str() {
                     "play-pause" => {
                         let mut playing = is_playing_for_messages.borrow_mut();
@@ -411,6 +409,7 @@ fn build_ui(app: &Application) {
                     }
                     _ => {}
                 },
+                Ok(_) => {}
                 Err(_) => break,
             }
         }

@@ -31,7 +31,8 @@ via the [`MenuItem`] API and receive events via [`PieMenuMessage`].
 - **Overlap validation**: Prevents visually overlapping items with automatic rollback on failure
 - **Hover detection**: Mouse hover highlights the nearest enabled menu item
 - **Click-to-select**: Click an enabled menu item to trigger its event
-- **Center close button**: Click the center circle to close the menu
+- **Center close button**: Click the center circle to close the menu (or close the current submenu if one is open)
+- **Submenus**: Hierarchical nested rings with configurable radii, tiered Escape/center-click navigation, and automatic angle redistribution
 - **GTK4 native**: Built as a proper GTK4 widget with `BinLayout` overlay
 
 ## Feature Flags
@@ -89,6 +90,8 @@ match receiver.try_recv() {
     Ok(PieMenuMessage::Closed) => { /* pie menu closed */ }
     Ok(PieMenuMessage::Rotate(degrees)) => { /* handle rotation */ }
     Ok(PieMenuMessage::Event(name)) => { /* handle event by name */ }
+    Ok(PieMenuMessage::SubmenuOpened(parent_id)) => { /* submenu opened */ }
+    Ok(PieMenuMessage::SubmenuClosed(parent_id)) => { /* submenu closed */ }
     Err(_) => {}
 }
 ```
@@ -111,7 +114,7 @@ The main widget. Wrap any child widget with this overlay to add pie menu functio
 
 ### `MenuItem`
 
-A single menu item with an id, label, icon, color, angle, radius, event name, enabled state, and fixed-position flag.
+A single menu item with an id, label, icon, color, angle, radius, event name, enabled state, fixed-position flag, and optional submenu items.
 
 ### `PieMenuMessage`
 
@@ -120,6 +123,8 @@ Messages sent from the pie menu to the consumer:
 - `Closed` — the pie menu was closed
 - `Rotate(f32)` — rotation delta in degrees from the rotation gesture
 - `Event(String)` — the event name of the clicked menu item
+- `SubmenuOpened(String)` — a submenu was opened (contains parent item id)
+- `SubmenuClosed(String)` — a submenu was closed (contains parent item id)
 
 ## License
 

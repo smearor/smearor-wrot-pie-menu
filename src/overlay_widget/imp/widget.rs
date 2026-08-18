@@ -21,6 +21,7 @@ use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::widget::WidgetImplExt;
 use std::cell::Cell;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
@@ -85,6 +86,16 @@ pub struct PieMenuOverlayWidgetImpl {
     /// Created in `root()`, removed in `unroot()`.
     #[cfg(feature = "keyboard")]
     pub(crate) key_controller: RefCell<Option<gtk4::EventControllerKey>>,
+
+    /// Stack of opened submenu item ids. Empty means main ring is active.
+    pub(crate) submenu_stack: RefCell<Vec<String>>,
+
+    /// Per-level submenu radius overrides. Level 0 is the main ring.
+    /// Levels without an explicit override use `main_radius + level * step`.
+    pub(crate) submenu_radii: RefCell<HashMap<u32, f32>>,
+
+    /// Step width between consecutive ring levels. Default: `80.0`.
+    pub(crate) submenu_radius_step: AtomicF64,
 }
 
 /// Default activation threshold for pinch-to-zoom (scale must exceed this to open the menu)
@@ -96,6 +107,12 @@ pub const DEFAULT_DEACTIVATION_THRESHOLD: f64 = 0.5;
 /// Default scroll rotation sensitivity multiplier.
 /// With a discrete mouse wheel tick (`dy ≈ 1.0`), this yields ~5° per tick.
 pub const DEFAULT_SCROLL_ROTATION_STEP: f64 = 5.0;
+
+/// Default step width between consecutive submenu ring levels in pixels.
+pub const DEFAULT_SUBMENU_RADIUS_STEP: f64 = 80.0;
+
+/// Maximum submenu nesting depth to prevent visual overflow.
+pub const MAX_SUBMENU_DEPTH: u32 = 3;
 
 impl Default for PieMenuOverlayWidgetImpl {
     fn default() -> Self {
@@ -116,6 +133,9 @@ impl Default for PieMenuOverlayWidgetImpl {
             left_stick_x: Cell::new(0.0),
             #[cfg(feature = "keyboard")]
             key_controller: RefCell::new(None),
+            submenu_stack: RefCell::new(Vec::new()),
+            submenu_radii: RefCell::new(HashMap::new()),
+            submenu_radius_step: AtomicF64::new(DEFAULT_SUBMENU_RADIUS_STEP),
         }
     }
 }
@@ -311,44 +331,100 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
             debug!("Click distance from center: {distance}, threshold: {center_radius}");
 
             if distance <= center_radius {
-                debug!("Center circle clicked, closing menu");
+                debug!("Center circle clicked, closing submenu or menu");
                 gesture.set_state(EventSequenceState::Claimed);
-                let _ = widget.hide_pie_menu();
+                if widget.submenu_depth() > 0 {
+                    let _ = widget.close_submenu();
+                } else {
+                    let _ = widget.hide_pie_menu();
+                }
             } else {
-                // Check if click is on a menu item
-                if let Some(menu_widget) = widget.imp().pie_menu_widget.borrow().as_ref() {
-                    let radius = menu_widget.imp().radius.load(Ordering::Relaxed);
-                    let rotation = menu_widget.imp().rotation.load(Ordering::Relaxed);
-                    let menu_items = &menu_widget.imp().menu_items;
+                // Check if click is on a menu item (main ring or active submenu ring)
+                let clicked_item = widget.imp().pie_menu_widget.borrow().as_ref().and_then(|menu_widget| {
+                    let imp = menu_widget.imp();
+                    let main_radius = imp.radius.load(Ordering::Relaxed);
+                    let rotation = imp.rotation.load(Ordering::Relaxed);
+                    let radius_step = imp.submenu_radius_step.load(Ordering::Relaxed);
+                    let submenu_stack = imp.submenu_stack.borrow();
 
-                    for item in menu_items.iter() {
-                        if !item.enabled {
-                            continue;
-                        }
-                        let angle_rad = (item.angle + rotation).to_radians();
-                        let item_x = center_x + (radius * 0.7) * angle_rad.cos();
-                        let item_y = center_y + (radius * 0.7) * angle_rad.sin();
-
-                        let item_dx = x as f32 - item_x;
-                        let item_dy = y as f32 - item_y;
-                        let item_distance = (item_dx * item_dx + item_dy * item_dy).sqrt();
-                        let item_radius = item.radius();
-
-                        if item_distance <= item_radius {
-                            debug!("Menu item '{}' clicked, sending event: {}", item.id, item.event);
-                            gesture.set_state(EventSequenceState::Claimed);
-                            if item.close_on_click {
-                                let _ = widget.hide_pie_menu();
+                    // Check main ring items only when no submenu is open
+                    let menu_items = &imp.menu_items;
+                    if submenu_stack.is_empty() {
+                        for item in menu_items.iter() {
+                            if !item.enabled {
+                                continue;
                             }
+                            let angle_rad = (item.angle + rotation).to_radians();
+                            let item_x = center_x + (main_radius * 0.7) * angle_rad.cos();
+                            let item_y = center_y + (main_radius * 0.7) * angle_rad.sin();
 
-                            // Send event message
-                            widget.send_message(PieMenuMessage::Event(item.event.clone()));
-                            break;
+                            let item_dx = x as f32 - item_x;
+                            let item_dy = y as f32 - item_y;
+                            let item_distance = (item_dx * item_dx + item_dy * item_dy).sqrt();
+                            let item_radius = item.radius();
+
+                            if item_distance <= item_radius {
+                                return Some((
+                                    item.id.clone(),
+                                    item.submenu.is_some(),
+                                    item.event.clone(),
+                                    item.close_on_click,
+                                ));
+                            }
                         }
                     }
-                }
 
-                debug!("Click outside center circle and menu items");
+                    // Check active submenu ring items (DashMap iter locks released by now)
+                    if let Some(parent_id) = submenu_stack.last() {
+                        let outer_radius = main_radius + submenu_stack.len() as f32 * radius_step;
+                        let inner_radius = if submenu_stack.len() == 1 { main_radius } else { main_radius + (submenu_stack.len() - 1) as f32 * radius_step };
+                        let item_ring_radius = (inner_radius + outer_radius) / 2.0;
+                        if let Some(parent_item) = menu_items.find_item_recursive(parent_id)
+                            && let Some(submenu_items) = &parent_item.submenu
+                        {
+                            for item in submenu_items {
+                                if !item.enabled {
+                                    continue;
+                                }
+                                let angle_rad = (item.angle + rotation).to_radians();
+                                let item_x = center_x + item_ring_radius * angle_rad.cos();
+                                let item_y = center_y + item_ring_radius * angle_rad.sin();
+
+                                let item_dx = x as f32 - item_x;
+                                let item_dy = y as f32 - item_y;
+                                let item_distance = (item_dx * item_dx + item_dy * item_dy).sqrt();
+                                let item_radius = item.radius();
+
+                                if item_distance <= item_radius {
+                                    return Some((
+                                        item.id.clone(),
+                                        item.submenu.is_some(),
+                                        item.event.clone(),
+                                        item.close_on_click,
+                                    ));
+                                }
+                            }
+                        }
+                    }
+
+                    None
+                });
+
+                if let Some((item_id, has_submenu, event, close_on_click)) = clicked_item {
+                    debug!("Menu item '{}' clicked", item_id);
+                    gesture.set_state(EventSequenceState::Claimed);
+
+                    if has_submenu {
+                        let _ = widget.open_submenu(&item_id);
+                    } else {
+                        if close_on_click {
+                            let _ = widget.hide_pie_menu();
+                        }
+                        widget.send_message(PieMenuMessage::Event(event));
+                    }
+                } else {
+                    debug!("Click outside center circle and menu items");
+                }
             }
         });
 
@@ -480,7 +556,11 @@ impl WidgetImpl for PieMenuOverlayWidgetImpl {
                     }
                     Key::Escape => {
                         if widget.is_pie_menu_open() {
-                            let _ = widget.hide_pie_menu();
+                            if widget.submenu_depth() > 0 {
+                                let _ = widget.close_submenu();
+                            } else {
+                                let _ = widget.hide_pie_menu();
+                            }
                             glib::Propagation::Stop
                         } else {
                             glib::Propagation::Proceed
@@ -597,5 +677,15 @@ mod tests {
         let enabled = AtomicBool::new(true);
         enabled.store(false, Ordering::Relaxed);
         assert!(!enabled.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn test_max_submenu_depth_constant() {
+        assert_eq!(MAX_SUBMENU_DEPTH, 3);
+    }
+
+    #[test]
+    fn test_default_submenu_radius_step_constant() {
+        assert_eq!(DEFAULT_SUBMENU_RADIUS_STEP, 80.0);
     }
 }

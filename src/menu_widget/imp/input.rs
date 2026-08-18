@@ -14,7 +14,7 @@ impl PieMenuWidgetImpl {
     /// Skips disabled items. Returns `None` if the menu has no enabled items.
     /// Does not mutate state or trigger redraw.
     fn compute_next_selection(&self, direction: i32) -> Option<String> {
-        let mut items: Vec<MenuItem> = self.menu_items.iter().map(|entry| entry.value().clone()).collect();
+        let mut items = self.active_ring_items();
         items.retain(|item| item.enabled);
         if items.is_empty() {
             return None;
@@ -36,7 +36,7 @@ impl PieMenuWidgetImpl {
     /// Computes the first enabled item ID (smallest angle). Returns `None` if the menu
     /// has no enabled items. Does not mutate state or trigger redraw.
     fn compute_first_selection(&self) -> Option<String> {
-        let mut items: Vec<MenuItem> = self.menu_items.iter().map(|entry| entry.value().clone()).collect();
+        let mut items = self.active_ring_items();
         items.retain(|item| item.enabled);
         if items.is_empty() {
             return None;
@@ -66,7 +66,7 @@ impl PieMenuWidgetImpl {
     /// Finds the enabled menu item whose angle is closest to `target_angle` (in degrees).
     /// Returns the item ID, or `None` if the menu has no enabled items.
     pub(crate) fn find_nearest_item(&self, target_angle: f32) -> Option<String> {
-        let mut items: Vec<MenuItem> = self.menu_items.iter().map(|entry| entry.value().clone()).collect();
+        let mut items = self.active_ring_items();
         items.retain(|item| item.enabled);
         if items.is_empty() {
             return None;
@@ -97,6 +97,32 @@ impl PieMenuWidgetImpl {
     /// Returns whether the item with the given ID is the current keyboard selection.
     pub(crate) fn is_keyboard_selected(&self, id: &str) -> bool {
         self.keyboard_selection.borrow().as_ref().is_some_and(|selected| selected == id)
+    }
+
+    /// Sets the submenu navigation stack and triggers a redraw.
+    /// An empty stack means the main ring is active.
+    pub(crate) fn set_submenu_stack(&self, stack: Vec<String>) {
+        *self.submenu_stack.borrow_mut() = stack;
+        self.obj().queue_draw();
+    }
+
+    /// Returns the current submenu depth (0 = main ring).
+    pub(crate) fn submenu_depth(&self) -> u32 {
+        self.submenu_stack.borrow().len() as u32
+    }
+
+    /// Returns the items of the currently active ring.
+    /// When no submenu is open, returns top-level items.
+    /// When a submenu is open, returns the items of the innermost open submenu.
+    pub(crate) fn active_ring_items(&self) -> Vec<MenuItem> {
+        let submenu_stack = self.submenu_stack.borrow();
+        let Some(parent_id) = submenu_stack.last() else {
+            return self.menu_items.iter().map(|entry| entry.value().clone()).collect();
+        };
+        self.menu_items
+            .find_item_recursive(parent_id)
+            .and_then(|item| item.submenu)
+            .unwrap_or_default()
     }
 }
 
@@ -275,5 +301,21 @@ mod tests {
         assert!(imp.compute_next_selection(1).is_none());
         assert!(imp.compute_first_selection().is_none());
         assert!(imp.find_nearest_item(0.0).is_none());
+    }
+
+    #[test]
+    fn test_submenu_stack_default_empty() {
+        let imp = PieMenuWidgetImpl::default();
+        assert!(imp.submenu_stack.borrow().is_empty());
+        assert_eq!(imp.submenu_depth(), 0);
+    }
+
+    #[test]
+    fn test_submenu_stack_push_pop() {
+        let imp = PieMenuWidgetImpl::default();
+        imp.submenu_stack.borrow_mut().push("parent".to_string());
+        assert_eq!(imp.submenu_depth(), 1);
+        imp.submenu_stack.borrow_mut().clear();
+        assert_eq!(imp.submenu_depth(), 0);
     }
 }

@@ -8,6 +8,8 @@ The `PieMenuMessage` enum represents messages sent from the pie menu widget to t
 pub enum PieMenuMessage {
     Rotate(f32),
     Event(String),
+    SubmenuOpened(String),
+    SubmenuClosed(String),
 }
 ```
 
@@ -18,6 +20,14 @@ Sent when the user performs a rotation gesture on the open pie menu. The value i
 ### `Event(String)`
 
 Sent when the user clicks a menu item. The string is the `event` field of the clicked `MenuItem`. The pie menu is automatically closed after a menu item click.
+
+### `SubmenuOpened(String)`
+
+Sent when a submenu is opened. The string is the id of the parent item whose submenu was opened.
+
+### `SubmenuClosed(String)`
+
+Sent when a submenu is closed, returning to the parent ring. The string is the id of the parent item whose submenu was closed.
 
 ## Usage
 
@@ -47,6 +57,12 @@ match receiver.try_recv() {
             "settings" => open_settings(),
             _ => {}
         }
+    }
+    Ok(PieMenuMessage::SubmenuOpened(parent_id)) => {
+        println!("Submenu opened for item: {}", parent_id);
+    }
+    Ok(PieMenuMessage::SubmenuClosed(parent_id)) => {
+        println!("Submenu closed for item: {}", parent_id);
     }
     Err(_) => {}
 }

@@ -381,6 +381,7 @@ fn build_ui(app: &Application) {
                     }
                     _ => {}
                 },
+                Ok(_) => {}
                 Err(_) => break,
             }
         }

@@ -1,8 +1,11 @@
+use crate::MenuItem;
 use crate::PieMenuOverlayWidget;
+use crate::menu_widget::menu_item::submenu_error::SubmenuError;
 use crate::overlay_widget::control::error::HidePieMenuError;
 use crate::overlay_widget::control::error::ShowPieMenuError;
 use crate::overlay_widget::imp::widget::DEFAULT_ACTIVATION_THRESHOLD;
 use crate::overlay_widget::imp::widget::DEFAULT_DEACTIVATION_THRESHOLD;
+use crate::overlay_widget::imp::widget::MAX_SUBMENU_DEPTH;
 use glib::subclass::prelude::ObjectSubclassIsExt;
 
 pub trait PieMenuControlHandler {
@@ -80,6 +83,42 @@ pub trait PieMenuControlHandler {
 
     /// Sets the keyboard selection to the given item ID and triggers a redraw.
     fn set_keyboard_selection(&self, id: String);
+
+    /// Opens the submenu of the item with the given id.
+    /// Submenu item angles are redistributed (fixed items keep their
+    /// angles, flexible items are auto-distributed) before rendering.
+    fn open_submenu(&self, parent_id: &str) -> Result<(), SubmenuError>;
+
+    /// Closes the current submenu and returns to the parent ring.
+    fn close_submenu(&self) -> Result<(), SubmenuError>;
+
+    /// Returns the current submenu depth (0 = main ring).
+    fn submenu_depth(&self) -> u32;
+
+    /// Returns the submenu items of the item with the given parent id.
+    fn get_submenu_items(&self, parent_id: &str) -> Vec<MenuItem>;
+
+    /// Redistributes submenu item angles for the submenu of the
+    /// item with the given parent id. Fixed items keep their angles;
+    /// flexible items are re-spaced proportionally in the gaps.
+    fn redistribute_submenu(&self, parent_id: &str);
+
+    /// Updates the submenu items of the item with the given parent id.
+    /// Replaces the entire submenu item list. Triggers redistribution
+    /// and overlap validation.
+    fn set_submenu_items(&self, parent_id: &str, items: Vec<MenuItem>) -> Result<(), SubmenuError>;
+
+    /// Sets the radius for a specific submenu level.
+    /// Level 0 is the main ring, level 1 is the first submenu, etc.
+    fn set_submenu_radius(&self, level: u32, radius: f32);
+
+    /// Sets the global step width between consecutive ring levels.
+    /// Each submenu level's radius is computed as:
+    /// `main_radius + level * step`. Default: `80.0`.
+    fn set_submenu_radius_step(&self, step: f32);
+
+    /// Returns the maximum submenu nesting depth.
+    fn max_submenu_depth(&self) -> u32;
 }
 
 impl PieMenuControlHandler for PieMenuOverlayWidget {
@@ -161,6 +200,42 @@ impl PieMenuControlHandler for PieMenuOverlayWidget {
 
     fn set_keyboard_selection(&self, id: String) {
         self.imp().set_keyboard_selection(id);
+    }
+
+    fn open_submenu(&self, parent_id: &str) -> Result<(), SubmenuError> {
+        self.imp().open_submenu(parent_id)
+    }
+
+    fn close_submenu(&self) -> Result<(), SubmenuError> {
+        self.imp().close_submenu()
+    }
+
+    fn submenu_depth(&self) -> u32 {
+        self.imp().submenu_depth()
+    }
+
+    fn get_submenu_items(&self, parent_id: &str) -> Vec<MenuItem> {
+        self.imp().get_submenu_items(parent_id)
+    }
+
+    fn redistribute_submenu(&self, parent_id: &str) {
+        self.imp().redistribute_submenu(parent_id);
+    }
+
+    fn set_submenu_items(&self, parent_id: &str, items: Vec<MenuItem>) -> Result<(), SubmenuError> {
+        self.imp().set_submenu_items(parent_id, items)
+    }
+
+    fn set_submenu_radius(&self, level: u32, radius: f32) {
+        self.imp().set_submenu_radius(level, radius);
+    }
+
+    fn set_submenu_radius_step(&self, step: f32) {
+        self.imp().set_submenu_radius_step(step);
+    }
+
+    fn max_submenu_depth(&self) -> u32 {
+        MAX_SUBMENU_DEPTH
     }
 }
 

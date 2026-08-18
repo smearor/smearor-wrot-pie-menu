@@ -49,6 +49,13 @@ pub struct PieMenuWidgetImpl {
     /// Stored as a string ID (not an index) to remain stable across
     /// DashMap insertion/removal order changes.
     pub(crate) keyboard_selection: RefCell<Option<String>>,
+
+    /// Stack of opened submenu item ids. Empty means main ring is active.
+    /// Synced from `PieMenuOverlayWidgetImpl` via `set_submenu_stack`.
+    pub(crate) submenu_stack: RefCell<Vec<String>>,
+
+    /// Step width between consecutive ring levels in pixels.
+    pub(crate) submenu_radius_step: AtomicF32,
 }
 
 impl Default for PieMenuWidgetImpl {
@@ -62,6 +69,8 @@ impl Default for PieMenuWidgetImpl {
             hovered_item_index: RefCell::new(-1),
             markings_enabled: AtomicBool::new(true),
             keyboard_selection: RefCell::new(None),
+            submenu_stack: RefCell::new(Vec::new()),
+            submenu_radius_step: AtomicF32::new(80.0),
         }
     }
 }
@@ -93,24 +102,37 @@ impl ObjectImpl for PieMenuWidgetImpl {
             let radius = imp.radius.load(Ordering::Relaxed) as f64;
             let center_radius = imp.center_radius.load(Ordering::Relaxed) as f64;
             let rotation = imp.rotation.load(Ordering::Relaxed) as f64;
+            let radius_step = imp.submenu_radius_step.load(Ordering::Relaxed) as f64;
 
             // Calculate distance from center (center is middle of widget)
-            let widget = imp.obj();
-            let width = widget.width() as f64;
-            let height = widget.height() as f64;
+            let widget_obj = imp.obj();
+            let width = widget_obj.width() as f64;
+            let height = widget_obj.height() as f64;
             let center_x = width / 2.0;
             let center_y = height / 2.0;
             let dx = x - center_x;
             let dy = y - center_y;
             let distance = (dx * dx + dy * dy).sqrt();
 
-            // Check if mouse is in the ring area (between center_radius and radius)
-            if distance < center_radius || distance > radius {
-                // Outside the ring, no item hovered
+            // Determine the active ring bounds
+            let submenu_stack = imp.submenu_stack.borrow();
+            let submenu_depth = submenu_stack.len();
+            let (ring_inner, ring_outer) = if submenu_depth == 0 {
+                (center_radius, radius)
+            } else {
+                let outer = radius + submenu_depth as f64 * radius_step;
+                let inner = if submenu_depth == 1 { radius } else { radius + (submenu_depth - 1) as f64 * radius_step };
+                (inner, outer)
+            };
+            drop(submenu_stack);
+
+            // Check if mouse is in the active ring area
+            if distance < ring_inner || distance > ring_outer {
+                // Outside the active ring, no item hovered
                 let mut hovered_index = imp.hovered_item_index.borrow_mut();
                 if *hovered_index != -1 {
                     *hovered_index = -1;
-                    widget.queue_draw();
+                    widget_obj.queue_draw();
                 }
                 return;
             }
@@ -120,8 +142,8 @@ impl ObjectImpl for PieMenuWidgetImpl {
             let angle_deg = angle_rad.to_degrees();
             let normalized_angle = (angle_deg - rotation).rem_euclid(360.0);
 
-            // Find which menu item corresponds to this angle
-            let menu_items = imp.menu_items.clone();
+            // Get the active ring's items
+            let menu_items = imp.active_ring_items();
             let num_items = menu_items.len();
             if num_items == 0 {
                 return;
@@ -147,7 +169,7 @@ impl ObjectImpl for PieMenuWidgetImpl {
             let mut hovered_index = imp.hovered_item_index.borrow_mut();
             if *hovered_index != item_index {
                 *hovered_index = item_index;
-                widget.queue_draw();
+                widget_obj.queue_draw();
             }
         });
 
@@ -344,7 +366,7 @@ impl WidgetImpl for PieMenuWidgetImpl {
             let item_radius = item.radius();
 
             // Highlight if hovered or keyboard-selected (only for enabled items)
-            let is_hovered = item.enabled && index as i32 == hovered_index;
+            let is_hovered = item.enabled && index as i32 == hovered_index && self.submenu_depth() == 0;
             let is_keyboard_selected = item.enabled && self.is_keyboard_selected(&item.id);
             let disabled_alpha = if item.enabled { 1.0 } else { 0.4 };
             let item_color = if is_hovered || is_keyboard_selected {
@@ -425,6 +447,140 @@ impl WidgetImpl for PieMenuWidgetImpl {
             snapshot.translate(&Point::new(-label_x, -label_y));
 
             debug!("Drew label '{}' at ({}, {})", item.label, label_x, label_y);
+        }
+
+        // Draw submenu rings for each open submenu level
+        let submenu_stack = self.submenu_stack.borrow().clone();
+        let main_radius = self.radius.load(Ordering::Relaxed);
+        let radius_step = self.submenu_radius_step.load(Ordering::Relaxed);
+        let stack_depth = self.submenu_depth() as usize;
+
+        for (level, parent_id) in submenu_stack.iter().enumerate() {
+            let submenu_radius = main_radius + (level + 1) as f32 * radius_step;
+            let is_active_level = level + 1 == stack_depth;
+            let ring_opacity = if is_active_level { 0.5 } else { 0.25 };
+
+            // Draw submenu ring outline
+            let builder = gtk4::gsk::PathBuilder::new();
+            for i in 0..=360 {
+                let angle = (i as f32).to_radians();
+                let x = center_x + submenu_radius * angle.cos();
+                let y = center_y + submenu_radius * angle.sin();
+                if i == 0 {
+                    builder.move_to(x, y);
+                } else {
+                    builder.line_to(x, y);
+                }
+            }
+            builder.close();
+            let path = builder.to_path();
+            let stroke = gtk4::gsk::Stroke::new(2.0);
+            let ring_stroke_color = RGBA::new(0.5, 0.5, 0.5, ring_opacity);
+            snapshot.append_stroke(&path, &stroke, &ring_stroke_color);
+
+            // Draw parent item indicator on the parent ring
+            if let Some(parent_item) = self.menu_items.find_item_recursive(parent_id) {
+                let parent_angle_rad = parent_item.angle.to_radians();
+                let parent_ring_radius = if level == 0 { main_radius } else { main_radius + level as f32 * radius_step };
+                let indicator_x = center_x + parent_ring_radius * 0.7 * parent_angle_rad.cos();
+                let indicator_y = center_y + parent_ring_radius * 0.7 * parent_angle_rad.sin();
+
+                let indicator_color = RGBA::new(1.0, 0.8, 0.2, 0.9);
+                let indicator_radius = 4.0;
+                let indicator_rect = Rect::new(indicator_x - indicator_radius, indicator_y - indicator_radius, indicator_radius * 2.0, indicator_radius * 2.0);
+                let indicator_rounded = RoundedRect::from_rect(indicator_rect, indicator_radius);
+                snapshot.push_rounded_clip(&indicator_rounded);
+                snapshot.append_color(&indicator_color, &indicator_rect);
+                snapshot.pop();
+            }
+
+            // Draw submenu items on the submenu ring
+            if let Some(parent_item) = self.menu_items.find_item_recursive(parent_id)
+                && let Some(submenu_items) = &parent_item.submenu
+            {
+                let item_alpha = if is_active_level { 1.0 } else { 0.4 };
+                let submenu_icon_size = radius_step / 3.0;
+                let inner_radius = if level == 0 { main_radius } else { main_radius + level as f32 * radius_step };
+                let item_ring_radius = (inner_radius + submenu_radius) / 2.0;
+                for (item_index, item) in submenu_items.iter().enumerate() {
+                    let angle_rad = item.angle.to_radians();
+                    let item_x = center_x + item_ring_radius * angle_rad.cos();
+                    let item_y = center_y + item_ring_radius * angle_rad.sin();
+
+                    let item_color: RGBA = item.color.into();
+                    let item_radius = item.radius();
+                    let is_hovered = is_active_level && item.enabled && item_index as i32 == hovered_index;
+                    let is_keyboard_selected = is_active_level && item.enabled && self.is_keyboard_selected(&item.id);
+                    let disabled_alpha = if item.enabled { item_alpha } else { item_alpha * 0.4 };
+                    let render_color = if is_hovered || is_keyboard_selected {
+                        RGBA::new(item_color.red() * 1.3, item_color.green() * 1.3, item_color.blue() * 1.3, item_alpha)
+                    } else {
+                        RGBA::new(item_color.red(), item_color.green(), item_color.blue(), disabled_alpha)
+                    };
+
+                    let item_rect = Rect::new(item_x - item_radius, item_y - item_radius, item_radius * 2.0, item_radius * 2.0);
+                    let item_rounded = RoundedRect::from_rect(item_rect, item_radius);
+                    snapshot.push_rounded_clip(&item_rounded);
+                    snapshot.append_color(&render_color, &item_rect);
+                    snapshot.pop();
+
+                    // Draw icon
+                    let paintable = icon_theme.lookup_icon(
+                        &item.icon_name,
+                        &[&item.icon_name],
+                        submenu_icon_size as i32,
+                        1,
+                        TextDirection::None,
+                        IconLookupFlags::FORCE_SYMBOLIC,
+                    );
+                    snapshot.translate(&Point::new(item_x - submenu_icon_size / 2.0, item_y - submenu_icon_size / 2.0));
+                    paintable.snapshot(snapshot, submenu_icon_size as f64, submenu_icon_size as f64);
+                    snapshot.translate(&Point::new(-item_x + submenu_icon_size / 2.0, -item_y + submenu_icon_size / 2.0));
+
+                    // Draw label
+                    let widget = self.obj();
+                    let pango_context = widget.pango_context();
+                    let pango_layout = gtk4::pango::Layout::new(&pango_context);
+                    pango_layout.set_text(&item.label);
+                    let font_desc = gtk4::pango::FontDescription::from_string("Sans 7");
+                    pango_layout.set_font_description(Some(&font_desc));
+
+                    let label_color: RGBA = item.label_color.into();
+                    let label_color = RGBA::new(label_color.red(), label_color.green(), label_color.blue(), disabled_alpha);
+                    let (_ink_rect, logical_rect) = pango_layout.extents();
+                    let label_width = logical_rect.width() as f32 / gtk4::pango::SCALE as f32;
+
+                    let label_x = item_x - label_width / 2.0;
+                    let label_y = item_y + item_radius;
+
+                    let shadow_offset = 1.0;
+                    let shadow_color = RGBA::new(0.0, 0.0, 0.0, 0.8);
+                    snapshot.translate(&Point::new(label_x + shadow_offset, label_y + shadow_offset));
+                    snapshot.append_layout(&pango_layout, &shadow_color);
+                    snapshot.translate(&Point::new(-(label_x + shadow_offset), -(label_y + shadow_offset)));
+
+                    snapshot.translate(&Point::new(label_x, label_y));
+                    snapshot.append_layout(&pango_layout, &label_color);
+                    snapshot.translate(&Point::new(-label_x, -label_y));
+                }
+            }
+
+            // Draw breadcrumb dots between rings
+            let breadcrumb_color = RGBA::new(0.6, 0.6, 0.6, 0.6);
+            let breadcrumb_radius = 2.0;
+            for i in 0..=level as i32 + 1 {
+                let breadcrumb_y = center_y - main_radius - (i as f32 + 0.5) * radius_step;
+                let breadcrumb_rect = Rect::new(
+                    center_x - breadcrumb_radius,
+                    breadcrumb_y - breadcrumb_radius,
+                    breadcrumb_radius * 2.0,
+                    breadcrumb_radius * 2.0,
+                );
+                let breadcrumb_rounded = RoundedRect::from_rect(breadcrumb_rect, breadcrumb_radius);
+                snapshot.push_rounded_clip(&breadcrumb_rounded);
+                snapshot.append_color(&breadcrumb_color, &breadcrumb_rect);
+                snapshot.pop();
+            }
         }
 
         // Restore transformation state
