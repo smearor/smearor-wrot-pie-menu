@@ -108,6 +108,20 @@ pub trait PieMenuControlHandler {
     /// and overlap validation.
     fn set_submenu_items(&self, parent_id: &str, items: Vec<MenuItem>) -> Result<(), SubmenuError>;
 
+    /// Sets the radius of the main pie menu ring in pixels.
+    /// Default: `160.0`.
+    fn set_pie_menu_radius(&self, radius: f32);
+
+    /// Returns the current main pie menu ring radius in pixels.
+    fn pie_menu_radius(&self) -> f32;
+
+    /// Sets the inner radius of the pie menu ring (the transparent center)
+    /// in pixels. Default: `64.0`.
+    fn set_pie_menu_center_radius(&self, radius: f32);
+
+    /// Returns the current inner radius of the pie menu ring in pixels.
+    fn pie_menu_center_radius(&self) -> f32;
+
     /// Sets the radius for a specific submenu level.
     /// Level 0 is the main ring, level 1 is the first submenu, etc.
     fn set_submenu_radius(&self, level: u32, radius: f32);
@@ -224,6 +238,22 @@ impl PieMenuControlHandler for PieMenuOverlayWidget {
 
     fn set_submenu_items(&self, parent_id: &str, items: Vec<MenuItem>) -> Result<(), SubmenuError> {
         self.imp().set_submenu_items(parent_id, items)
+    }
+
+    fn set_pie_menu_radius(&self, radius: f32) {
+        self.imp().set_pie_menu_radius(radius);
+    }
+
+    fn pie_menu_radius(&self) -> f32 {
+        self.imp().pie_menu_radius()
+    }
+
+    fn set_pie_menu_center_radius(&self, radius: f32) {
+        self.imp().set_pie_menu_center_radius(radius);
+    }
+
+    fn pie_menu_center_radius(&self) -> f32 {
+        self.imp().pie_menu_center_radius()
     }
 
     fn set_submenu_radius(&self, level: u32, radius: f32) {

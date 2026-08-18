@@ -32,6 +32,7 @@ controller-evdev = ["dep:evdev"]
 
 [dev-dependencies]
 smearor-wrot-rotation = { version = "0.2.0" }
+sysinfo = "0.39"
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)', 'cfg(fn_traits)', 'cfg(unboxed_closures)', 'cfg(feature, values("keyboard", "mouse-scroll", "controller-sdl2", "controller-evdev"))'] }

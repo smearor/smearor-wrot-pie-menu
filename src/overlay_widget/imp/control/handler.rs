@@ -282,6 +282,39 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         Ok(())
     }
 
+    fn set_pie_menu_radius(&self, radius: f32) {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
+            pie_menu_widget.imp().radius.store(radius, Ordering::Relaxed);
+            pie_menu_widget.queue_resize();
+            pie_menu_widget.queue_draw();
+        }
+    }
+
+    fn pie_menu_radius(&self) -> f32 {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        pie_menu_widget_borrow
+            .as_ref()
+            .map(|widget| widget.imp().radius.load(Ordering::Relaxed))
+            .unwrap_or(160.0)
+    }
+
+    fn set_pie_menu_center_radius(&self, radius: f32) {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
+            pie_menu_widget.imp().center_radius.store(radius, Ordering::Relaxed);
+            pie_menu_widget.queue_draw();
+        }
+    }
+
+    fn pie_menu_center_radius(&self) -> f32 {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        pie_menu_widget_borrow
+            .as_ref()
+            .map(|widget| widget.imp().center_radius.load(Ordering::Relaxed))
+            .unwrap_or(64.0)
+    }
+
     fn set_submenu_radius(&self, level: u32, radius: f32) {
         self.submenu_radii.borrow_mut().insert(level, radius);
     }
