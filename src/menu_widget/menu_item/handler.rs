@@ -4,6 +4,7 @@ use crate::menu_widget::menu_item::error::AddMenuItemError;
 use crate::menu_widget::menu_item::error::RemoveMenuItemError;
 use crate::menu_widget::menu_item::error::SetMenuItemEnabledError;
 use crate::menu_widget::menu_item::error::UpdateMenuItemError;
+use crate::menu_widget::menu_item::widget_config_error::SetWidgetConfigError;
 use glib::subclass::prelude::ObjectSubclassIsExt;
 
 pub trait PieMenuMenuItemHandler {
@@ -42,6 +43,15 @@ pub trait PieMenuMenuItemHandler {
     /// overlap validation is performed and the update is rolled back on failure.
     /// Triggers a redraw on success.
     fn update_menu_item(&self, menu_item: MenuItem) -> Result<(), UpdateMenuItemError>;
+
+    /// Clears the widget cache and rebuilds all item widgets on the next
+    /// layout pass. Use this after registering new widget factories or
+    /// after changing `widget_type` on existing items.
+    fn refresh_widgets(&self);
+
+    /// Replaces the `widget_config` for a single menu item and clears
+    /// its cached widget, forcing a rebuild on the next layout pass.
+    fn set_widget_config(&self, id: &str, config: serde_json::Value) -> Result<(), SetWidgetConfigError>;
 }
 
 impl PieMenuMenuItemHandler for PieMenuOverlayWidget {
@@ -79,5 +89,13 @@ impl PieMenuMenuItemHandler for PieMenuOverlayWidget {
 
     fn update_menu_item(&self, menu_item: MenuItem) -> Result<(), UpdateMenuItemError> {
         self.imp().update_menu_item(menu_item)
+    }
+
+    fn refresh_widgets(&self) {
+        self.imp().refresh_widgets()
+    }
+
+    fn set_widget_config(&self, id: &str, config: serde_json::Value) -> Result<(), SetWidgetConfigError> {
+        self.imp().set_widget_config(id, config)
     }
 }

@@ -5,6 +5,7 @@ use crate::menu_widget::menu_item::error::RemoveMenuItemError;
 use crate::menu_widget::menu_item::error::SetMenuItemEnabledError;
 use crate::menu_widget::menu_item::error::UpdateMenuItemError;
 use crate::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
+use crate::menu_widget::menu_item::widget_config_error::SetWidgetConfigError;
 
 impl PieMenuMenuItemHandler for PieMenuOverlayWidgetImpl {
     fn add_menu_item(&self, menu_item: MenuItem) -> Result<(), AddMenuItemError> {
@@ -73,5 +74,20 @@ impl PieMenuMenuItemHandler for PieMenuOverlayWidgetImpl {
             return Err(UpdateMenuItemError::NotFound { id: menu_item.id.clone() });
         };
         pie_menu_widget.update_menu_item(menu_item)
+    }
+
+    fn refresh_widgets(&self) {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
+            pie_menu_widget.refresh_widgets();
+        }
+    }
+
+    fn set_widget_config(&self, id: &str, config: serde_json::Value) -> Result<(), SetWidgetConfigError> {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        let Some(pie_menu_widget) = pie_menu_widget_borrow.clone() else {
+            return Err(SetWidgetConfigError::NotFound { id: id.to_string() });
+        };
+        pie_menu_widget.set_widget_config(id, config)
     }
 }

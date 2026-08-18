@@ -5,6 +5,7 @@ use crate::menu_widget::menu_item::error::RemoveMenuItemError;
 use crate::menu_widget::menu_item::error::SetMenuItemEnabledError;
 use crate::menu_widget::menu_item::error::UpdateMenuItemError;
 use crate::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
+use crate::menu_widget::menu_item::widget_config_error::SetWidgetConfigError;
 use glib::subclass::prelude::ObjectSubclassIsExt;
 
 impl PieMenuMenuItemHandler for PieMenuWidget {
@@ -42,5 +43,13 @@ impl PieMenuMenuItemHandler for PieMenuWidget {
 
     fn update_menu_item(&self, menu_item: MenuItem) -> Result<(), UpdateMenuItemError> {
         self.imp().update_menu_item(menu_item)
+    }
+
+    fn refresh_widgets(&self) {
+        self.imp().refresh_widgets()
+    }
+
+    fn set_widget_config(&self, id: &str, config: serde_json::Value) -> Result<(), SetWidgetConfigError> {
+        self.imp().set_widget_config(id, config)
     }
 }

@@ -4,10 +4,12 @@
 //! Snap buttons and a manual angle slider control the rotation. Pie menu items
 //! trigger clockwise / counter-clockwise rotation snaps.
 
+use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
 use smearor_wrot_pie_menu::RotationHandler;
+use smearor_wrot_pie_menu::SquareConfig;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
 use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
@@ -157,12 +159,17 @@ fn build_ui(app: &Application) {
         .add_menu_item(
             MenuItem::builder()
                 .id("rotate-cw")
-                .label("Rotate CW")
-                .icon_name("object-rotate-right-symbolic")
-                .color("#00000077")
                 .angle(0.0)
                 .radius(30.0)
                 .event("rotate-cw")
+                .widget_type("square")
+                .config(
+                    SquareConfig::builder()
+                        .icon_name("object-rotate-right-symbolic")
+                        .label("Rotate CW")
+                        .color("#00000077")
+                        .build(),
+                )
                 .build(),
         )
         .expect("Failed to add menu item");
@@ -171,12 +178,17 @@ fn build_ui(app: &Application) {
         .add_menu_item(
             MenuItem::builder()
                 .id("rotate-ccw")
-                .label("Rotate CCW")
-                .icon_name("object-rotate-left-symbolic")
-                .color("#00000077")
                 .angle(180.0)
                 .radius(30.0)
                 .event("rotate-ccw")
+                .widget_type("circle")
+                .config(
+                    CircleConfig::builder()
+                        .icon_name("object-rotate-left-symbolic")
+                        .label("Rotate CCW")
+                        .color("#00000077")
+                        .build(),
+                )
                 .build(),
         )
         .expect("Failed to add menu item");

@@ -1,4 +1,5 @@
 use crate::menu::MenuItem;
+use crate::menu::widget_factory_erased::MenuItemWidgetFactoryErased;
 use crate::menu_widget::menu_item::error::AddMenuItemError;
 use crate::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use crate::overlay_widget::control::handler::PieMenuControlHandler;
@@ -76,5 +77,17 @@ impl PieMenuOverlayWidget {
     pub fn with_menu_item(self, item: MenuItem) -> Result<Self, AddMenuItemError> {
         self.add_menu_item(item)?;
         Ok(self)
+    }
+
+    /// Registers a custom widget factory under its type name.
+    ///
+    /// If a factory with the same type name already exists, it is
+    /// replaced. Call `refresh_widgets` after registering new
+    /// factories to rebuild existing item widgets.
+    pub fn register_widget_factory(&self, factory: Box<dyn MenuItemWidgetFactoryErased>) {
+        let pie_menu_widget_borrow = self.imp().pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
+            pie_menu_widget.register_widget_factory(factory);
+        }
     }
 }

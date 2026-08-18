@@ -1,4 +1,6 @@
+use crate::color::RgbColor;
 use crate::color::RgbaColor;
+use crate::menu::size::ItemSize;
 use serde::Deserialize;
 use serde::Serialize;
 use std::hash::Hash;
@@ -9,10 +11,15 @@ use typed_builder::TypedBuilder;
 pub const DEFAULT_MENU_ITEM_RADIUS: f32 = 40.0;
 
 /// Default label color (white, fully opaque)
-pub const DEFAULT_LABEL_COLOR: RgbaColor = RgbaColor::with_rgb(1.0, 1.0, 1.0, 1.0);
+pub const DEFAULT_LABEL_COLOR: RgbaColor = RgbaColor::new(RgbColor::new(1.0, 1.0, 1.0), 1.0);
 
 /// Default icon color (grey, ~47% transparent)
-pub const DEFAULT_ICON_COLOR: RgbaColor = RgbaColor::with_rgb(0.467, 0.467, 0.467, 0.467);
+pub const DEFAULT_ICON_COLOR: RgbaColor = RgbaColor::new(RgbColor::new(0.4667, 0.4667, 0.4667), 0.4667);
+
+/// Default value for `content_rotates` field.
+fn default_content_rotates() -> bool {
+    true
+}
 
 /// A single item in a pie menu
 #[derive(Debug, Clone, Serialize, Deserialize, TypedBuilder)]
@@ -20,18 +27,6 @@ pub struct MenuItem {
     /// The unique identifier
     #[builder(setter(into))]
     pub id: String,
-    /// The label of the menu item
-    #[builder(setter(into))]
-    pub label: String,
-    /// The color of the label
-    #[builder(default = DEFAULT_LABEL_COLOR, setter(into))]
-    pub label_color: RgbaColor,
-    /// The icon name of the menu item
-    #[builder(setter(into))]
-    pub icon_name: String,
-    /// The color of the icon
-    #[builder(default = DEFAULT_ICON_COLOR, setter(into))]
-    pub color: RgbaColor,
     /// The angle of the menu item in degrees
     pub angle: f32,
     /// The radius of the menu item in pixels (optional, uses default if not set)
@@ -64,6 +59,95 @@ pub struct MenuItem {
     /// Duplicate IDs at any level are undefined behavior.
     #[builder(default, setter(strip_option))]
     pub submenu: Option<Vec<MenuItem>>,
+
+    /// The widget type name used to resolve the factory from the
+    /// registry. When `None`, defaults to `"circle"` — preserving
+    /// existing behavior.
+    ///
+    /// This field is serializable so that widget types can be
+    /// stored in JSON/TOML configuration files.
+    #[builder(default, setter(strip_option, into))]
+    #[serde(default)]
+    pub widget_type: Option<String>,
+
+    /// Type-specific widget configuration as a `serde_json::Value`.
+    ///
+    /// When `None`, the factory's `Config::default()` is used.
+    /// When `Some(value)`, the value is deserialized into the factory's
+    /// `Config` type by the `MenuItemWidgetFactoryErased` blanket impl.
+    ///
+    /// This field is serializable so that widget configuration can
+    /// be stored in JSON/TOML configuration files. The schema is
+    /// defined by the factory's `Config` type — type safety is
+    /// provided at the factory level, not at the `MenuItem` level.
+    #[builder(default, setter(strip_option))]
+    #[serde(default)]
+    pub widget_config: Option<serde_json::Value>,
+
+    /// Optional non-square allocation size for widget content.
+    /// When `None`, the item's `radius` is used for a square
+    /// allocation of `2 * radius` pixels. When `Some(ItemSize)`,
+    /// the widget is allocated with the specified dimensions.
+    ///
+    /// This field is serializable.
+    #[builder(default, setter(strip_option))]
+    #[serde(default)]
+    pub content_size: Option<ItemSize>,
+
+    /// Whether the widget rotates with the ring or stays upright.
+    ///
+    /// When `true` (default), the widget rotates with the ring.
+    /// When `false`, the widget stays upright.
+    #[builder(default = true)]
+    #[serde(default = "default_content_rotates")]
+    pub content_rotates: bool,
+}
+
+/// Manual extension of the generated `MenuItemBuilder` providing a
+/// typed `config()` setter that accepts any `Serialize` type.
+///
+/// This avoids requiring callers to wrap configs in
+/// `serde_json::to_value(&...).unwrap()` manually.
+#[allow(non_camel_case_types)]
+impl<__id, __angle, __radius, __event, __enabled, __fixed_position, __close_on_click, __submenu, __widget_type, __content_size, __content_rotates>
+    MenuItemBuilder<(
+        __id,
+        __angle,
+        __radius,
+        __event,
+        __enabled,
+        __fixed_position,
+        __close_on_click,
+        __submenu,
+        __widget_type,
+        (),
+        __content_size,
+        __content_rotates,
+    )>
+{
+    /// Sets the `widget_config` from any `Serialize` type.
+    ///
+    /// The config is serialized to `serde_json::Value` internally.
+    /// This is the typed equivalent of `.widget_config(serde_json::to_value(&config).unwrap())`.
+    pub fn config<T: Serialize>(
+        self,
+        config: T,
+    ) -> MenuItemBuilder<(
+        __id,
+        __angle,
+        __radius,
+        __event,
+        __enabled,
+        __fixed_position,
+        __close_on_click,
+        __submenu,
+        __widget_type,
+        (Option<serde_json::Value>,),
+        __content_size,
+        __content_rotates,
+    )> {
+        self.widget_config(serde_json::to_value(&config).unwrap_or(serde_json::Value::Null))
+    }
 }
 
 impl MenuItem {
@@ -123,158 +207,69 @@ impl Eq for MenuItem {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::color::RgbColor;
 
     #[test]
     fn test_menu_item_builder() {
-        let item = MenuItem::builder()
-            .id("test")
-            .label("Test Item")
-            .icon_name("test-icon")
-            .angle(90.0)
-            .event("test-event")
-            .build();
+        let item = MenuItem::builder().id("test").angle(90.0).event("test-event").build();
 
         assert_eq!(item.id, "test");
-        assert_eq!(item.label, "Test Item");
-        assert_eq!(item.icon_name, "test-icon");
         assert_eq!(item.angle, 90.0);
         assert_eq!(item.event, "test-event");
-        assert_eq!(item.label_color, DEFAULT_LABEL_COLOR);
-        assert_eq!(item.color, DEFAULT_ICON_COLOR);
-    }
-
-    #[test]
-    fn test_menu_item_builder_with_hex_colors() {
-        let item = MenuItem::builder()
-            .id("test")
-            .label("Test")
-            .label_color("#FF0000FF")
-            .icon_name("icon")
-            .color("#00FF00FF")
-            .angle(0.0)
-            .event("event")
-            .build();
-
-        assert_eq!(item.label_color, RgbaColor::with_rgb(1.0, 0.0, 0.0, 1.0));
-        assert_eq!(item.color, RgbaColor::with_rgb(0.0, 1.0, 0.0, 1.0));
-    }
-
-    #[test]
-    fn test_menu_item_builder_with_rgb_color() {
-        let item = MenuItem::builder()
-            .id("test")
-            .label("Test")
-            .label_color(RgbColor::new(0.5, 0.5, 0.5))
-            .icon_name("icon")
-            .color(RgbColor::new(0.2, 0.8, 0.4))
-            .angle(0.0)
-            .event("event")
-            .build();
-
-        assert_eq!(item.label_color, RgbaColor::with_rgb(0.5, 0.5, 0.5, 1.0));
-        assert_eq!(item.color, RgbaColor::with_rgb(0.2, 0.8, 0.4, 1.0));
     }
 
     #[test]
     fn test_menu_item_radius_default() {
-        let item = MenuItem::builder().id("test").label("Test").icon_name("icon").angle(0.0).event("event").build();
+        let item = MenuItem::builder().id("test").angle(0.0).event("event").build();
         assert_eq!(item.radius(), DEFAULT_MENU_ITEM_RADIUS);
     }
 
     #[test]
     fn test_menu_item_radius_custom() {
-        let item = MenuItem::builder()
-            .id("test")
-            .label("Test")
-            .icon_name("icon")
-            .angle(0.0)
-            .radius(60.0)
-            .event("event")
-            .build();
+        let item = MenuItem::builder().id("test").angle(0.0).radius(60.0).event("event").build();
         assert_eq!(item.radius(), 60.0);
     }
 
     #[test]
     fn test_menu_item_eq_by_id() {
-        let item1 = MenuItem::builder()
-            .id("same")
-            .label("Label1")
-            .icon_name("icon1")
-            .angle(0.0)
-            .event("event1")
-            .build();
-        let item2 = MenuItem::builder()
-            .id("same")
-            .label("Label2")
-            .icon_name("icon2")
-            .angle(90.0)
-            .event("event2")
-            .build();
+        let item1 = MenuItem::builder().id("same").angle(0.0).event("event1").build();
+        let item2 = MenuItem::builder().id("same").angle(90.0).event("event2").build();
         assert_eq!(item1, item2);
     }
 
     #[test]
     fn test_menu_item_enabled_default() {
-        let item = MenuItem::builder().id("test").label("Test").icon_name("icon").angle(0.0).event("event").build();
+        let item = MenuItem::builder().id("test").angle(0.0).event("event").build();
         assert!(item.enabled);
     }
 
     #[test]
     fn test_menu_item_disabled() {
-        let item = MenuItem::builder()
-            .id("test")
-            .label("Test")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("event")
-            .enabled(false)
-            .build();
+        let item = MenuItem::builder().id("test").angle(0.0).event("event").enabled(false).build();
         assert!(!item.enabled);
     }
 
     #[test]
     fn test_menu_item_close_on_click_default() {
-        let item = MenuItem::builder().id("test").label("Test").icon_name("icon").angle(0.0).event("event").build();
+        let item = MenuItem::builder().id("test").angle(0.0).event("event").build();
         assert!(item.close_on_click);
     }
 
     #[test]
     fn test_menu_item_close_on_click_false() {
-        let item = MenuItem::builder()
-            .id("test")
-            .label("Test")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("event")
-            .close_on_click(false)
-            .build();
+        let item = MenuItem::builder().id("test").angle(0.0).event("event").close_on_click(false).build();
         assert!(!item.close_on_click);
     }
 
     #[test]
     fn test_submenu_field_default_none() {
-        let item = MenuItem::builder().id("test").label("Test").icon_name("icon").angle(0.0).event("event").build();
+        let item = MenuItem::builder().id("test").angle(0.0).event("event").build();
         assert!(item.submenu.is_none());
     }
 
     #[test]
     fn test_submenu_with_items() {
-        let child = MenuItem::builder()
-            .id("child")
-            .label("Child")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("child-event")
-            .build();
-        let parent = MenuItem::builder()
-            .id("parent")
-            .label("Parent")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("parent-event")
-            .submenu(vec![child])
-            .build();
+        let child = MenuItem::builder().id("child").angle(0.0).event("child-event").build();
+        let parent = MenuItem::builder().id("parent").angle(0.0).event("parent-event").submenu(vec![child]).build();
         assert!(parent.submenu.is_some());
         assert_eq!(parent.submenu.as_ref().unwrap().len(), 1);
         assert_eq!(parent.submenu.as_ref().unwrap()[0].id, "child");
@@ -282,23 +277,14 @@ mod tests {
 
     #[test]
     fn test_submenu_nested() {
-        let grandchild = MenuItem::builder().id("gc").label("GC").icon_name("icon").angle(0.0).event("gc-event").build();
+        let grandchild = MenuItem::builder().id("gc").angle(0.0).event("gc-event").build();
         let child = MenuItem::builder()
             .id("child")
-            .label("Child")
-            .icon_name("icon")
             .angle(0.0)
             .event("child-event")
             .submenu(vec![grandchild])
             .build();
-        let parent = MenuItem::builder()
-            .id("parent")
-            .label("Parent")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("parent-event")
-            .submenu(vec![child])
-            .build();
+        let parent = MenuItem::builder().id("parent").angle(0.0).event("parent-event").submenu(vec![child]).build();
         let submenu = parent.submenu.as_ref().unwrap();
         assert!(submenu[0].submenu.is_some());
         assert_eq!(submenu[0].submenu.as_ref().unwrap()[0].id, "gc");

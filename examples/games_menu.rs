@@ -10,9 +10,12 @@
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
+use smearor_wrot_pie_menu::SquareConfig;
+use smearor_wrot_pie_menu::color::RgbaColor;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
 use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
+use smearor_wrot_pie_menu::{ButtonConfig, CircleConfig};
 
 use dashmap::DashMap;
 use gtk4::Align;
@@ -43,9 +46,10 @@ struct MenuData {
 struct GenreEntry {
     id: String,
     label: String,
+    #[allow(unused)]
     icon: String,
-    color: String,
-    publisher_color: String,
+    color: RgbaColor,
+    publisher_color: RgbaColor,
     angle: f32,
     publishers: Vec<PublisherEntry>,
 }
@@ -61,22 +65,32 @@ struct PublisherEntry {
     #[serde(skip)]
     icon: String,
     #[serde(skip)]
-    color: String,
+    color: RgbaColor,
     #[serde(skip)]
     angle: f32,
 }
 
 impl From<PublisherEntry> for MenuItem {
     fn from(publisher: PublisherEntry) -> Self {
+        let config = SquareConfig::from(&publisher);
         let submenu: Vec<MenuItem> = publisher.games.into_iter().map(Into::into).collect();
         MenuItem::builder()
-            .id(publisher.full_id.clone())
-            .label(publisher.label)
-            .icon_name(publisher.icon)
-            .color(publisher.color)
+            .id(&publisher.full_id)
             .angle(publisher.angle)
-            .event(publisher.full_id)
+            .event(&publisher.full_id)
+            .widget_type("square")
+            .config(config)
             .submenu(submenu)
+            .build()
+    }
+}
+
+impl From<&PublisherEntry> for SquareConfig {
+    fn from(publisher: &PublisherEntry) -> Self {
+        SquareConfig::builder()
+            .icon_name(&publisher.icon)
+            .label(&publisher.label)
+            .color(publisher.color)
             .build()
     }
 }
@@ -93,7 +107,7 @@ struct GameEntry {
     #[serde(skip)]
     icon: String,
     #[serde(skip)]
-    color: String,
+    color: RgbaColor,
     #[serde(skip)]
     angle: f32,
 }
@@ -101,13 +115,18 @@ struct GameEntry {
 impl From<GameEntry> for MenuItem {
     fn from(game: GameEntry) -> Self {
         MenuItem::builder()
-            .id(game.full_id.clone())
-            .label(game.label)
-            .icon_name(game.icon)
-            .color(game.color)
+            .id(&game.full_id)
             .angle(game.angle)
-            .event(game.full_id)
+            .event(&game.full_id)
+            .widget_type("circle")
+            .config(CircleConfig::from(&game))
             .build()
+    }
+}
+
+impl From<&GameEntry> for CircleConfig {
+    fn from(game: &GameEntry) -> Self {
+        CircleConfig::builder().icon_name(&game.icon).label(&game.label).color(game.color).build()
     }
 }
 
@@ -139,14 +158,14 @@ fn load_menu_data() -> MenuStore {
         for (pub_index, publisher) in genre.publishers.iter_mut().enumerate() {
             publisher.full_id = format!("{}-{}", genre.id, publisher.id);
             publisher.icon = "system-users-symbolic".to_string();
-            publisher.color = genre.publisher_color.clone();
+            publisher.color = genre.publisher_color;
             publisher.angle = 360.0 * pub_index as f32 / publisher_count;
 
             let game_count = publisher.games.len() as f32;
             for (game_index, game) in publisher.games.iter_mut().enumerate() {
                 game.full_id = format!("{}-{}", publisher.full_id, game.id);
                 game.icon = "applications-games-symbolic".to_string();
-                game.color = genre.color.clone();
+                game.color = genre.color;
                 game.angle = 360.0 * game_index as f32 / game_count;
 
                 store.lookup.insert(
@@ -170,7 +189,6 @@ fn main() -> glib::ExitCode {
 
     app.run()
 }
-
 
 fn build_ui(app: &Application) {
     let window = ApplicationWindow::builder()
@@ -211,11 +229,7 @@ fn build_ui(app: &Application) {
     main_box.append(&hint_label);
 
     // --- Info display ---
-    let info_frame = Frame::builder()
-        .label("Selected Game")
-        .margin_top(12)
-        .margin_bottom(12)
-        .build();
+    let info_frame = Frame::builder().label("Selected Game").margin_top(12).margin_bottom(12).build();
 
     let info_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
@@ -232,15 +246,9 @@ fn build_ui(app: &Application) {
         .halign(Align::Center)
         .build();
 
-    let genre_label = Label::builder()
-        .label("Genre: —")
-        .halign(Align::Center)
-        .build();
+    let genre_label = Label::builder().label("Genre: —").halign(Align::Center).build();
 
-    let publisher_label = Label::builder()
-        .label("Publisher: —")
-        .halign(Align::Center)
-        .build();
+    let publisher_label = Label::builder().label("Publisher: —").halign(Align::Center).build();
 
     info_box.append(&game_label);
     info_box.append(&genre_label);
@@ -284,12 +292,11 @@ fn build_ui(app: &Application) {
             .add_menu_item(
                 MenuItem::builder()
                     .id(format!("genre-{id}", id = genre.id))
-                    .label(&genre.label)
-                    .icon_name(&genre.icon)
-                    .color(&genre.color[..])
                     .angle(genre.angle)
                     .fixed_position(true)
                     .event(format!("genre-{id}", id = genre.id))
+                    .widget_type("button")
+                    .config(ButtonConfig::builder().label(genre.label).build())
                     .submenu(submenu)
                     .build(),
             )

@@ -1,13 +1,135 @@
 use crate::PieMenuWidgetImpl;
 use crate::menu::MenuItem;
+use crate::menu::context::MenuItemContext;
+use gtk4::prelude::Cast;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::prelude::ObjectSubclassExt;
 use std::sync::atomic::Ordering;
+use tracing::debug;
 
 impl PieMenuWidgetImpl {
     /// Returns the current rotation in degrees.
     pub(crate) fn rotation(&self) -> f32 {
         self.rotation.load(Ordering::Relaxed)
+    }
+
+    /// Builds widgets for all menu items that don't have a cached widget yet.
+    ///
+    /// This is called during the snapshot pass. Widgets are built once,
+    /// registered as children of `PieMenuWidget` via `set_parent`,
+    /// and stored in `item_widgets`. Subsequent renders reuse the cache.
+    ///
+    /// Widgets for items on the active ring are made visible; all others
+    /// are hidden.
+    pub(crate) fn ensure_item_widgets(&self) {
+        let pie_widget = self.obj();
+        let registry = self.widget_registry.borrow();
+        let mut item_widgets = self.item_widgets.borrow_mut();
+
+        let submenu_stack = self.submenu_stack.borrow().clone();
+
+        // Collect all items that should have widgets: top-level + submenu items
+        // of every open submenu level.
+        let mut all_items: Vec<MenuItem> = self.menu_items.iter().map(|e| e.value().clone()).collect();
+
+        for parent_id in &submenu_stack {
+            if let Some(parent_item) = self.menu_items.find_item_recursive(parent_id)
+                && let Some(submenu) = &parent_item.submenu
+            {
+                all_items.extend(submenu.iter().cloned());
+            }
+        }
+
+        // Build missing widgets
+        let mut created_any = false;
+        for item in &all_items {
+            if item_widgets.contains_key(&item.id) {
+                continue;
+            }
+
+            let type_name = item.widget_type.as_deref().unwrap_or("circle");
+            let Some(factory) = registry.get(type_name) else {
+                debug!("No factory registered for widget type '{}', skipping item '{}'", type_name, item.id);
+                continue;
+            };
+
+            let context = MenuItemContext {
+                id: item.id.clone(),
+                event: item.event.clone(),
+                trigger_event: Box::new(|| {}),
+            };
+
+            let widget = factory.build(item, &context);
+            let parent_widget = pie_widget.upcast_ref::<gtk4::Widget>();
+            widget.set_parent(parent_widget);
+            widget.set_visible(false);
+            debug!("Created widget of type '{}' for item '{}'", type_name, item.id);
+            item_widgets.insert(item.id.clone(), widget);
+            created_any = true;
+        }
+
+        // Update visibility: items on ALL active rings (top-level + every
+        // open submenu level) should be visible, not just the innermost.
+        let visible_ids: std::collections::HashSet<&str> = all_items.iter().map(|i| i.id.as_str()).collect();
+
+        let keyboard_selection = self.keyboard_selection.borrow().clone();
+
+        for (id, widget) in item_widgets.iter() {
+            let should_be_visible = visible_ids.contains(id.as_str());
+            widget.set_visible(should_be_visible);
+
+            // Update keyboard selection highlight on custom widgets
+            let is_selected = keyboard_selection.as_ref().is_some_and(|selected| selected == id);
+            if let Some(circle) = widget.downcast_ref::<crate::menu::circle_item_widget::CircleItemWidget>() {
+                circle.set_selected(is_selected);
+            } else if let Some(square) = widget.downcast_ref::<crate::menu::square_item_widget::SquareItemWidget>() {
+                square.set_selected(is_selected);
+            } else {
+                // Fallback for standard GTK widgets (e.g. Button): use CSS class
+                if is_selected {
+                    widget.add_css_class("selected");
+                } else {
+                    widget.remove_css_class("selected");
+                }
+                widget.queue_draw();
+            }
+        }
+
+        // Drop borrows before triggering layout to avoid reentrancy panics.
+        drop(item_widgets);
+        drop(registry);
+
+        // If new widgets were created, trigger a new allocate pass so
+        // `size_allocate` positions them. `queue_resize` is insufficient
+        // here because the widget's own size request does not change —
+        // `queue_allocate` forces a reallocation regardless.
+        if created_any {
+            pie_widget.queue_allocate();
+        }
+    }
+
+    /// Unparents and removes all cached item widgets.
+    ///
+    /// Called by `refresh_widgets` to force a full rebuild on the
+    /// next layout pass. Mutations are deferred to the next event
+    /// loop iteration via `glib::idle_add_local_once` by the caller
+    /// to prevent `RefCell` reentrancy panics.
+    pub(crate) fn clear_item_widgets(&self) {
+        let mut item_widgets = self.item_widgets.borrow_mut();
+        for (_, widget) in item_widgets.drain() {
+            widget.unparent();
+        }
+    }
+
+    /// Unparents and removes the cached widget for a single item.
+    ///
+    /// Called by `set_widget_config` to force a rebuild of a single
+    /// item's widget on the next layout pass.
+    pub(crate) fn remove_item_widget(&self, id: &str) {
+        let mut item_widgets = self.item_widgets.borrow_mut();
+        if let Some(widget) = item_widgets.remove(id) {
+            widget.unparent();
+        }
     }
 
     /// Computes the next selection ID when cycling by `direction` (-1 for CCW, +1 for CW).
@@ -95,6 +217,7 @@ impl PieMenuWidgetImpl {
     }
 
     /// Returns whether the item with the given ID is the current keyboard selection.
+    #[allow(unused)]
     pub(crate) fn is_keyboard_selected(&self, id: &str) -> bool {
         self.keyboard_selection.borrow().as_ref().is_some_and(|selected| selected == id)
     }
@@ -103,6 +226,7 @@ impl PieMenuWidgetImpl {
     /// An empty stack means the main ring is active.
     pub(crate) fn set_submenu_stack(&self, stack: Vec<String>) {
         *self.submenu_stack.borrow_mut() = stack;
+        self.obj().queue_allocate();
         self.obj().queue_draw();
     }
 
@@ -119,10 +243,7 @@ impl PieMenuWidgetImpl {
         let Some(parent_id) = submenu_stack.last() else {
             return self.menu_items.iter().map(|entry| entry.value().clone()).collect();
         };
-        self.menu_items
-            .find_item_recursive(parent_id)
-            .and_then(|item| item.submenu)
-            .unwrap_or_default()
+        self.menu_items.find_item_recursive(parent_id).and_then(|item| item.submenu).unwrap_or_default()
     }
 }
 
@@ -131,7 +252,7 @@ mod tests {
     use super::*;
 
     fn make_item(id: &str, angle: f32) -> MenuItem {
-        MenuItem::builder().id(id).label(id).icon_name("icon").angle(angle).event(id).build()
+        MenuItem::builder().id(id).angle(angle).event(id).build()
     }
 
     #[test]
@@ -254,14 +375,7 @@ mod tests {
     }
 
     fn make_disabled_item(id: &str, angle: f32) -> MenuItem {
-        MenuItem::builder()
-            .id(id)
-            .label(id)
-            .icon_name("icon")
-            .angle(angle)
-            .event(id)
-            .enabled(false)
-            .build()
+        MenuItem::builder().id(id).angle(angle).event(id).enabled(false).build()
     }
 
     #[test]

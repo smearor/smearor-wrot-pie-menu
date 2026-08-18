@@ -1,12 +1,9 @@
 use crate::menu::menu::Menu;
+use crate::menu::widget_registry::MenuItemWidgetRegistry;
 use crate::menu_widget::widget::PieMenuWidget;
 use atomic_float::AtomicF32;
 use glib::subclass::prelude::*;
 use gtk4::EventControllerMotion;
-use gtk4::IconLookupFlags;
-use gtk4::IconTheme;
-use gtk4::TextDirection;
-use gtk4::gdk::Display;
 use gtk4::gdk::RGBA;
 use gtk4::glib;
 use gtk4::graphene::Point;
@@ -14,7 +11,9 @@ use gtk4::graphene::Rect;
 use gtk4::gsk::RoundedRect;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
+use gtk4::subclass::widget::WidgetImplExt;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -56,6 +55,16 @@ pub struct PieMenuWidgetImpl {
 
     /// Step width between consecutive ring levels in pixels.
     pub(crate) submenu_radius_step: AtomicF32,
+
+    /// Widget registry resolving type names to factories.
+    /// Pre-populated with standard implementations (`"circle"`, `"square"`).
+    pub(crate) widget_registry: RefCell<MenuItemWidgetRegistry>,
+
+    /// Cached item widgets keyed by item ID.
+    /// Widgets are built once, registered as children of `PieMenuWidget`
+    /// via `set_parent`, and positioned during the GTK4 layout phase
+    /// in `WidgetImpl::size_allocate`.
+    pub(crate) item_widgets: RefCell<HashMap<String, gtk4::Widget>>,
 }
 
 impl Default for PieMenuWidgetImpl {
@@ -71,6 +80,8 @@ impl Default for PieMenuWidgetImpl {
             keyboard_selection: RefCell::new(None),
             submenu_stack: RefCell::new(Vec::new()),
             submenu_radius_step: AtomicF32::new(80.0),
+            widget_registry: RefCell::new(MenuItemWidgetRegistry::new()),
+            item_widgets: RefCell::new(HashMap::new()),
         }
     }
 }
@@ -86,7 +97,8 @@ impl ObjectImpl for PieMenuWidgetImpl {
         self.parent_constructed();
         let widget = self.obj();
 
-        widget.set_layout_manager(Some(gtk4::BinLayout::new()));
+        // No layout manager — child widgets are positioned manually in
+        // `size_allocate` based on their ring position and rotation.
 
         // Add motion controller for mouse hover detection
         let motion_controller = EventControllerMotion::new();
@@ -121,7 +133,11 @@ impl ObjectImpl for PieMenuWidgetImpl {
                 (center_radius, radius)
             } else {
                 let outer = radius + submenu_depth as f64 * radius_step;
-                let inner = if submenu_depth == 1 { radius } else { radius + (submenu_depth - 1) as f64 * radius_step };
+                let inner = if submenu_depth == 1 {
+                    radius
+                } else {
+                    radius + (submenu_depth - 1) as f64 * radius_step
+                };
                 (inner, outer)
             };
             drop(submenu_stack);
@@ -208,7 +224,99 @@ impl WidgetImpl for PieMenuWidgetImpl {
         }
     }
 
+    fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
+        self.parent_size_allocate(width, height, baseline);
+
+        // Build any missing child widgets before positioning so they
+        // exist in the same allocation pass.  Calling this here (rather
+        // than only in `snapshot`) avoids a one-frame delay where
+        // widgets are created in `snapshot` but not allocated until the
+        // next layout pass.
+        self.ensure_item_widgets();
+
+        let center_x = width as f32 / 2.0;
+        let center_y = height as f32 / 2.0;
+        let radius = self.radius.load(Ordering::Relaxed);
+        let rotation = self.rotation.load(Ordering::Relaxed);
+        let radius_step = self.submenu_radius_step.load(Ordering::Relaxed);
+
+        let item_widgets = self.item_widgets.borrow();
+        let menu_items = self.menu_items.clone();
+
+        // Position top-level item widgets on the main ring.
+        // When content_rotates is true, widgets are positioned at their
+        // un-rotated angle — the rotation transform in `snapshot` handles
+        // the visual rotation.  When false, the position includes rotation.
+        for item in menu_items.iter() {
+            if let Some(child_widget) = item_widgets.get(&item.id) {
+                let effective_angle = if item.content_rotates { item.angle } else { item.angle + rotation };
+                let angle_rad = effective_angle.to_radians();
+                let item_x = center_x + (radius * 0.7) * angle_rad.cos();
+                let item_y = center_y + (radius * 0.7) * angle_rad.sin();
+
+                let (w, h) = match &item.content_size {
+                    Some(size) => (size.width, size.height),
+                    None => {
+                        let (min_w, nat_w, _, _) = child_widget.measure(gtk4::Orientation::Horizontal, -1);
+                        let (min_h, nat_h, _, _) = child_widget.measure(gtk4::Orientation::Vertical, -1);
+                        let w = nat_w.max(min_w).max(item.radius() as i32 * 2);
+                        let h = nat_h.max(min_h).max(item.radius() as i32 * 2);
+                        (w as f32, h as f32)
+                    }
+                };
+
+                let allocation = gtk4::Allocation::new((item_x - w / 2.0) as i32, (item_y - h / 2.0) as i32, w as i32, h as i32);
+                debug!(
+                    "Allocating item '{}' at ({}, {}) size {}x{}",
+                    item.id,
+                    allocation.x(),
+                    allocation.y(),
+                    allocation.width(),
+                    allocation.height()
+                );
+                child_widget.size_allocate(&allocation, -1);
+            }
+        }
+
+        // Position submenu item widgets on their respective rings
+        let submenu_stack = self.submenu_stack.borrow();
+        for (level, parent_id) in submenu_stack.iter().enumerate() {
+            let submenu_radius = radius + (level + 1) as f32 * radius_step;
+            let inner_radius = if level == 0 { radius } else { radius + level as f32 * radius_step };
+            let item_ring_radius = (inner_radius + submenu_radius) / 2.0;
+
+            if let Some(parent_item) = menu_items.find_item_recursive(parent_id)
+                && let Some(submenu_items) = &parent_item.submenu
+            {
+                for item in submenu_items {
+                    if let Some(child_widget) = item_widgets.get(&item.id) {
+                        let effective_angle = if item.content_rotates { item.angle } else { item.angle + rotation };
+                        let angle_rad = effective_angle.to_radians();
+                        let item_x = center_x + item_ring_radius * angle_rad.cos();
+                        let item_y = center_y + item_ring_radius * angle_rad.sin();
+
+                        let (w, h) = match &item.content_size {
+                            Some(size) => (size.width, size.height),
+                            None => {
+                                let (min_w, nat_w, _, _) = child_widget.measure(gtk4::Orientation::Horizontal, -1);
+                                let (min_h, nat_h, _, _) = child_widget.measure(gtk4::Orientation::Vertical, -1);
+                                let w = nat_w.max(min_w).max(item.radius() as i32 * 2);
+                                let h = nat_h.max(min_h).max(item.radius() as i32 * 2);
+                                (w as f32, h as f32)
+                            }
+                        };
+
+                        let allocation = gtk4::Allocation::new((item_x - w / 2.0) as i32, (item_y - h / 2.0) as i32, w as i32, h as i32);
+                        child_widget.size_allocate(&allocation, -1);
+                    }
+                }
+            }
+        }
+    }
+
     fn snapshot(&self, snapshot: &gtk4::Snapshot) {
+        self.ensure_item_widgets();
+
         let obj = self.obj();
         let width = obj.width() as f32;
         let height = obj.height() as f32;
@@ -348,106 +456,9 @@ impl WidgetImpl for PieMenuWidgetImpl {
             debug!("Drew 5-degree markings on both edges of the ring with highlights at 0° and {}°", nearest_angle);
         }
 
-        // Draw menu items in ring layout
-        let Some(display) = Display::default() else {
-            return;
-        };
-        let icon_theme = IconTheme::for_display(&display);
-        let icon_size = (radius - center_radius) / 3.0;
-        debug!("Icon size: {icon_size}",);
-        let hovered_index = *self.hovered_item_index.borrow();
-        for (index, item) in self.menu_items.iter().enumerate() {
-            let angle_rad = item.angle.to_radians();
-            let item_x = center_x + (radius * 0.7) * angle_rad.cos();
-            let item_y = center_y + (radius * 0.7) * angle_rad.sin();
-
-            // Draw item background circle
-            let item_color: RGBA = item.color.into();
-            let item_radius = item.radius();
-
-            // Highlight if hovered or keyboard-selected (only for enabled items)
-            let is_hovered = item.enabled && index as i32 == hovered_index && self.submenu_depth() == 0;
-            let is_keyboard_selected = item.enabled && self.is_keyboard_selected(&item.id);
-            let disabled_alpha = if item.enabled { 1.0 } else { 0.4 };
-            let item_color = if is_hovered || is_keyboard_selected {
-                RGBA::new(item_color.red() * 1.3, item_color.green() * 1.3, item_color.blue() * 1.3, 1.0)
-            } else {
-                RGBA::new(item_color.red(), item_color.green(), item_color.blue(), disabled_alpha)
-            };
-
-            // Draw shadow for item circle
-            let item_shadow_color = RGBA::new(0.8, 0.8, 0.8, 0.1);
-            let item_shadow_offset = 2.0;
-            let item_shadow_radius = item_radius + item_shadow_offset;
-            let item_shadow_rect = Rect::new(item_x - item_shadow_radius, item_y - item_shadow_radius, item_shadow_radius * 2.0, item_shadow_radius * 2.0);
-            let item_shadow_rounded = RoundedRect::from_rect(item_shadow_rect, item_shadow_radius);
-            snapshot.push_rounded_clip(&item_shadow_rounded);
-            snapshot.append_color(&item_shadow_color, &item_shadow_rect);
-            snapshot.pop();
-
-            let item_rect = Rect::new(item_x - item_radius, item_y - item_radius, item_radius * 2.0, item_radius * 2.0);
-            let item_rounded = RoundedRect::from_rect(item_rect, item_radius);
-            snapshot.push_rounded_clip(&item_rounded);
-            snapshot.append_color(&item_color, &item_rect);
-            snapshot.pop();
-            debug!("Drew menu item at ({}, {})", item_x, item_y);
-
-            // Draw selection ring outline for keyboard-selected item
-            if is_keyboard_selected {
-                let selection_ring_radius = item_radius + 3.0;
-                let selection_ring_rect = Rect::new(
-                    item_x - selection_ring_radius,
-                    item_y - selection_ring_radius,
-                    selection_ring_radius * 2.0,
-                    selection_ring_radius * 2.0,
-                );
-                let selection_ring_rounded = RoundedRect::from_rect(selection_ring_rect, selection_ring_radius);
-                let selection_ring_color = RGBA::new(1.0, 1.0, 1.0, 0.9);
-                let selection_stroke = gtk4::gsk::Stroke::new(2.0);
-                let builder = gtk4::gsk::PathBuilder::new();
-                builder.add_rounded_rect(&selection_ring_rounded);
-                let path = builder.to_path();
-                snapshot.append_stroke(&path, &selection_stroke, &selection_ring_color);
-            }
-
-            // Draw icon from icon_name
-            let paintable =
-                icon_theme.lookup_icon(&item.icon_name, &[&item.icon_name], icon_size as i32, 1, TextDirection::None, IconLookupFlags::FORCE_SYMBOLIC);
-            snapshot.translate(&Point::new(item_x - icon_size / 2.0, item_y - icon_size / 2.0));
-            paintable.snapshot(snapshot, icon_size as f64, icon_size as f64);
-            snapshot.translate(&Point::new(-item_x + icon_size / 2.0, -item_y + icon_size / 2.0));
-            debug!("Drew icon '{}' at ({}, {})", item.icon_name, item_x, item_y);
-
-            // Draw label below icon
-            let widget = self.obj();
-            let pango_context = widget.pango_context();
-            let pango_layout = gtk4::pango::Layout::new(&pango_context);
-            pango_layout.set_text(&item.label);
-            let font_desc = gtk4::pango::FontDescription::from_string("Sans 7");
-            pango_layout.set_font_description(Some(&font_desc));
-
-            let label_color: RGBA = item.label_color.into();
-            let label_color = RGBA::new(label_color.red(), label_color.green(), label_color.blue(), disabled_alpha);
-            let (_ink_rect, logical_rect) = pango_layout.extents();
-            let label_width = logical_rect.width() as f32 / gtk4::pango::SCALE as f32;
-
-            let label_x = item_x - label_width / 2.0;
-            let label_y = item_y + item_radius;
-
-            // Draw label shadow
-            let shadow_offset = 1.0;
-            let shadow_color = RGBA::new(0.0, 0.0, 0.0, 0.8);
-            snapshot.translate(&Point::new(label_x + shadow_offset, label_y + shadow_offset));
-            snapshot.append_layout(&pango_layout, &shadow_color);
-            snapshot.translate(&Point::new(-(label_x + shadow_offset), -(label_y + shadow_offset)));
-
-            // Draw label
-            snapshot.translate(&Point::new(label_x, label_y));
-            snapshot.append_layout(&pango_layout, &label_color);
-            snapshot.translate(&Point::new(-label_x, -label_y));
-
-            debug!("Drew label '{}' at ({}, {})", item.label, label_x, label_y);
-        }
+        // All items are rendered as child widgets by the widget
+        // registry — no manual drawing needed.
+        let item_widgets = self.item_widgets.borrow();
 
         // Draw submenu rings for each open submenu level
         let submenu_stack = self.submenu_stack.borrow().clone();
@@ -495,74 +506,12 @@ impl WidgetImpl for PieMenuWidgetImpl {
             }
 
             // Draw submenu items on the submenu ring
+            // All submenu items are rendered as child widgets by the widget
+            // registry — no manual drawing needed.
             if let Some(parent_item) = self.menu_items.find_item_recursive(parent_id)
-                && let Some(submenu_items) = &parent_item.submenu
+                && let Some(_submenu_items) = &parent_item.submenu
             {
-                let item_alpha = if is_active_level { 1.0 } else { 0.4 };
-                let submenu_icon_size = radius_step / 3.0;
-                let inner_radius = if level == 0 { main_radius } else { main_radius + level as f32 * radius_step };
-                let item_ring_radius = (inner_radius + submenu_radius) / 2.0;
-                for (item_index, item) in submenu_items.iter().enumerate() {
-                    let angle_rad = item.angle.to_radians();
-                    let item_x = center_x + item_ring_radius * angle_rad.cos();
-                    let item_y = center_y + item_ring_radius * angle_rad.sin();
-
-                    let item_color: RGBA = item.color.into();
-                    let item_radius = item.radius();
-                    let is_hovered = is_active_level && item.enabled && item_index as i32 == hovered_index;
-                    let is_keyboard_selected = is_active_level && item.enabled && self.is_keyboard_selected(&item.id);
-                    let disabled_alpha = if item.enabled { item_alpha } else { item_alpha * 0.4 };
-                    let render_color = if is_hovered || is_keyboard_selected {
-                        RGBA::new(item_color.red() * 1.3, item_color.green() * 1.3, item_color.blue() * 1.3, item_alpha)
-                    } else {
-                        RGBA::new(item_color.red(), item_color.green(), item_color.blue(), disabled_alpha)
-                    };
-
-                    let item_rect = Rect::new(item_x - item_radius, item_y - item_radius, item_radius * 2.0, item_radius * 2.0);
-                    let item_rounded = RoundedRect::from_rect(item_rect, item_radius);
-                    snapshot.push_rounded_clip(&item_rounded);
-                    snapshot.append_color(&render_color, &item_rect);
-                    snapshot.pop();
-
-                    // Draw icon
-                    let paintable = icon_theme.lookup_icon(
-                        &item.icon_name,
-                        &[&item.icon_name],
-                        submenu_icon_size as i32,
-                        1,
-                        TextDirection::None,
-                        IconLookupFlags::FORCE_SYMBOLIC,
-                    );
-                    snapshot.translate(&Point::new(item_x - submenu_icon_size / 2.0, item_y - submenu_icon_size / 2.0));
-                    paintable.snapshot(snapshot, submenu_icon_size as f64, submenu_icon_size as f64);
-                    snapshot.translate(&Point::new(-item_x + submenu_icon_size / 2.0, -item_y + submenu_icon_size / 2.0));
-
-                    // Draw label
-                    let widget = self.obj();
-                    let pango_context = widget.pango_context();
-                    let pango_layout = gtk4::pango::Layout::new(&pango_context);
-                    pango_layout.set_text(&item.label);
-                    let font_desc = gtk4::pango::FontDescription::from_string("Sans 7");
-                    pango_layout.set_font_description(Some(&font_desc));
-
-                    let label_color: RGBA = item.label_color.into();
-                    let label_color = RGBA::new(label_color.red(), label_color.green(), label_color.blue(), disabled_alpha);
-                    let (_ink_rect, logical_rect) = pango_layout.extents();
-                    let label_width = logical_rect.width() as f32 / gtk4::pango::SCALE as f32;
-
-                    let label_x = item_x - label_width / 2.0;
-                    let label_y = item_y + item_radius;
-
-                    let shadow_offset = 1.0;
-                    let shadow_color = RGBA::new(0.0, 0.0, 0.0, 0.8);
-                    snapshot.translate(&Point::new(label_x + shadow_offset, label_y + shadow_offset));
-                    snapshot.append_layout(&pango_layout, &shadow_color);
-                    snapshot.translate(&Point::new(-(label_x + shadow_offset), -(label_y + shadow_offset)));
-
-                    snapshot.translate(&Point::new(label_x, label_y));
-                    snapshot.append_layout(&pango_layout, &label_color);
-                    snapshot.translate(&Point::new(-label_x, -label_y));
-                }
+                // Items rendered by widget registry
             }
 
             // Draw breadcrumb dots between rings
@@ -583,7 +532,61 @@ impl WidgetImpl for PieMenuWidgetImpl {
             }
         }
 
+        // Snapshot child widgets whose content rotates with the ring.
+        // These are rendered INSIDE the rotation transform so they rotate.
+        // Their allocation positions use item.angle (without rotation).
+        let menu_items = self.menu_items.clone();
+        for item in menu_items.iter() {
+            if item.content_rotates
+                && let Some(child) = item_widgets.get(&item.id)
+                && child.is_visible()
+            {
+                self.obj().snapshot_child(child, snapshot);
+            }
+        }
+        // Also snapshot submenu item widgets with content_rotates
+        for parent_id in submenu_stack.iter() {
+            if let Some(parent_item) = menu_items.find_item_recursive(parent_id)
+                && let Some(submenu_items) = &parent_item.submenu
+            {
+                for item in submenu_items {
+                    if item.content_rotates
+                        && let Some(child) = item_widgets.get(&item.id)
+                        && child.is_visible()
+                    {
+                        self.obj().snapshot_child(child, snapshot);
+                    }
+                }
+            }
+        }
+
         // Restore transformation state
         snapshot.restore();
+
+        // Snapshot child widgets whose content does NOT rotate.
+        // These are rendered AFTER the rotation transform is restored.
+        // Their allocation positions already include rotation.
+        for item in menu_items.iter() {
+            if !item.content_rotates
+                && let Some(child) = item_widgets.get(&item.id)
+                && child.is_visible()
+            {
+                self.obj().snapshot_child(child, snapshot);
+            }
+        }
+        for parent_id in submenu_stack.iter() {
+            if let Some(parent_item) = menu_items.find_item_recursive(parent_id)
+                && let Some(submenu_items) = &parent_item.submenu
+            {
+                for item in submenu_items {
+                    if !item.content_rotates
+                        && let Some(child) = item_widgets.get(&item.id)
+                        && child.is_visible()
+                    {
+                        self.obj().snapshot_child(child, snapshot);
+                    }
+                }
+            }
+        }
     }
 }

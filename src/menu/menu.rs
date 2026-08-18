@@ -210,7 +210,7 @@ mod tests {
     use super::*;
 
     fn make_item(id: &str, angle: f32) -> MenuItem {
-        MenuItem::builder().id(id).label(id).icon_name("icon").angle(angle).event(id).build()
+        MenuItem::builder().id(id).angle(angle).event(id).build()
     }
 
     #[test]
@@ -223,21 +223,8 @@ mod tests {
 
     #[test]
     fn test_find_item_recursive_in_submenu() {
-        let child = MenuItem::builder()
-            .id("child")
-            .label("Child")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("child")
-            .build();
-        let parent = MenuItem::builder()
-            .id("parent")
-            .label("Parent")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("parent")
-            .submenu(vec![child])
-            .build();
+        let child = MenuItem::builder().id("child").angle(0.0).event("child").build();
+        let parent = MenuItem::builder().id("parent").angle(0.0).event("parent").submenu(vec![child]).build();
         let menu = Menu::new();
         menu.insert("parent".to_string(), parent);
         assert!(menu.find_item_recursive("child").is_some());
@@ -246,23 +233,9 @@ mod tests {
 
     #[test]
     fn test_find_item_recursive_nested_submenu() {
-        let grandchild = MenuItem::builder().id("gc").label("GC").icon_name("icon").angle(0.0).event("gc").build();
-        let child = MenuItem::builder()
-            .id("child")
-            .label("Child")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("child")
-            .submenu(vec![grandchild])
-            .build();
-        let parent = MenuItem::builder()
-            .id("parent")
-            .label("Parent")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("parent")
-            .submenu(vec![child])
-            .build();
+        let grandchild = MenuItem::builder().id("gc").angle(0.0).event("gc").build();
+        let child = MenuItem::builder().id("child").angle(0.0).event("child").submenu(vec![grandchild]).build();
+        let parent = MenuItem::builder().id("parent").angle(0.0).event("parent").submenu(vec![child]).build();
         let menu = Menu::new();
         menu.insert("parent".to_string(), parent);
         assert!(menu.find_item_recursive("gc").is_some());
@@ -270,13 +243,7 @@ mod tests {
 
     #[test]
     fn test_replace_submenu_recursive_top_level() {
-        let parent = MenuItem::builder()
-            .id("parent")
-            .label("Parent")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("parent")
-            .build();
+        let parent = MenuItem::builder().id("parent").angle(0.0).event("parent").build();
         let menu = Menu::new();
         menu.insert("parent".to_string(), parent);
         let new_child = make_item("new_child", 45.0);
