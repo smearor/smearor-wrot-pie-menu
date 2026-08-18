@@ -7,6 +7,8 @@
 //! Selecting a game displays its title, genre, and publisher in the window.
 //! Menu data is loaded from `games_menu.json` at compile time.
 
+use smearor_wrot_pie_menu::ButtonConfig;
+use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
@@ -15,7 +17,6 @@ use smearor_wrot_pie_menu::color::RgbaColor;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
 use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
-use smearor_wrot_pie_menu::{ButtonConfig, CircleConfig};
 
 use dashmap::DashMap;
 use gtk4::Align;

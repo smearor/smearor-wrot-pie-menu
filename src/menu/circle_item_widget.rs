@@ -1,9 +1,11 @@
 use crate::color::RgbaColor;
 use glib::subclass::prelude::*;
+use gtk4::gdk;
 use gtk4::glib;
+use gtk4::graphene;
+use gtk4::gsk;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
-use gtk4::{gdk, graphene, gsk};
 use std::cell::RefCell;
 
 mod imp {
