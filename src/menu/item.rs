@@ -51,12 +51,58 @@ pub struct MenuItem {
     /// Whether the pie menu closes after this item is clicked. Defaults to `true`.
     #[builder(default = true)]
     pub close_on_click: bool,
+    /// Optional submenu items. When present, selecting this item
+    /// opens a nested ring instead of sending an event.
+    ///
+    /// Submenu items follow the same `fixed_position` / flexible angle
+    /// distribution rules as top-level items.
+    ///
+    /// **ID uniqueness**: The `id` field must be globally unique across the
+    /// entire menu tree (all levels). This simplifies lookup operations
+    /// (`open_submenu`, `get_submenu_items`, `set_submenu_items`) to a flat
+    /// search instead of a tree traversal from the root via `submenu_stack`.
+    /// Duplicate IDs at any level are undefined behavior.
+    #[builder(default, setter(strip_option))]
+    pub submenu: Option<Vec<MenuItem>>,
 }
 
 impl MenuItem {
     /// Returns the radius, falling back to the default if not set
     pub fn radius(&self) -> f32 {
         self.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS)
+    }
+
+    /// Recursively searches for an item with the given id in this item's subtree.
+    /// Returns a clone of the found item, or `None` if not found.
+    pub fn find_recursive(&self, id: &str) -> Option<MenuItem> {
+        if self.id == id {
+            return Some(self.clone());
+        }
+        if let Some(submenu) = &self.submenu {
+            for item in submenu {
+                if let Some(found) = item.find_recursive(id) {
+                    return Some(found);
+                }
+            }
+        }
+        None
+    }
+
+    /// Recursively replaces the submenu of the item with `parent_id`.
+    /// Returns `true` if the parent was found and updated.
+    pub fn replace_submenu_recursive(&mut self, parent_id: &str, new_submenu: &[MenuItem]) -> bool {
+        if self.id == parent_id {
+            self.submenu = Some(new_submenu.to_vec());
+            return true;
+        }
+        if let Some(submenu) = &mut self.submenu {
+            for item in submenu.iter_mut() {
+                if item.replace_submenu_recursive(parent_id, new_submenu) {
+                    return true;
+                }
+            }
+        }
+        false
     }
 }
 
@@ -204,5 +250,57 @@ mod tests {
             .close_on_click(false)
             .build();
         assert!(!item.close_on_click);
+    }
+
+    #[test]
+    fn test_submenu_field_default_none() {
+        let item = MenuItem::builder().id("test").label("Test").icon_name("icon").angle(0.0).event("event").build();
+        assert!(item.submenu.is_none());
+    }
+
+    #[test]
+    fn test_submenu_with_items() {
+        let child = MenuItem::builder()
+            .id("child")
+            .label("Child")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("child-event")
+            .build();
+        let parent = MenuItem::builder()
+            .id("parent")
+            .label("Parent")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("parent-event")
+            .submenu(vec![child])
+            .build();
+        assert!(parent.submenu.is_some());
+        assert_eq!(parent.submenu.as_ref().unwrap().len(), 1);
+        assert_eq!(parent.submenu.as_ref().unwrap()[0].id, "child");
+    }
+
+    #[test]
+    fn test_submenu_nested() {
+        let grandchild = MenuItem::builder().id("gc").label("GC").icon_name("icon").angle(0.0).event("gc-event").build();
+        let child = MenuItem::builder()
+            .id("child")
+            .label("Child")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("child-event")
+            .submenu(vec![grandchild])
+            .build();
+        let parent = MenuItem::builder()
+            .id("parent")
+            .label("Parent")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("parent-event")
+            .submenu(vec![child])
+            .build();
+        let submenu = parent.submenu.as_ref().unwrap();
+        assert!(submenu[0].submenu.is_some());
+        assert_eq!(submenu[0].submenu.as_ref().unwrap()[0].id, "gc");
     }
 }

@@ -1,7 +1,11 @@
+use crate::MenuItem;
 use crate::PieMenuOverlayWidgetImpl;
+use crate::menu::Menu;
+use crate::menu_widget::menu_item::submenu_error::SubmenuError;
 use crate::overlay_widget::control::error::HidePieMenuError;
 use crate::overlay_widget::control::error::ShowPieMenuError;
 use crate::overlay_widget::control::handler::PieMenuControlHandler;
+use crate::overlay_widget::imp::widget::MAX_SUBMENU_DEPTH;
 use crate::overlay_widget::message::PieMenuMessage;
 use crate::overlay_widget::message::handler::PieMenuMessageSender;
 use glib::subclass::prelude::ObjectSubclassIsExt;
@@ -17,6 +21,8 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
             return Err(ShowPieMenuError::MenuWidgetNotAvailable);
         };
         self.visible.store(true, Ordering::Relaxed);
+        self.submenu_stack.borrow_mut().clear();
+        pie_menu_widget.imp().set_submenu_stack(Vec::new());
         pie_menu_widget.set_visible(true);
         self.send_message(PieMenuMessage::Opened);
         Ok(())
@@ -28,6 +34,8 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
             return Err(HidePieMenuError::MenuWidgetNotAvailable);
         };
         self.visible.store(false, Ordering::Relaxed);
+        self.submenu_stack.borrow_mut().clear();
+        pie_menu_widget.imp().set_submenu_stack(Vec::new());
         pie_menu_widget.set_visible(false);
         self.send_message(PieMenuMessage::Closed);
         Ok(())
@@ -106,14 +114,22 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
     fn confirm_selection(&self) {
         let selected_id = self.pie_menu_widget.borrow().as_ref().and_then(|widget| widget.imp().keyboard_selection());
         if let Some(id) = selected_id {
-            let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
-            if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref()
-                && let Some(item) = pie_menu_widget.imp().menu_items.get(&id)
-            {
+            let (has_submenu, event) = {
+                let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+                let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() else {
+                    return;
+                };
+                let Some(item) = pie_menu_widget.imp().menu_items.find_item_recursive(&id) else {
+                    return;
+                };
                 if !item.enabled {
                     return;
                 }
-                let event = item.event.clone();
+                (item.submenu.is_some(), item.event.clone())
+            };
+            if has_submenu {
+                let _ = self.open_submenu(&id);
+            } else {
                 self.send_message(PieMenuMessage::Event(event));
             }
         }
@@ -147,5 +163,143 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
             pie_menu_widget.imp().set_keyboard_selection(id);
         }
+    }
+
+    fn open_submenu(&self, parent_id: &str) -> Result<(), SubmenuError> {
+        if self.submenu_depth() >= MAX_SUBMENU_DEPTH {
+            return Err(SubmenuError::MaxDepthReached { max_depth: MAX_SUBMENU_DEPTH });
+        }
+
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() else {
+            return Err(SubmenuError::NotFound { id: parent_id.to_string() });
+        };
+
+        let parent_item = pie_menu_widget
+            .imp()
+            .menu_items
+            .find_item_recursive(parent_id)
+            .ok_or(SubmenuError::NotFound { id: parent_id.to_string() })?;
+
+        let submenu_items = parent_item.submenu.clone().ok_or(SubmenuError::NoSubmenu { id: parent_id.to_string() })?;
+        if submenu_items.is_empty() {
+            return Err(SubmenuError::NoSubmenu { id: parent_id.to_string() });
+        }
+
+        let temp_menu = Menu::from_items(submenu_items);
+        temp_menu.redistribute_angles();
+
+        let ring_radius = self.submenu_radius_for_level(self.submenu_depth() + 1);
+        if temp_menu.validate_all_no_overlap(ring_radius).is_err() {
+            return Err(SubmenuError::ItemOverlap {
+                parent_id: parent_id.to_string(),
+            });
+        }
+
+        let redistributed_items = temp_menu.to_items();
+        pie_menu_widget.imp().menu_items.replace_submenu_recursive(parent_id, redistributed_items);
+
+        self.submenu_stack.borrow_mut().push(parent_id.to_string());
+        pie_menu_widget.imp().set_submenu_stack(self.submenu_stack.borrow().clone());
+
+        let submenu_items = pie_menu_widget
+            .imp()
+            .menu_items
+            .find_item_recursive(parent_id)
+            .and_then(|item| item.submenu)
+            .unwrap_or_default();
+        if let Some(first) = submenu_items.iter().filter(|item| item.enabled).min_by(|a, b| a.angle.total_cmp(&b.angle)) {
+            pie_menu_widget.imp().set_keyboard_selection(first.id.clone());
+        } else {
+            *pie_menu_widget.imp().keyboard_selection.borrow_mut() = None;
+        }
+
+        pie_menu_widget.queue_draw();
+        self.send_message(PieMenuMessage::SubmenuOpened(parent_id.to_string()));
+        Ok(())
+    }
+
+    fn close_submenu(&self) -> Result<(), SubmenuError> {
+        let parent_id = self.submenu_stack.borrow_mut().pop().ok_or(SubmenuError::NoSubmenuOpen)?;
+
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
+            pie_menu_widget.imp().set_submenu_stack(self.submenu_stack.borrow().clone());
+            pie_menu_widget.imp().set_keyboard_selection(parent_id.clone());
+            pie_menu_widget.queue_draw();
+        }
+
+        self.send_message(PieMenuMessage::SubmenuClosed(parent_id));
+        Ok(())
+    }
+
+    fn submenu_depth(&self) -> u32 {
+        self.submenu_stack.borrow().len() as u32
+    }
+
+    fn get_submenu_items(&self, parent_id: &str) -> Vec<MenuItem> {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        pie_menu_widget_borrow
+            .as_ref()
+            .and_then(|widget| widget.imp().menu_items.find_item_recursive(parent_id))
+            .and_then(|item| item.submenu)
+            .unwrap_or_default()
+    }
+
+    fn redistribute_submenu(&self, parent_id: &str) {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref()
+            && let Some(parent_item) = pie_menu_widget.imp().menu_items.find_item_recursive(parent_id)
+            && let Some(submenu_items) = parent_item.submenu
+        {
+            let temp_menu = Menu::from_items(submenu_items);
+            temp_menu.redistribute_angles();
+            let redistributed = temp_menu.to_items();
+            pie_menu_widget.imp().menu_items.replace_submenu_recursive(parent_id, redistributed);
+            pie_menu_widget.queue_draw();
+        }
+    }
+
+    fn set_submenu_items(&self, parent_id: &str, items: Vec<MenuItem>) -> Result<(), SubmenuError> {
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() else {
+            return Err(SubmenuError::NotFound { id: parent_id.to_string() });
+        };
+
+        if pie_menu_widget.imp().menu_items.find_item_recursive(parent_id).is_none() {
+            return Err(SubmenuError::NotFound { id: parent_id.to_string() });
+        }
+
+        let temp_menu = Menu::from_items(items);
+        temp_menu.redistribute_angles();
+
+        let ring_radius = self.submenu_radius_for_level(self.submenu_depth() + 1);
+        if temp_menu.validate_all_no_overlap(ring_radius).is_err() {
+            return Err(SubmenuError::ItemOverlap {
+                parent_id: parent_id.to_string(),
+            });
+        }
+
+        let redistributed = temp_menu.to_items();
+        pie_menu_widget.imp().menu_items.replace_submenu_recursive(parent_id, redistributed);
+        pie_menu_widget.queue_draw();
+        Ok(())
+    }
+
+    fn set_submenu_radius(&self, level: u32, radius: f32) {
+        self.submenu_radii.borrow_mut().insert(level, radius);
+    }
+
+    fn set_submenu_radius_step(&self, step: f32) {
+        self.submenu_radius_step.store(step as f64, Ordering::Relaxed);
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
+            pie_menu_widget.imp().submenu_radius_step.store(step, Ordering::Relaxed);
+            pie_menu_widget.queue_draw();
+        }
+    }
+
+    fn max_submenu_depth(&self) -> u32 {
+        MAX_SUBMENU_DEPTH
     }
 }

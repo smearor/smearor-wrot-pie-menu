@@ -14,6 +14,7 @@ pub use menu::DEFAULT_MENU_ITEM_RADIUS;
 pub use menu::MenuItem;
 pub use menu_widget::PieMenuWidget;
 pub use menu_widget::imp::PieMenuWidgetImpl;
+pub use menu_widget::menu_item::submenu_error::SubmenuError;
 pub use menu_widget::rotation::handler::RotationHandler;
 pub use overlay_widget::PieMenuOverlayWidget;
 pub use overlay_widget::imp::PieMenuOverlayWidgetImpl;

@@ -1,0 +1,195 @@
+{
+  "genres": [
+    {
+      "id": "rpg",
+      "label": "RPG",
+      "icon": "preferences-system-symbolic",
+      "color": "#1a527677",
+      "publisher_color": "#2e86c177",
+      "angle": 0.0,
+      "publishers": [
+        {
+          "id": "cdpr",
+          "label": "CD Projekt Red",
+          "games": [
+            { "id": "witcher3", "label": "Witcher 3", "title": "The Witcher 3: Wild Hunt", "publisher": "CD Projekt Red" },
+            { "id": "cyberpunk", "label": "Cyberpunk 2077", "title": "Cyberpunk 2077", "publisher": "CD Projekt Red" }
+          ]
+        },
+        {
+          "id": "beth",
+          "label": "Bethesda",
+          "games": [
+            { "id": "skyrim", "label": "Skyrim", "title": "The Elder Scrolls V: Skyrim", "publisher": "Bethesda Softworks" },
+            { "id": "oblivion", "label": "Oblivion", "title": "The Elder Scrolls IV: Oblivion", "publisher": "Bethesda Softworks" }
+          ]
+        },
+        {
+          "id": "larian",
+          "label": "Larian",
+          "games": [
+            { "id": "baldursgate3", "label": "Baldur's Gate 3", "title": "Baldur's Gate 3", "publisher": "Larian Studios" },
+            { "id": "divinity", "label": "Divinity: OS 2", "title": "Divinity: Original Sin 2", "publisher": "Larian Studios" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act",
+      "label": "Action",
+      "icon": "emblem-favorite-symbolic",
+      "color": "#922b2177",
+      "publisher_color": "#cb433577",
+      "angle": 72.0,
+      "publishers": [
+        {
+          "id": "sony",
+          "label": "Sony",
+          "games": [
+            { "id": "godofwar", "label": "God of War", "title": "God of War", "publisher": "Sony Interactive" },
+            { "id": "spiderman", "label": "Spider-Man", "title": "Marvel's Spider-Man", "publisher": "Sony Interactive" }
+          ]
+        },
+        {
+          "id": "bandai",
+          "label": "Bandai Namco",
+          "games": [
+            { "id": "eldenring", "label": "Elden Ring", "title": "Elden Ring", "publisher": "Bandai Namco" },
+            { "id": "tekken", "label": "Tekken 8", "title": "Tekken 8", "publisher": "Bandai Namco" }
+          ]
+        },
+        {
+          "id": "acti",
+          "label": "Activision",
+          "games": [
+            { "id": "sekiro", "label": "Sekiro", "title": "Sekiro: Shadows Die Twice", "publisher": "Activision" },
+            { "id": "crash", "label": "Crash 4", "title": "Crash Bandicoot 4", "publisher": "Activision" }
+          ]
+        },
+        {
+          "id": "beth",
+          "label": "Bethesda",
+          "games": [
+            { "id": "doom", "label": "DOOM Eternal", "title": "DOOM Eternal", "publisher": "Bethesda Softworks" },
+            { "id": "rage", "label": "RAGE 2", "title": "RAGE 2", "publisher": "Bethesda Softworks" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "str",
+      "label": "Strategy",
+      "icon": "document-properties-symbolic",
+      "color": "#1e844977",
+      "publisher_color": "#27ae6077",
+      "angle": 144.0,
+      "publishers": [
+        {
+          "id": "2k",
+          "label": "2K Games",
+          "games": [
+            { "id": "civ6", "label": "Civilization VI", "title": "Civilization VI", "publisher": "2K Games" },
+            { "id": "xcom2", "label": "XCOM 2", "title": "XCOM 2", "publisher": "2K Games" }
+          ]
+        },
+        {
+          "id": "xbox",
+          "label": "Xbox",
+          "games": [
+            { "id": "aoe2", "label": "AoE II: DE", "title": "Age of Empires II: DE", "publisher": "Xbox Game Studios" },
+            { "id": "halo", "label": "Halo Wars 2", "title": "Halo Wars 2", "publisher": "Xbox Game Studios" }
+          ]
+        },
+        {
+          "id": "paradox",
+          "label": "Paradox",
+          "games": [
+            { "id": "stellaris", "label": "Stellaris", "title": "Stellaris", "publisher": "Paradox Interactive" },
+            { "id": "eu4", "label": "EU IV", "title": "Europa Universalis IV", "publisher": "Paradox Interactive" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sho",
+      "label": "Shooter",
+      "icon": "media-tape-symbolic",
+      "color": "#6c348377",
+      "publisher_color": "#884ea077",
+      "angle": 216.0,
+      "publishers": [
+        {
+          "id": "valve",
+          "label": "Valve",
+          "games": [
+            { "id": "csgo", "label": "CS2", "title": "Counter-Strike 2", "publisher": "Valve" },
+            { "id": "tf2", "label": "TF2", "title": "Team Fortress 2", "publisher": "Valve" }
+          ]
+        },
+        {
+          "id": "blizz",
+          "label": "Blizzard",
+          "games": [
+            { "id": "overwatch", "label": "Overwatch 2", "title": "Overwatch 2", "publisher": "Blizzard Entertainment" },
+            { "id": "destiny", "label": "Destiny 2", "title": "Destiny 2", "publisher": "Blizzard Entertainment" }
+          ]
+        },
+        {
+          "id": "riot",
+          "label": "Riot",
+          "games": [
+            { "id": "valorant", "label": "Valorant", "title": "Valorant", "publisher": "Riot Games" }
+          ]
+        },
+        {
+          "id": "ea",
+          "label": "EA",
+          "games": [
+            { "id": "apex", "label": "Apex Legends", "title": "Apex Legends", "publisher": "Electronic Arts" },
+            { "id": "battlefield", "label": "Battlefield 2042", "title": "Battlefield 2042", "publisher": "Electronic Arts" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "puz",
+      "label": "Puzzle",
+      "icon": "applications-science-symbolic",
+      "color": "#2874a677",
+      "publisher_color": "#5499c477",
+      "angle": 288.0,
+      "publishers": [
+        {
+          "id": "valve",
+          "label": "Valve",
+          "games": [
+            { "id": "portal2", "label": "Portal 2", "title": "Portal 2", "publisher": "Valve" },
+            { "id": "portal1", "label": "Portal", "title": "Portal", "publisher": "Valve" }
+          ]
+        },
+        {
+          "id": "enhance",
+          "label": "Enhance",
+          "games": [
+            { "id": "tetris", "label": "Tetris Effect", "title": "Tetris Effect", "publisher": "Enhance Games" },
+            { "id": "lumines", "label": "Lumines", "title": "Lumines Remastered", "publisher": "Enhance Games" }
+          ]
+        },
+        {
+          "id": "hempuli",
+          "label": "Hempuli",
+          "games": [
+            { "id": "baba", "label": "Baba Is You", "title": "Baba Is You", "publisher": "Hempuli" }
+          ]
+        },
+        {
+          "id": "thekla",
+          "label": "Thekla",
+          "games": [
+            { "id": "witness", "label": "The Witness", "title": "The Witness", "publisher": "Thekla Inc." }
+          ]
+        }
+      ]
+    }
+  ]
+}

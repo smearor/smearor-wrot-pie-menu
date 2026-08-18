@@ -65,6 +65,57 @@ impl Menu {
         Ok(())
     }
 
+    /// Recursively searches for an item with the given id in the menu tree.
+    /// Checks top-level items first, then descends into submenus.
+    /// Returns a clone of the found item, or `None` if not found.
+    pub fn find_item_recursive(&self, id: &str) -> Option<MenuItem> {
+        if let Some(entry) = self.get(id) {
+            return Some(entry.value().clone());
+        }
+        for entry in self.iter() {
+            if let Some(submenu) = &entry.value().submenu {
+                for item in submenu {
+                    if let Some(found) = item.find_recursive(id) {
+                        return Some(found);
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Recursively replaces the submenu of the item with `parent_id`.
+    /// Searches top-level items first, then descends into submenus.
+    /// Returns `true` if the parent was found and updated.
+    pub fn replace_submenu_recursive(&self, parent_id: &str, new_submenu: Vec<MenuItem>) -> bool {
+        if let Some(mut entry) = self.get_mut(parent_id) {
+            entry.submenu = Some(new_submenu);
+            return true;
+        }
+        let items: Vec<MenuItem> = self.iter().map(|e| e.value().clone()).collect();
+        for mut item in items {
+            if item.replace_submenu_recursive(parent_id, &new_submenu) {
+                self.insert(item.id.clone(), item);
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Creates a `Menu` from a `Vec<MenuItem>`, indexing by id.
+    pub fn from_items(items: Vec<MenuItem>) -> Self {
+        let menu = Self::new();
+        for item in items {
+            menu.insert(item.id.clone(), item);
+        }
+        menu
+    }
+
+    /// Returns all items in the menu as a `Vec<MenuItem>`.
+    pub fn to_items(&self) -> Vec<MenuItem> {
+        self.iter().map(|e| e.value().clone()).collect()
+    }
+
     /// Redistributes non-fixed items proportionally in the gaps between fixed items.
     /// Wider angular segments receive proportionally more items.
     pub fn redistribute_angles(&self) {
@@ -151,6 +202,102 @@ impl Menu {
                 flexible_index += 1;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_item(id: &str, angle: f32) -> MenuItem {
+        MenuItem::builder().id(id).label(id).icon_name("icon").angle(angle).event(id).build()
+    }
+
+    #[test]
+    fn test_find_item_recursive_top_level() {
+        let menu = Menu::new();
+        menu.insert("a".to_string(), make_item("a", 0.0));
+        assert!(menu.find_item_recursive("a").is_some());
+        assert!(menu.find_item_recursive("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_find_item_recursive_in_submenu() {
+        let child = MenuItem::builder()
+            .id("child")
+            .label("Child")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("child")
+            .build();
+        let parent = MenuItem::builder()
+            .id("parent")
+            .label("Parent")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("parent")
+            .submenu(vec![child])
+            .build();
+        let menu = Menu::new();
+        menu.insert("parent".to_string(), parent);
+        assert!(menu.find_item_recursive("child").is_some());
+        assert_eq!(menu.find_item_recursive("child").unwrap().id, "child");
+    }
+
+    #[test]
+    fn test_find_item_recursive_nested_submenu() {
+        let grandchild = MenuItem::builder().id("gc").label("GC").icon_name("icon").angle(0.0).event("gc").build();
+        let child = MenuItem::builder()
+            .id("child")
+            .label("Child")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("child")
+            .submenu(vec![grandchild])
+            .build();
+        let parent = MenuItem::builder()
+            .id("parent")
+            .label("Parent")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("parent")
+            .submenu(vec![child])
+            .build();
+        let menu = Menu::new();
+        menu.insert("parent".to_string(), parent);
+        assert!(menu.find_item_recursive("gc").is_some());
+    }
+
+    #[test]
+    fn test_replace_submenu_recursive_top_level() {
+        let parent = MenuItem::builder()
+            .id("parent")
+            .label("Parent")
+            .icon_name("icon")
+            .angle(0.0)
+            .event("parent")
+            .build();
+        let menu = Menu::new();
+        menu.insert("parent".to_string(), parent);
+        let new_child = make_item("new_child", 45.0);
+        assert!(menu.replace_submenu_recursive("parent", vec![new_child]));
+        assert!(menu.get("parent").unwrap().submenu.is_some());
+        assert_eq!(menu.get("parent").unwrap().submenu.as_ref().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_replace_submenu_recursive_not_found() {
+        let menu = Menu::new();
+        assert!(!menu.replace_submenu_recursive("nonexistent", vec![]));
+    }
+
+    #[test]
+    fn test_from_items_and_to_items() {
+        let items = vec![make_item("a", 0.0), make_item("b", 90.0)];
+        let menu = Menu::from_items(items);
+        assert_eq!(menu.len(), 2);
+        let items = menu.to_items();
+        assert_eq!(items.len(), 2);
     }
 }
 

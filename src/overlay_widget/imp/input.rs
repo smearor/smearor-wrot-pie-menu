@@ -6,20 +6,29 @@ use glib::subclass::prelude::ObjectSubclassIsExt;
 use std::sync::atomic::Ordering;
 
 impl PieMenuOverlayWidgetImpl {
-    /// Confirms the current keyboard selection by sending `PieMenuMessage::Event`
-    /// for the selected item. Does nothing if no item is selected or if the
-    /// selected item is disabled.
+    /// Confirms the current keyboard selection. If the selected item has a submenu,
+    /// opens it. Otherwise sends `PieMenuMessage::Event` for the selected item.
+    /// Does nothing if no item is selected or if the selected item is disabled.
     pub(crate) fn confirm_selection(&self) {
         let selected_id = self.pie_menu_widget.borrow().as_ref().and_then(|widget| widget.imp().keyboard_selection());
         if let Some(id) = selected_id {
-            let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
-            if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref()
-                && let Some(item) = pie_menu_widget.imp().menu_items.get(&id)
-            {
+            let (has_submenu, event) = {
+                let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+                let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() else {
+                    return;
+                };
+                let Some(item) = pie_menu_widget.imp().menu_items.find_item_recursive(&id) else {
+                    return;
+                };
                 if !item.enabled {
                     return;
                 }
-                let event = item.event.clone();
+                (item.submenu.is_some(), item.event.clone())
+            };
+            if has_submenu {
+                let _ = self.open_submenu(&id);
+            } else {
+                let _ = self.hide_pie_menu();
                 self.send_message(PieMenuMessage::Event(event));
             }
         }
@@ -89,6 +98,21 @@ impl PieMenuOverlayWidgetImpl {
     /// Returns the current scroll rotation sensitivity multiplier.
     pub(crate) fn scroll_rotation_step(&self) -> f32 {
         self.scroll_rotation_step.load(Ordering::Relaxed) as f32
+    }
+
+    /// Computes the ring radius for a given submenu level.
+    /// Uses explicit override if set, otherwise `main_radius + level * step`.
+    pub(crate) fn submenu_radius_for_level(&self, level: u32) -> f32 {
+        if let Some(radius) = self.submenu_radii.borrow().get(&level) {
+            return *radius;
+        }
+        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
+        let main_radius = pie_menu_widget_borrow
+            .as_ref()
+            .map(|widget| widget.imp().radius.load(Ordering::Relaxed))
+            .unwrap_or(160.0);
+        let step = self.submenu_radius_step.load(Ordering::Relaxed) as f32;
+        main_radius + level as f32 * step
     }
 }
 
