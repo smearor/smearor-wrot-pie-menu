@@ -10,14 +10,18 @@
 //! Data is refreshed every second via `glib::timeout_add_local`.
 
 use smearor_wrot_pie_menu::GaugeConfig;
+use smearor_wrot_pie_menu::GaugeItemWidget;
+use smearor_wrot_pie_menu::GaugeItemWidgetParams;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
+use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
 
 use gtk4::Align;
 use gtk4::Application;
 use gtk4::ApplicationWindow;
 use gtk4::Box;
+use gtk4::GestureClick;
 use gtk4::Label;
 use gtk4::Orientation;
 use gtk4::Picture;
@@ -67,38 +71,31 @@ fn build_ui(app: &Application) {
     logo.set_halign(Align::Center);
     logo.set_valign(Align::Center);
 
+    // Center widget: a gauge showing overall CPU load, with click-to-close
+    let center_gauge = GaugeItemWidget::new(GaugeItemWidgetParams {
+        label: "CPU".to_string(),
+        value: 0.0,
+        unit: "%".to_string(),
+        min: 0.0,
+        warning: 80.0,
+        critical: 90.0,
+        max: 100.0,
+        item_radius: 90.0,
+        enabled: true,
+    });
+
     let overlay = PieMenuOverlayWidget::new(Some(logo.upcast_ref()))
         .with_pie_menu_radius(250.0)
         .with_pie_menu_center_radius(100.0)
         .with_activation_threshold(2.0)
         .with_deactivation_threshold(0.4)
+        .with_center_widget(center_gauge.upcast_ref())
         // .with_rotation_gesture_enabled(false)
         // .with_markings_enabled(false)
         .with_menu_item(
             MenuItem::builder()
-                .id("cpu")
-                .angle(0.0)
-                .event("cpu")
-                .radius(70.0)
-                .widget_type("gauge")
-                .config(
-                    GaugeConfig::builder()
-                        .label("CPU")
-                        .value(0.0)
-                        .unit("%")
-                        .min(0.0)
-                        .warning(80.0)
-                        .critical(90.0)
-                        .max(100.0)
-                        .build(),
-                )
-                .build(),
-        )
-        .expect("Failed to add 'cpu' menu item")
-        .with_menu_item(
-            MenuItem::builder()
                 .id("temp")
-                .angle(90.0)
+                .angle(45.0)
                 .event("temp")
                 .radius(70.0)
                 .widget_type("gauge")
@@ -119,7 +116,7 @@ fn build_ui(app: &Application) {
         .with_menu_item(
             MenuItem::builder()
                 .id("mem")
-                .angle(180.0)
+                .angle(135.0)
                 .event("mem")
                 .radius(70.0)
                 .widget_type("gauge")
@@ -159,6 +156,18 @@ fn build_ui(app: &Application) {
         )
         .expect("Failed to add 'disk' menu item");
 
+    // Center widget click handler: close submenu or menu
+    let overlay_for_center = overlay.clone();
+    let center_click = GestureClick::new();
+    center_click.connect_pressed(move |_, _, _, _| {
+        if overlay_for_center.submenu_depth() > 0 {
+            let _ = overlay_for_center.close_submenu();
+        } else {
+            let _ = overlay_for_center.hide_pie_menu();
+        }
+    });
+    center_gauge.add_controller(center_click);
+
     let system = Rc::new(RefCell::new(System::new()));
     let components = Rc::new(RefCell::new(Components::new_with_refreshed_list()));
     let disks = Rc::new(RefCell::new(Disks::new_with_refreshed_list()));
@@ -168,6 +177,7 @@ fn build_ui(app: &Application) {
     system.borrow_mut().refresh_memory();
 
     let overlay_clone = overlay.clone();
+    let center_gauge_clone = center_gauge.clone();
     let system_clone = system.clone();
     let components_clone = components.clone();
     let disks_clone = disks.clone();
@@ -185,6 +195,7 @@ fn build_ui(app: &Application) {
         // CPU usage
         let cpu_usage = system_clone.borrow().global_cpu_usage() as f64;
         update_gauge(&overlay_clone, "cpu", cpu_usage);
+        center_gauge_clone.set_value(cpu_usage);
 
         // CPU temperature — find first component with a valid temperature
         let temp = components_clone

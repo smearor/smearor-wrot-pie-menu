@@ -296,6 +296,12 @@ impl GaugeItemWidget {
         self.imp().selected.replace(selected);
         self.queue_draw();
     }
+
+    /// Updates the gauge value and triggers a redraw.
+    pub fn set_value(&self, value: f64) {
+        self.imp().value.replace(value);
+        self.queue_draw();
+    }
 }
 
 #[cfg(test)]

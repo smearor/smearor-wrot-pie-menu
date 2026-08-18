@@ -16,6 +16,8 @@ pub mod widget_registry;
 pub use button_widget::ButtonConfig;
 pub use circle_widget::CircleConfig;
 pub use context::MenuItemContext;
+pub use gauge_item_widget::GaugeItemWidget;
+pub use gauge_item_widget::GaugeItemWidgetParams;
 pub use gauge_widget::GaugeConfig;
 pub use gauge_widget::GaugeWidgetFactory;
 pub use item::DEFAULT_MENU_ITEM_RADIUS;

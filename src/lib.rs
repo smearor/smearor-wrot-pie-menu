@@ -16,6 +16,8 @@ pub use menu::ButtonConfig;
 pub use menu::CircleConfig;
 pub use menu::DEFAULT_MENU_ITEM_RADIUS;
 pub use menu::GaugeConfig;
+pub use menu::GaugeItemWidget;
+pub use menu::GaugeItemWidgetParams;
 pub use menu::ItemSize;
 pub use menu::MenuItem;
 pub use menu::MenuItemContext;

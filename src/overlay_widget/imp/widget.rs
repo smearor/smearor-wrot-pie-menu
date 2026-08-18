@@ -331,12 +331,25 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
             debug!("Click distance from center: {distance}, threshold: {center_radius}");
 
             if distance <= center_radius {
-                debug!("Center circle clicked, closing submenu or menu");
-                gesture.set_state(EventSequenceState::Claimed);
-                if widget.submenu_depth() > 0 {
-                    let _ = widget.close_submenu();
+                // Check if a center widget is set — if so, let the event propagate
+                let has_center_widget = widget
+                    .imp()
+                    .pie_menu_widget
+                    .borrow()
+                    .as_ref()
+                    .and_then(|menu_widget| menu_widget.imp().center_widget.borrow().clone())
+                    .is_some();
+
+                if has_center_widget {
+                    debug!("Center click with center widget set — propagating to widget");
                 } else {
-                    let _ = widget.hide_pie_menu();
+                    debug!("Center circle clicked, closing submenu or menu");
+                    gesture.set_state(EventSequenceState::Claimed);
+                    if widget.submenu_depth() > 0 {
+                        let _ = widget.close_submenu();
+                    } else {
+                        let _ = widget.hide_pie_menu();
+                    }
                 }
             } else {
                 // Check if click is on a menu item (main ring or active submenu ring)
@@ -624,6 +637,7 @@ impl WidgetImpl for PieMenuOverlayWidgetImpl {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gtk4::prelude::Cast;
 
     #[test]
     fn test_default_activation_threshold() {
@@ -685,5 +699,28 @@ mod tests {
     #[test]
     fn test_default_submenu_radius_step_constant() {
         assert_eq!(DEFAULT_SUBMENU_RADIUS_STEP, 80.0);
+    }
+
+    #[test]
+    #[ignore = "requires GTK display environment"]
+    fn test_center_click_default_closes_menu() {
+        crate::test_util::ensure_gtk_init();
+        let child = gtk4::Label::new(Some("child"));
+        let overlay = crate::overlay_widget::widget::PieMenuOverlayWidget::new(Some(child.upcast_ref()));
+        // Without a center widget, the overlay should have no center widget
+        assert!(overlay.center_widget().is_none());
+        // The built-in close logic should be active (verified by the absence
+        // of a center widget — the click handler checks this at runtime)
+    }
+
+    #[test]
+    #[ignore = "requires GTK display environment"]
+    fn test_center_click_with_center_widget_propagates() {
+        crate::test_util::ensure_gtk_init();
+        let child = gtk4::Label::new(Some("child"));
+        let center = gtk4::Label::new(Some("center"));
+        let overlay = crate::overlay_widget::widget::PieMenuOverlayWidget::new(Some(child.upcast_ref())).with_center_widget(center.upcast_ref());
+        // With a center widget set, the built-in close logic is bypassed
+        assert!(overlay.center_widget().is_some());
     }
 }

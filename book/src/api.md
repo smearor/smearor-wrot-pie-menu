@@ -236,6 +236,14 @@ Sets the radius for a specific submenu level. Level 0 is the main ring, level 1 
 
 Sets the global step width between consecutive ring levels. Each submenu level's radius is computed as `main_radius + level * step`. Default: `80.0`.
 
+### `set_center_widget(Option<&Widget>)` / `center_widget() -> Option<Widget>`
+
+Sets or removes an optional center widget rendered inside the pie menu ring's transparent center. The center widget rotates with the ring. When set, the consumer is responsible for implementing close-menu / close-submenu behavior via event controllers on the center widget. When `None`, the built-in center-click-to-close behavior is restored.
+
+### `with_center_widget(&Widget) -> Self`
+
+Builder method that sets the center widget and returns self for chaining. See [Builder Pattern](builder_pattern.md).
+
 ### `cycle_selection(i32)`
 
 Cycles the keyboard selection by `direction` (-1 for CCW, +1 for CW). Items are sorted by angle for deterministic navigation order. Disabled items are skipped.
@@ -392,6 +400,8 @@ pub enum PieMenuMessage {
 | `set_rotation` | `RotationHandler` | `f32` | Set rotation |
 | `rotation` | `RotationHandler` | — | Get rotation |
 | `set_close_callback` | `PieMenuWidget` | `Fn() + 'static` | Center click callback |
+| `set_center_widget` | `PieMenuOverlayWidget` | `Option<&Widget>` | Set/remove center widget |
+| `center_widget` | `PieMenuOverlayWidget` | — | Get current center widget |
 | `set_markings_enabled` | `PieMenuWidget` | `bool` | Enable/disable ring markings |
 | `markings_enabled` | `PieMenuWidget` | — | Get markings state |
 | `with_message_sender` | `PieMenuOverlayWidget` | `Sender<PieMenuMessage>` | Builder: set sender |
@@ -404,5 +414,6 @@ pub enum PieMenuMessage {
 | `with_pie_menu_center_radius` | `PieMenuOverlayWidget` | `f32` | Builder: set inner ring radius |
 | `with_submenu_radius_step` | `PieMenuOverlayWidget` | `f32` | Builder: set step between ring levels |
 | `with_submenu_radius` | `PieMenuOverlayWidget` | `u32, f32` | Builder: set radius for a specific submenu level |
+| `with_center_widget` | `PieMenuOverlayWidget` | `&Widget` | Builder: set center widget |
 | `with_menu_item` | `PieMenuOverlayWidget` | `MenuItem` | Builder: add item |
 | `register_widget_factory` | `PieMenuOverlayWidget` | `Box<dyn MenuItemWidgetFactoryErased>` | Register a custom widget factory |

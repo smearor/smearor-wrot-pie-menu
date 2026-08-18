@@ -74,6 +74,50 @@ use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandl
 overlay.set_markings_enabled(false);
 ```
 
+## Optional Center Widget
+
+An optional GTK4 widget can be placed in the center of the pie menu ring. The center widget rotates with the ring and is responsible for its own event handling, including close-menu and close-submenu interactions.
+
+```rust
+use gtk4::GestureClick;
+use gtk4::Label;
+use gtk4::prelude::*;
+use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+let center_label = Label::new(Some("Close"));
+
+// The consumer is responsible for close behavior
+let overlay_clone = overlay.clone();
+let click = GestureClick::new();
+click.connect_pressed(move |_, _, _, _| {
+    if overlay_clone.submenu_depth() > 0 {
+        let _ = overlay_clone.close_submenu();
+    } else {
+        let _ = overlay_clone.hide_pie_menu();
+    }
+});
+center_label.add_controller(click);
+
+overlay.set_center_widget(Some(&center_label));
+```
+
+When no center widget is set, the built-in center-click-to-close behavior remains active. When a center widget is set, the built-in close logic is bypassed — the click event propagates to the center widget's own event controllers.
+
+The center widget is clamped to `2 * center_radius` pixels in size. Use `set_pie_menu_center_radius` to adjust the available space.
+
+```rust
+// Builder pattern
+let overlay = PieMenuOverlayWidget::new(Some(&child))
+    .with_center_widget(&center_label)
+    .with_pie_menu_center_radius(100.0);
+```
+
+To remove the center widget and restore default behavior:
+
+```rust
+overlay.set_center_widget(None);
+```
+
 ## Message Channel
 
 Set up an `mpsc` channel to receive messages from the pie menu:
@@ -101,7 +145,7 @@ The `PieMenuOverlayWidget` responds to two touch gestures:
 - **Rotation** (`GestureRotate`): Rotates the menu ring and sends `Rotate` messages when the delta exceeds 10 degrees
 
 Click detection handles:
-- **Center circle click**: Closes the menu
+- **Center circle click**: Closes the menu (unless a center widget is set — see [Optional Center Widget](#optional-center-widget))
 - **Menu item click**: Sends `Event` message with the item's event name
 
 ### Additional Input Methods

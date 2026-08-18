@@ -119,4 +119,27 @@ impl PieMenuOverlayWidget {
             pie_menu_widget.register_widget_factory(factory);
         }
     }
+
+    /// Sets the center widget and returns self for chaining.
+    /// The center widget rotates with the ring and is responsible
+    /// for its own event handling (close-menu, close-submenu).
+    pub fn with_center_widget(self, widget: &Widget) -> Self {
+        self.set_center_widget(Some(widget));
+        self
+    }
+
+    /// Sets or removes the center widget.
+    /// Delegates to `PieMenuWidget::set_center_widget`.
+    pub fn set_center_widget(&self, widget: Option<&Widget>) {
+        let pie_menu_widget_borrow = self.imp().pie_menu_widget.borrow();
+        if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
+            pie_menu_widget.set_center_widget(widget);
+        }
+    }
+
+    /// Returns the current center widget, if any.
+    pub fn center_widget(&self) -> Option<Widget> {
+        let pie_menu_widget_borrow = self.imp().pie_menu_widget.borrow();
+        pie_menu_widget_borrow.as_ref().and_then(|pie_menu_widget| pie_menu_widget.center_widget())
+    }
 }
