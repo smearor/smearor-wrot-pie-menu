@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-39a78894.js";
+            window.path_to_searchindex_js = "searchindex-b1d12f77.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d2f469de.js"></script>
@@ -236,6 +236,45 @@ overlay.set_rotation_gesture_enabled(false);
 
 overlay.set_markings_enabled(false);
 <span class="boring">}</span></code></pre>
+<h2 id="optional-center-widget"><a class="header" href="#optional-center-widget">Optional Center Widget</a></h2>
+<p>An optional GTK4 widget can be placed in the center of the pie menu ring. The center widget rotates with the ring and is responsible for its own event handling, including close-menu and close-submenu interactions.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use gtk4::GestureClick;
+use gtk4::Label;
+use gtk4::prelude::*;
+use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+let center_label = Label::new(Some("Close"));
+
+// The consumer is responsible for close behavior
+let overlay_clone = overlay.clone();
+let click = GestureClick::new();
+click.connect_pressed(move |_, _, _, _| {
+    if overlay_clone.submenu_depth() &gt; 0 {
+        let _ = overlay_clone.close_submenu();
+    } else {
+        let _ = overlay_clone.hide_pie_menu();
+    }
+});
+center_label.add_controller(click);
+
+overlay.set_center_widget(Some(&amp;center_label));
+<span class="boring">}</span></code></pre>
+<p>When no center widget is set, the built-in center-click-to-close behavior remains active. When a center widget is set, the built-in close logic is bypassed — the click event propagates to the center widget’s own event controllers.</p>
+<p>The center widget is clamped to <code>2 * center_radius</code> pixels in size. Use <code>set_pie_menu_center_radius</code> to adjust the available space.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Builder pattern
+let overlay = PieMenuOverlayWidget::new(Some(&amp;child))
+    .with_center_widget(&amp;center_label)
+    .with_pie_menu_center_radius(100.0);
+<span class="boring">}</span></code></pre>
+<p>To remove the center widget and restore default behavior:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.set_center_widget(None);
+<span class="boring">}</span></code></pre>
 <h2 id="message-channel"><a class="header" href="#message-channel">Message Channel</a></h2>
 <p>Set up an <code>mpsc</code> channel to receive messages from the pie menu:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -262,7 +301,7 @@ overlay.set_message_sender(sender);
 </ul>
 <p>Click detection handles:</p>
 <ul>
-<li><strong>Center circle click</strong>: Closes the menu</li>
+<li><strong>Center circle click</strong>: Closes the menu (unless a center widget is set — see <a href="#optional-center-widget">Optional Center Widget</a>)</li>
 <li><strong>Menu item click</strong>: Sends <code>Event</code> message with the item’s event name</li>
 </ul>
 <h3 id="additional-input-methods"><a class="header" href="#additional-input-methods">Additional Input Methods</a></h3>

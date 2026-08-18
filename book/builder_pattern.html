@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-39a78894.js";
+            window.path_to_searchindex_js = "searchindex-b1d12f77.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d2f469de.js"></script>
@@ -186,6 +186,14 @@
 <tr><td><code>with_message_sender(sender)</code></td><td><code>Self</code></td><td>Sets the message channel sender</td></tr>
 <tr><td><code>with_activation_threshold(f64)</code></td><td><code>Self</code></td><td>Sets the pinch-to-zoom activation threshold</td></tr>
 <tr><td><code>with_deactivation_threshold(f64)</code></td><td><code>Self</code></td><td>Sets the pinch-out deactivation threshold</td></tr>
+<tr><td><code>with_rotation_gesture_enabled(bool)</code></td><td><code>Self</code></td><td>Enables/disables the rotation gesture</td></tr>
+<tr><td><code>with_markings_enabled(bool)</code></td><td><code>Self</code></td><td>Enables/disables ring markings</td></tr>
+<tr><td><code>with_scroll_rotation_step(f64)</code></td><td><code>Self</code></td><td>Sets the scroll rotation sensitivity</td></tr>
+<tr><td><code>with_pie_menu_radius(f32)</code></td><td><code>Self</code></td><td>Sets the main pie menu ring radius (default: 160.0)</td></tr>
+<tr><td><code>with_pie_menu_center_radius(f32)</code></td><td><code>Self</code></td><td>Sets the inner ring radius / transparent center (default: 64.0)</td></tr>
+<tr><td><code>with_submenu_radius_step(f32)</code></td><td><code>Self</code></td><td>Sets the step between consecutive submenu ring levels (default: 80.0)</td></tr>
+<tr><td><code>with_submenu_radius(u32, f32)</code></td><td><code>Self</code></td><td>Sets the radius for a specific submenu level</td></tr>
+<tr><td><code>with_center_widget(&amp;Widget)</code></td><td><code>Self</code></td><td>Sets an optional center widget that rotates with the ring</td></tr>
 <tr><td><code>with_menu_item(MenuItem)</code></td><td><code>Result&lt;Self, AddMenuItemError&gt;</code></td><td>Adds a menu item</td></tr>
 </tbody>
 </table>
@@ -213,6 +221,55 @@
 <span class="boring">}</span></code></pre>
 <h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
 <p><code>with_menu_item()</code> returns <code>Result&lt;Self, AddMenuItemError&gt;</code>. If the item overlaps with an existing item, the error is propagated and the chain stops. Use <code>?</code> to short-circuit on failure.</p>
+<h2 id="ring-radius-configuration"><a class="header" href="#ring-radius-configuration">Ring Radius Configuration</a></h2>
+<p>The pie menu ring size can be controlled with <code>with_pie_menu_radius</code> and <code>with_pie_menu_center_radius</code>. Items are positioned at <code>0.7 * radius</code> from center. To center items in the ring, set <code>center_radius = 2 * (0.7 * radius) - radius</code>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let overlay = PieMenuOverlayWidget::new(Some(&amp;child))
+    .with_pie_menu_radius(250.0)
+    .with_pie_menu_center_radius(100.0)
+    .with_menu_item(
+        MenuItem::builder()
+            .id("gauge")
+            .angle(0.0)
+            .event("gauge")
+            .radius(70.0)
+            .widget_type("gauge")
+            .config(GaugeConfig::builder()
+                .label("CPU")
+                .value(42.0)
+                .unit("%")
+                .min(0.0)
+                .warning(80.0)
+                .critical(90.0)
+                .max(100.0)
+                .build())
+            .build(),
+    )?;
+<span class="boring">}</span></code></pre>
+<h2 id="center-widget"><a class="header" href="#center-widget">Center Widget</a></h2>
+<p>The builder supports setting an optional center widget that rotates with the ring. The consumer is responsible for the center widget’s event handling (e.g. click-to-close).</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::GaugeItemWidget;
+use smearor_wrot_pie_menu::GaugeItemWidgetParams;
+
+let center_gauge = GaugeItemWidget::new(GaugeItemWidgetParams {
+    label: "CPU".to_string(),
+    value: 0.0,
+    unit: "%".to_string(),
+    min: 0.0,
+    warning: 80.0,
+    critical: 90.0,
+    max: 100.0,
+    item_radius: 90.0,
+    enabled: true,
+});
+
+let overlay = PieMenuOverlayWidget::new(Some(&amp;child))
+    .with_pie_menu_center_radius(100.0)
+    .with_center_widget(&amp;center_gauge);
+<span class="boring">}</span></code></pre>
 
                     </main>
 

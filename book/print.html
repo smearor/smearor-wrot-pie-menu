@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-39a78894.js";
+            window.path_to_searchindex_js = "searchindex-b1d12f77.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d2f469de.js"></script>
@@ -337,6 +337,45 @@ overlay.set_rotation_gesture_enabled(false);
 
 overlay.set_markings_enabled(false);
 <span class="boring">}</span></code></pre>
+<h2 id="optional-center-widget"><a class="header" href="#optional-center-widget">Optional Center Widget</a></h2>
+<p>An optional GTK4 widget can be placed in the center of the pie menu ring. The center widget rotates with the ring and is responsible for its own event handling, including close-menu and close-submenu interactions.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use gtk4::GestureClick;
+use gtk4::Label;
+use gtk4::prelude::*;
+use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
+
+let center_label = Label::new(Some("Close"));
+
+// The consumer is responsible for close behavior
+let overlay_clone = overlay.clone();
+let click = GestureClick::new();
+click.connect_pressed(move |_, _, _, _| {
+    if overlay_clone.submenu_depth() &gt; 0 {
+        let _ = overlay_clone.close_submenu();
+    } else {
+        let _ = overlay_clone.hide_pie_menu();
+    }
+});
+center_label.add_controller(click);
+
+overlay.set_center_widget(Some(&amp;center_label));
+<span class="boring">}</span></code></pre>
+<p>When no center widget is set, the built-in center-click-to-close behavior remains active. When a center widget is set, the built-in close logic is bypassed — the click event propagates to the center widget’s own event controllers.</p>
+<p>The center widget is clamped to <code>2 * center_radius</code> pixels in size. Use <code>set_pie_menu_center_radius</code> to adjust the available space.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Builder pattern
+let overlay = PieMenuOverlayWidget::new(Some(&amp;child))
+    .with_center_widget(&amp;center_label)
+    .with_pie_menu_center_radius(100.0);
+<span class="boring">}</span></code></pre>
+<p>To remove the center widget and restore default behavior:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>overlay.set_center_widget(None);
+<span class="boring">}</span></code></pre>
 <h2 id="message-channel"><a class="header" href="#message-channel">Message Channel</a></h2>
 <p>Set up an <code>mpsc</code> channel to receive messages from the pie menu:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -363,7 +402,7 @@ overlay.set_message_sender(sender);
 </ul>
 <p>Click detection handles:</p>
 <ul>
-<li><strong>Center circle click</strong>: Closes the menu</li>
+<li><strong>Center circle click</strong>: Closes the menu (unless a center widget is set — see <a href="#optional-center-widget">Optional Center Widget</a>)</li>
 <li><strong>Menu item click</strong>: Sends <code>Event</code> message with the item’s event name</li>
 </ul>
 <h3 id="additional-input-methods"><a class="header" href="#additional-input-methods">Additional Input Methods</a></h3>
@@ -703,6 +742,12 @@ overlay.set_widget_config("cpu", json!({ "value": 0.72 }))?;
     fn markings_enabled(&amp;self) -&gt; bool;
     fn set_scroll_rotation_step(&amp;self, sensitivity: f64);
     fn scroll_rotation_step(&amp;self) -&gt; f32;
+    fn set_pie_menu_radius(&amp;self, radius: f32);
+    fn pie_menu_radius(&amp;self) -&gt; f32;
+    fn set_pie_menu_center_radius(&amp;self, radius: f32);
+    fn pie_menu_center_radius(&amp;self) -&gt; f32;
+    fn set_submenu_radius(&amp;self, level: u32, radius: f32);
+    fn set_submenu_radius_step(&amp;self, step: f32);
     fn cycle_selection(&amp;self, direction: i32);
     fn select_first_item(&amp;self);
     fn confirm_selection(&amp;self);
@@ -728,6 +773,18 @@ overlay.set_widget_config("cpu", json!({ "value": 0.72 }))?;
 <p>Enables or disables drawing of inner and outer ring markings. Default: <code>true</code>.</p>
 <h3 id="set_scroll_rotation_stepf64--scroll_rotation_step---f32"><a class="header" href="#set_scroll_rotation_stepf64--scroll_rotation_step---f32"><code>set_scroll_rotation_step(f64)</code> / <code>scroll_rotation_step() -&gt; f32</code></a></h3>
 <p>Sets/gets the scroll rotation sensitivity multiplier. The rotation delta is computed as <code>dy * sensitivity</code>. Default: <code>5.0</code>. See <a href="#input-handling">Input Handling</a>.</p>
+<h3 id="set_pie_menu_radiusf32--pie_menu_radius---f32"><a class="header" href="#set_pie_menu_radiusf32--pie_menu_radius---f32"><code>set_pie_menu_radius(f32)</code> / <code>pie_menu_radius() -&gt; f32</code></a></h3>
+<p>Sets/gets the radius of the main pie menu ring in pixels. Default: <code>160.0</code>. Increasing this enlarges the ring to accommodate larger item widgets.</p>
+<h3 id="set_pie_menu_center_radiusf32--pie_menu_center_radius---f32"><a class="header" href="#set_pie_menu_center_radiusf32--pie_menu_center_radius---f32"><code>set_pie_menu_center_radius(f32)</code> / <code>pie_menu_center_radius() -&gt; f32</code></a></h3>
+<p>Sets/gets the inner radius of the pie menu ring (the transparent center) in pixels. Default: <code>64.0</code>. Items are positioned at <code>0.7 * radius</code> from center; to center items in the ring, set <code>center_radius = 2 * (0.7 * radius) - radius</code>.</p>
+<h3 id="set_submenu_radiusu32-f32"><a class="header" href="#set_submenu_radiusu32-f32"><code>set_submenu_radius(u32, f32)</code></a></h3>
+<p>Sets the radius for a specific submenu level. Level 0 is the main ring, level 1 is the first submenu, etc. This overrides the computed <code>main_radius + level * step</code> value for that level.</p>
+<h3 id="set_submenu_radius_stepf32"><a class="header" href="#set_submenu_radius_stepf32"><code>set_submenu_radius_step(f32)</code></a></h3>
+<p>Sets the global step width between consecutive ring levels. Each submenu level’s radius is computed as <code>main_radius + level * step</code>. Default: <code>80.0</code>.</p>
+<h3 id="set_center_widgetoptionwidget--center_widget---optionwidget"><a class="header" href="#set_center_widgetoptionwidget--center_widget---optionwidget"><code>set_center_widget(Option&lt;&amp;Widget&gt;)</code> / <code>center_widget() -&gt; Option&lt;Widget&gt;</code></a></h3>
+<p>Sets or removes an optional center widget rendered inside the pie menu ring’s transparent center. The center widget rotates with the ring. When set, the consumer is responsible for implementing close-menu / close-submenu behavior via event controllers on the center widget. When <code>None</code>, the built-in center-click-to-close behavior is restored.</p>
+<h3 id="with_center_widgetwidget---self"><a class="header" href="#with_center_widgetwidget---self"><code>with_center_widget(&amp;Widget) -&gt; Self</code></a></h3>
+<p>Builder method that sets the center widget and returns self for chaining. See <a href="#builder-pattern-1">Builder Pattern</a>.</p>
 <h3 id="cycle_selectioni32"><a class="header" href="#cycle_selectioni32"><code>cycle_selection(i32)</code></a></h3>
 <p>Cycles the keyboard selection by <code>direction</code> (-1 for CCW, +1 for CW). Items are sorted by angle for deterministic navigation order. Disabled items are skipped.</p>
 <h3 id="select_first_item"><a class="header" href="#select_first_item"><code>select_first_item()</code></a></h3>
@@ -839,6 +896,12 @@ MenuItem::builder()
 <tr><td><code>markings_enabled</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get markings state</td></tr>
 <tr><td><code>set_scroll_rotation_step</code></td><td><code>PieMenuControlHandler</code></td><td><code>f64</code></td><td>Set scroll rotation sensitivity</td></tr>
 <tr><td><code>scroll_rotation_step</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get scroll rotation sensitivity</td></tr>
+<tr><td><code>set_pie_menu_radius</code></td><td><code>PieMenuControlHandler</code></td><td><code>f32</code></td><td>Set main ring radius</td></tr>
+<tr><td><code>pie_menu_radius</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get main ring radius</td></tr>
+<tr><td><code>set_pie_menu_center_radius</code></td><td><code>PieMenuControlHandler</code></td><td><code>f32</code></td><td>Set inner ring radius (transparent center)</td></tr>
+<tr><td><code>pie_menu_center_radius</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Get inner ring radius</td></tr>
+<tr><td><code>set_submenu_radius</code></td><td><code>PieMenuControlHandler</code></td><td><code>u32, f32</code></td><td>Set radius for a specific submenu level</td></tr>
+<tr><td><code>set_submenu_radius_step</code></td><td><code>PieMenuControlHandler</code></td><td><code>f32</code></td><td>Set step between consecutive ring levels</td></tr>
 <tr><td><code>cycle_selection</code></td><td><code>PieMenuControlHandler</code></td><td><code>i32</code></td><td>Cycle keyboard selection</td></tr>
 <tr><td><code>select_first_item</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Select first item</td></tr>
 <tr><td><code>confirm_selection</code></td><td><code>PieMenuControlHandler</code></td><td>—</td><td>Confirm keyboard selection</td></tr>
@@ -851,6 +914,8 @@ MenuItem::builder()
 <tr><td><code>set_rotation</code></td><td><code>RotationHandler</code></td><td><code>f32</code></td><td>Set rotation</td></tr>
 <tr><td><code>rotation</code></td><td><code>RotationHandler</code></td><td>—</td><td>Get rotation</td></tr>
 <tr><td><code>set_close_callback</code></td><td><code>PieMenuWidget</code></td><td><code>Fn() + 'static</code></td><td>Center click callback</td></tr>
+<tr><td><code>set_center_widget</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>Option&lt;&amp;Widget&gt;</code></td><td>Set/remove center widget</td></tr>
+<tr><td><code>center_widget</code></td><td><code>PieMenuOverlayWidget</code></td><td>—</td><td>Get current center widget</td></tr>
 <tr><td><code>set_markings_enabled</code></td><td><code>PieMenuWidget</code></td><td><code>bool</code></td><td>Enable/disable ring markings</td></tr>
 <tr><td><code>markings_enabled</code></td><td><code>PieMenuWidget</code></td><td>—</td><td>Get markings state</td></tr>
 <tr><td><code>with_message_sender</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>Sender&lt;PieMenuMessage&gt;</code></td><td>Builder: set sender</td></tr>
@@ -859,6 +924,11 @@ MenuItem::builder()
 <tr><td><code>with_rotation_gesture_enabled</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>bool</code></td><td>Builder: enable/disable rotation gesture</td></tr>
 <tr><td><code>with_markings_enabled</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>bool</code></td><td>Builder: enable/disable markings</td></tr>
 <tr><td><code>with_scroll_rotation_step</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f64</code></td><td>Builder: set scroll rotation sensitivity</td></tr>
+<tr><td><code>with_pie_menu_radius</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f32</code></td><td>Builder: set main ring radius</td></tr>
+<tr><td><code>with_pie_menu_center_radius</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f32</code></td><td>Builder: set inner ring radius</td></tr>
+<tr><td><code>with_submenu_radius_step</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>f32</code></td><td>Builder: set step between ring levels</td></tr>
+<tr><td><code>with_submenu_radius</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>u32, f32</code></td><td>Builder: set radius for a specific submenu level</td></tr>
+<tr><td><code>with_center_widget</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>&amp;Widget</code></td><td>Builder: set center widget</td></tr>
 <tr><td><code>with_menu_item</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>MenuItem</code></td><td>Builder: add item</td></tr>
 <tr><td><code>register_widget_factory</code></td><td><code>PieMenuOverlayWidget</code></td><td><code>Box&lt;dyn MenuItemWidgetFactoryErased&gt;</code></td><td>Register a custom widget factory</td></tr>
 </tbody>
@@ -952,6 +1022,14 @@ overlay.set_menu_item_enabled("save", true)?;
 <tr><td><code>with_message_sender(sender)</code></td><td><code>Self</code></td><td>Sets the message channel sender</td></tr>
 <tr><td><code>with_activation_threshold(f64)</code></td><td><code>Self</code></td><td>Sets the pinch-to-zoom activation threshold</td></tr>
 <tr><td><code>with_deactivation_threshold(f64)</code></td><td><code>Self</code></td><td>Sets the pinch-out deactivation threshold</td></tr>
+<tr><td><code>with_rotation_gesture_enabled(bool)</code></td><td><code>Self</code></td><td>Enables/disables the rotation gesture</td></tr>
+<tr><td><code>with_markings_enabled(bool)</code></td><td><code>Self</code></td><td>Enables/disables ring markings</td></tr>
+<tr><td><code>with_scroll_rotation_step(f64)</code></td><td><code>Self</code></td><td>Sets the scroll rotation sensitivity</td></tr>
+<tr><td><code>with_pie_menu_radius(f32)</code></td><td><code>Self</code></td><td>Sets the main pie menu ring radius (default: 160.0)</td></tr>
+<tr><td><code>with_pie_menu_center_radius(f32)</code></td><td><code>Self</code></td><td>Sets the inner ring radius / transparent center (default: 64.0)</td></tr>
+<tr><td><code>with_submenu_radius_step(f32)</code></td><td><code>Self</code></td><td>Sets the step between consecutive submenu ring levels (default: 80.0)</td></tr>
+<tr><td><code>with_submenu_radius(u32, f32)</code></td><td><code>Self</code></td><td>Sets the radius for a specific submenu level</td></tr>
+<tr><td><code>with_center_widget(&amp;Widget)</code></td><td><code>Self</code></td><td>Sets an optional center widget that rotates with the ring</td></tr>
 <tr><td><code>with_menu_item(MenuItem)</code></td><td><code>Result&lt;Self, AddMenuItemError&gt;</code></td><td>Adds a menu item</td></tr>
 </tbody>
 </table>
@@ -979,6 +1057,55 @@ overlay.set_menu_item_enabled("save", true)?;
 <span class="boring">}</span></code></pre>
 <h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
 <p><code>with_menu_item()</code> returns <code>Result&lt;Self, AddMenuItemError&gt;</code>. If the item overlaps with an existing item, the error is propagated and the chain stops. Use <code>?</code> to short-circuit on failure.</p>
+<h2 id="ring-radius-configuration"><a class="header" href="#ring-radius-configuration">Ring Radius Configuration</a></h2>
+<p>The pie menu ring size can be controlled with <code>with_pie_menu_radius</code> and <code>with_pie_menu_center_radius</code>. Items are positioned at <code>0.7 * radius</code> from center. To center items in the ring, set <code>center_radius = 2 * (0.7 * radius) - radius</code>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let overlay = PieMenuOverlayWidget::new(Some(&amp;child))
+    .with_pie_menu_radius(250.0)
+    .with_pie_menu_center_radius(100.0)
+    .with_menu_item(
+        MenuItem::builder()
+            .id("gauge")
+            .angle(0.0)
+            .event("gauge")
+            .radius(70.0)
+            .widget_type("gauge")
+            .config(GaugeConfig::builder()
+                .label("CPU")
+                .value(42.0)
+                .unit("%")
+                .min(0.0)
+                .warning(80.0)
+                .critical(90.0)
+                .max(100.0)
+                .build())
+            .build(),
+    )?;
+<span class="boring">}</span></code></pre>
+<h2 id="center-widget"><a class="header" href="#center-widget">Center Widget</a></h2>
+<p>The builder supports setting an optional center widget that rotates with the ring. The consumer is responsible for the center widget’s event handling (e.g. click-to-close).</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::GaugeItemWidget;
+use smearor_wrot_pie_menu::GaugeItemWidgetParams;
+
+let center_gauge = GaugeItemWidget::new(GaugeItemWidgetParams {
+    label: "CPU".to_string(),
+    value: 0.0,
+    unit: "%".to_string(),
+    min: 0.0,
+    warning: 80.0,
+    critical: 90.0,
+    max: 100.0,
+    item_radius: 90.0,
+    enabled: true,
+});
+
+let overlay = PieMenuOverlayWidget::new(Some(&amp;child))
+    .with_pie_menu_center_radius(100.0)
+    .with_center_widget(&amp;center_gauge);
+<span class="boring">}</span></code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="auto-distribution"><a class="header" href="#auto-distribution">Auto Distribution</a></h1>
 <p>The <code>add_menu_item_auto()</code> method automatically calculates item angles, distributing them evenly across the ring.</p>
@@ -1338,7 +1465,7 @@ glib::idle_add_local(move || {
 <li><strong><code>ItemSize</code></strong> — optional non-square allocation for widgets</li>
 </ul>
 <h3 id="standard-implementations"><a class="header" href="#standard-implementations">Standard Implementations</a></h3>
-<p>The library ships three standard widget types:</p>
+<p>The library ships four standard widget types:</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -1348,6 +1475,7 @@ glib::idle_add_local(move || {
 <tr><td><code>"circle"</code></td><td><code>CircleWidgetFactory</code></td><td><code>CircleConfig</code></td><td>Circular item with icon + label</td></tr>
 <tr><td><code>"square"</code></td><td><code>SquareWidgetFactory</code></td><td><code>SquareConfig</code></td><td>Square item with icon + label</td></tr>
 <tr><td><code>"button"</code></td><td><code>ButtonWidgetFactory</code></td><td><code>ButtonConfig</code></td><td>Simple GTK4 Button (debug)</td></tr>
+<tr><td><code>"gauge"</code></td><td><code>GaugeWidgetFactory</code></td><td><code>GaugeConfig</code></td><td>Tachometer-style gauge with color-coded zones</td></tr>
 </tbody>
 </table>
 </div>
@@ -1393,6 +1521,54 @@ let config = CircleConfig::builder()
 let config = ButtonConfig::builder()
     .label("Click me")
     .build();
+<span class="boring">}</span></code></pre>
+<h3 id="gaugeconfig"><a class="header" href="#gaugeconfig">GaugeConfig</a></h3>
+<p>The <code>GaugeConfig</code> defines a tachometer-style gauge with an 80% arc (288° sweep), color-coded zones (green / orange / red), and centered label + value text.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::GaugeConfig;
+
+let config = GaugeConfig::builder()
+    .label("CPU")
+    .value(42.0)
+    .unit("%")
+    .min(0.0)
+    .warning(80.0)
+    .critical(90.0)
+    .max(100.0)
+    .build();
+<span class="boring">}</span></code></pre>
+<p>Fields:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>label</code></td><td><code>String</code></td><td>No</td><td><code>""</code></td><td>Display label shown above the value</td></tr>
+<tr><td><code>value</code></td><td><code>f64</code></td><td>No</td><td><code>0.0</code></td><td>Current value</td></tr>
+<tr><td><code>unit</code></td><td><code>String</code></td><td>No</td><td><code>""</code></td><td>Unit suffix shown after the value</td></tr>
+<tr><td><code>min</code></td><td><code>f64</code></td><td>No</td><td><code>0.0</code></td><td>Minimum value (arc start)</td></tr>
+<tr><td><code>warning</code></td><td><code>f64</code></td><td>No</td><td><code>0.0</code></td><td>Threshold where the arc turns orange</td></tr>
+<tr><td><code>critical</code></td><td><code>f64</code></td><td>No</td><td><code>0.0</code></td><td>Threshold where the arc turns red</td></tr>
+<tr><td><code>max</code></td><td><code>f64</code></td><td>No</td><td><code>100.0</code></td><td>Maximum value (arc end)</td></tr>
+</tbody>
+</table>
+</div>
+<p>The arc is drawn from <code>min</code> to <code>max</code>. Between <code>warning</code> and <code>critical</code> the arc is orange; above <code>critical</code> it is red. Below <code>warning</code> it is green.</p>
+<h4 id="dynamic-updates"><a class="header" href="#dynamic-updates">Dynamic Updates</a></h4>
+<p>To update a gauge value at runtime, use <code>set_widget_config</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::GaugeConfig;
+
+if let Some(item) = overlay.get_menu_item("cpu")
+    &amp;&amp; let Some(config_value) = &amp;item.widget_config
+    &amp;&amp; let Ok(mut config) = serde_json::from_value::&lt;GaugeConfig&gt;(config_value.clone())
+{
+    config.value = 72.5;
+    let _ = overlay.set_widget_config("cpu", serde_json::to_value(&amp;config).unwrap_or(serde_json::Value::Null));
+}
 <span class="boring">}</span></code></pre>
 <h2 id="using-widgets-in-menu-items"><a class="header" href="#using-widgets-in-menu-items">Using Widgets in Menu Items</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -1471,7 +1647,7 @@ impl MenuItemWidgetFactory for CpuGaugeFactory {
 
 overlay.register_widget_factory(Box::new(CpuGaugeFactory));
 <span class="boring">}</span></code></pre>
-<h2 id="dynamic-updates"><a class="header" href="#dynamic-updates">Dynamic Updates</a></h2>
+<h2 id="dynamic-updates-1"><a class="header" href="#dynamic-updates-1">Dynamic Updates</a></h2>
 <h3 id="refresh_widgets-1"><a class="header" href="#refresh_widgets-1">refresh_widgets</a></h3>
 <p>Clears the widget cache and rebuilds all item widgets on the next layout pass. Use this after registering new widget factories or changing <code>widget_type</code> on existing items.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -1659,6 +1835,53 @@ overlay.set_widget_config("cpu", json!({ "value": 0.72 }))?;
 <p>The demo requires <code>smearor-wrot-rotation</code> as a dev-dependency:</p>
 <pre><code class="language-toml">[dev-dependencies]
 smearor-wrot-rotation = { path = "../smearor-wrot-rotation" }
+</code></pre>
+<h2 id="sysinfo-dashboard"><a class="header" href="#sysinfo-dashboard">Sysinfo Dashboard</a></h2>
+<p>A system information dashboard that displays CPU usage, CPU temperature, memory usage, and disk usage as <code>Gauge</code> widgets within a pie menu. The gauge values are refreshed every second using the <a href="https://crates.io/crates/sysinfo"><code>sysinfo</code></a> crate. The smearor logo is rendered as the overlay’s background child widget.</p>
+<h3 id="launch-1"><a class="header" href="#launch-1">Launch</a></h3>
+<pre><code class="language-sh">cargo run --example sysinfo_dashboard
+</code></pre>
+<h3 id="features-1"><a class="header" href="#features-1">Features</a></h3>
+<ul>
+<li><strong>Four gauge widgets</strong>: CPU %, CPU temperature (°C), memory %, disk usage %</li>
+<li><strong>80% arc tachometer rendering</strong>: Each gauge draws a 288° arc with color-coded zones (green / orange / red)</li>
+<li><strong>Color-coded thresholds</strong>: Warning and critical thresholds define the zone boundaries</li>
+<li><strong>1-second refresh</strong>: A <code>glib::timeout_add_local</code> callback refreshes <code>sysinfo::System</code>, <code>sysinfo::Components</code>, and <code>sysinfo::Disks</code> every second and updates each gauge via <code>set_widget_config</code></li>
+<li><strong>Configurable ring size</strong>: Uses <code>with_pie_menu_radius(250.0)</code> and <code>with_pie_menu_center_radius(100.0)</code> to fit the larger gauge widgets</li>
+<li><strong>Smearor logo background</strong>: Renders <code>assets/smearor.png</code> as the overlay’s child widget</li>
+</ul>
+<h3 id="integration-overview-1"><a class="header" href="#integration-overview-1">Integration Overview</a></h3>
+<pre class="mermaid">flowchart TD
+    ApplicationWindow --&gt; Box["Box (vertical)"]
+    Box --&gt; InfoLabel["Info label"]
+    Box --&gt; PieMenuOverlayWidget
+    PieMenuOverlayWidget --&gt; Picture["Picture (smearor.png)"]
+    PieMenuOverlayWidget --&gt; PieMenuWidget
+    PieMenuWidget --&gt; GaugeCPU["Gauge: CPU %"]
+    PieMenuWidget --&gt; GaugeTemp["Gauge: Temp °C"]
+    PieMenuWidget --&gt; GaugeMem["Gauge: Mem %"]
+    PieMenuWidget --&gt; GaugeDisk["Gauge: Disk %"]
+</pre>
+
+<h3 id="how-it-works-1-1"><a class="header" href="#how-it-works-1-1">How It Works</a></h3>
+<ol>
+<li>
+<p><strong>Widget hierarchy</strong>: A <code>Picture</code> widget loads <code>assets/smearor.png</code> and is passed as the child of <code>PieMenuOverlayWidget</code>. A vertical <code>Box</code> places an info label at the top and the overlay below.</p>
+</li>
+<li>
+<p><strong>Gauge items</strong>: Four <code>MenuItem</code>s with <code>widget_type("gauge")</code> and <code>GaugeConfig</code> are added at 0°, 90°, 180°, and 270°. Each has appropriate <code>min</code>, <code>warning</code>, <code>critical</code>, and <code>max</code> values.</p>
+</li>
+<li>
+<p><strong>Ring sizing</strong>: <code>with_pie_menu_radius(250.0)</code> enlarges the ring to fit the 70px-radius gauge widgets. <code>with_pie_menu_center_radius(100.0)</code> adjusts the inner radius so items are centered in the ring.</p>
+</li>
+<li>
+<p><strong>Periodic updates</strong>: A <code>glib::timeout_add_local</code> callback fires every second, refreshes <code>sysinfo</code> data, and calls <code>set_widget_config</code> for each gauge with the updated <code>GaugeConfig</code> value.</p>
+</li>
+</ol>
+<h3 id="dependencies-1"><a class="header" href="#dependencies-1">Dependencies</a></h3>
+<p>The example requires <code>sysinfo</code> as a dev-dependency:</p>
+<pre><code class="language-toml">[dev-dependencies]
+sysinfo = "0.39"
 </code></pre>
 
                     </main>

@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-39a78894.js";
+            window.path_to_searchindex_js = "searchindex-b1d12f77.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d2f469de.js"></script>
@@ -186,7 +186,7 @@
 <li><strong><code>ItemSize</code></strong> — optional non-square allocation for widgets</li>
 </ul>
 <h3 id="standard-implementations"><a class="header" href="#standard-implementations">Standard Implementations</a></h3>
-<p>The library ships three standard widget types:</p>
+<p>The library ships four standard widget types:</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -196,6 +196,7 @@
 <tr><td><code>"circle"</code></td><td><code>CircleWidgetFactory</code></td><td><code>CircleConfig</code></td><td>Circular item with icon + label</td></tr>
 <tr><td><code>"square"</code></td><td><code>SquareWidgetFactory</code></td><td><code>SquareConfig</code></td><td>Square item with icon + label</td></tr>
 <tr><td><code>"button"</code></td><td><code>ButtonWidgetFactory</code></td><td><code>ButtonConfig</code></td><td>Simple GTK4 Button (debug)</td></tr>
+<tr><td><code>"gauge"</code></td><td><code>GaugeWidgetFactory</code></td><td><code>GaugeConfig</code></td><td>Tachometer-style gauge with color-coded zones</td></tr>
 </tbody>
 </table>
 </div>
@@ -241,6 +242,54 @@ let config = CircleConfig::builder()
 let config = ButtonConfig::builder()
     .label("Click me")
     .build();
+<span class="boring">}</span></code></pre>
+<h3 id="gaugeconfig"><a class="header" href="#gaugeconfig">GaugeConfig</a></h3>
+<p>The <code>GaugeConfig</code> defines a tachometer-style gauge with an 80% arc (288° sweep), color-coded zones (green / orange / red), and centered label + value text.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::GaugeConfig;
+
+let config = GaugeConfig::builder()
+    .label("CPU")
+    .value(42.0)
+    .unit("%")
+    .min(0.0)
+    .warning(80.0)
+    .critical(90.0)
+    .max(100.0)
+    .build();
+<span class="boring">}</span></code></pre>
+<p>Fields:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>label</code></td><td><code>String</code></td><td>No</td><td><code>""</code></td><td>Display label shown above the value</td></tr>
+<tr><td><code>value</code></td><td><code>f64</code></td><td>No</td><td><code>0.0</code></td><td>Current value</td></tr>
+<tr><td><code>unit</code></td><td><code>String</code></td><td>No</td><td><code>""</code></td><td>Unit suffix shown after the value</td></tr>
+<tr><td><code>min</code></td><td><code>f64</code></td><td>No</td><td><code>0.0</code></td><td>Minimum value (arc start)</td></tr>
+<tr><td><code>warning</code></td><td><code>f64</code></td><td>No</td><td><code>0.0</code></td><td>Threshold where the arc turns orange</td></tr>
+<tr><td><code>critical</code></td><td><code>f64</code></td><td>No</td><td><code>0.0</code></td><td>Threshold where the arc turns red</td></tr>
+<tr><td><code>max</code></td><td><code>f64</code></td><td>No</td><td><code>100.0</code></td><td>Maximum value (arc end)</td></tr>
+</tbody>
+</table>
+</div>
+<p>The arc is drawn from <code>min</code> to <code>max</code>. Between <code>warning</code> and <code>critical</code> the arc is orange; above <code>critical</code> it is red. Below <code>warning</code> it is green.</p>
+<h4 id="dynamic-updates"><a class="header" href="#dynamic-updates">Dynamic Updates</a></h4>
+<p>To update a gauge value at runtime, use <code>set_widget_config</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use smearor_wrot_pie_menu::GaugeConfig;
+
+if let Some(item) = overlay.get_menu_item("cpu")
+    &amp;&amp; let Some(config_value) = &amp;item.widget_config
+    &amp;&amp; let Ok(mut config) = serde_json::from_value::&lt;GaugeConfig&gt;(config_value.clone())
+{
+    config.value = 72.5;
+    let _ = overlay.set_widget_config("cpu", serde_json::to_value(&amp;config).unwrap_or(serde_json::Value::Null));
+}
 <span class="boring">}</span></code></pre>
 <h2 id="using-widgets-in-menu-items"><a class="header" href="#using-widgets-in-menu-items">Using Widgets in Menu Items</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -319,7 +368,7 @@ impl MenuItemWidgetFactory for CpuGaugeFactory {
 
 overlay.register_widget_factory(Box::new(CpuGaugeFactory));
 <span class="boring">}</span></code></pre>
-<h2 id="dynamic-updates"><a class="header" href="#dynamic-updates">Dynamic Updates</a></h2>
+<h2 id="dynamic-updates-1"><a class="header" href="#dynamic-updates-1">Dynamic Updates</a></h2>
 <h3 id="refresh_widgets"><a class="header" href="#refresh_widgets">refresh_widgets</a></h3>
 <p>Clears the widget cache and rebuilds all item widgets on the next layout pass. Use this after registering new widget factories or changing <code>widget_type</code> on existing items.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
