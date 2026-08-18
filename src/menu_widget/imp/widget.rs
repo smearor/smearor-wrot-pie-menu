@@ -4,6 +4,7 @@ use crate::menu_widget::widget::PieMenuWidget;
 use atomic_float::AtomicF32;
 use glib::subclass::prelude::*;
 use gtk4::EventControllerMotion;
+use gtk4::Widget;
 use gtk4::gdk::RGBA;
 use gtk4::glib;
 use gtk4::graphene::Point;
@@ -65,6 +66,11 @@ pub struct PieMenuWidgetImpl {
     /// via `set_parent`, and positioned during the GTK4 layout phase
     /// in `WidgetImpl::size_allocate`.
     pub(crate) item_widgets: RefCell<HashMap<String, gtk4::Widget>>,
+
+    /// Optional center widget rendered inside the ring's transparent center.
+    /// Rotates with the ring. When set, the consumer is responsible for
+    /// close-menu / close-submenu event handling.
+    pub(crate) center_widget: RefCell<Option<Widget>>,
 }
 
 impl Default for PieMenuWidgetImpl {
@@ -82,6 +88,7 @@ impl Default for PieMenuWidgetImpl {
             submenu_radius_step: AtomicF32::new(80.0),
             widget_registry: RefCell::new(MenuItemWidgetRegistry::new()),
             item_widgets: RefCell::new(HashMap::new()),
+            center_widget: RefCell::new(None),
         }
     }
 }
@@ -205,6 +212,9 @@ impl ObjectImpl for PieMenuWidgetImpl {
     }
 
     fn dispose(&self) {
+        // Clear center_widget RefCell to drop our strong reference,
+        // then unparent all children (including the center widget)
+        let _ = self.center_widget.borrow_mut().take();
         let widget = self.obj();
         while let Some(child) = widget.first_child() {
             child.unparent();
@@ -311,6 +321,27 @@ impl WidgetImpl for PieMenuWidgetImpl {
                     }
                 }
             }
+        }
+
+        // Position center widget (unrotated — rotation is applied in snapshot)
+        let center_radius = self.center_radius.load(Ordering::Relaxed);
+        if let Some(center) = self.center_widget.borrow().as_ref()
+            && center.is_visible()
+        {
+            let (min_w, nat_w, _, _) = center.measure(gtk4::Orientation::Horizontal, -1);
+            let (min_h, nat_h, _, _) = center.measure(gtk4::Orientation::Vertical, -1);
+            let max_size = (center_radius * 2.0) as i32;
+            let w = nat_w.max(min_w).min(max_size);
+            let h = nat_h.max(min_h).min(max_size);
+            let allocation = gtk4::Allocation::new((center_x - w as f32 / 2.0) as i32, (center_y - h as f32 / 2.0) as i32, w, h);
+            debug!(
+                "Allocating center widget at ({}, {}) size {}x{}",
+                allocation.x(),
+                allocation.y(),
+                allocation.width(),
+                allocation.height()
+            );
+            center.size_allocate(&allocation, -1);
         }
     }
 
@@ -530,6 +561,14 @@ impl WidgetImpl for PieMenuWidgetImpl {
                 snapshot.append_color(&breadcrumb_color, &breadcrumb_rect);
                 snapshot.pop();
             }
+        }
+
+        // Snapshot center widget (rotates with ring)
+        // Rendered after ring drawing, before item widgets
+        if let Some(center) = self.center_widget.borrow().as_ref()
+            && center.is_visible()
+        {
+            self.obj().snapshot_child(center, snapshot);
         }
 
         // Snapshot child widgets whose content rotates with the ring.

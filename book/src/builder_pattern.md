@@ -16,6 +16,7 @@
 | `with_pie_menu_center_radius(f32)` | `Self` | Sets the inner ring radius / transparent center (default: 64.0) |
 | `with_submenu_radius_step(f32)` | `Self` | Sets the step between consecutive submenu ring levels (default: 80.0) |
 | `with_submenu_radius(u32, f32)` | `Self` | Sets the radius for a specific submenu level |
+| `with_center_widget(&Widget)` | `Self` | Sets an optional center widget that rotates with the ring |
 | `with_menu_item(MenuItem)` | `Result<Self, AddMenuItemError>` | Adds a menu item |
 
 ## Example
@@ -70,4 +71,29 @@ let overlay = PieMenuOverlayWidget::new(Some(&child))
                 .build())
             .build(),
     )?;
+```
+
+## Center Widget
+
+The builder supports setting an optional center widget that rotates with the ring. The consumer is responsible for the center widget's event handling (e.g. click-to-close).
+
+```rust
+use smearor_wrot_pie_menu::GaugeItemWidget;
+use smearor_wrot_pie_menu::GaugeItemWidgetParams;
+
+let center_gauge = GaugeItemWidget::new(GaugeItemWidgetParams {
+    label: "CPU".to_string(),
+    value: 0.0,
+    unit: "%".to_string(),
+    min: 0.0,
+    warning: 80.0,
+    critical: 90.0,
+    max: 100.0,
+    item_radius: 90.0,
+    enabled: true,
+});
+
+let overlay = PieMenuOverlayWidget::new(Some(&child))
+    .with_pie_menu_center_radius(100.0)
+    .with_center_widget(&center_gauge);
 ```
