@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["DEFAULT_ICON_COLOR","DEFAULT_LABEL_COLOR","DEFAULT_MENU_ITEM_RADIUS"],"struct":["MenuItem"]};
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_ICON_COLOR","DEFAULT_LABEL_COLOR","DEFAULT_MENU_ITEM_RADIUS"],"fn":["default_content_rotates"],"struct":["MenuItem"]};

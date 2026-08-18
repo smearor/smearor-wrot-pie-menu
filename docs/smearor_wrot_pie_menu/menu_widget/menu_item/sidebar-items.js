@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["error","handler"]};
+window.SIDEBAR_ITEMS = {"mod":["error","handler","submenu_error","widget_config_error"]};

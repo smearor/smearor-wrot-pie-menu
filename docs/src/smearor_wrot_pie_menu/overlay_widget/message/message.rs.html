@@ -2,16 +2,22 @@
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span>serde::Serialize;
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a><span class="doccomment">/// Messages sent from the pie menu to the consumer application
-<a href=#5 id=5 data-nosnippet>5</a></span><span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
-<a href=#6 id=6 data-nosnippet>6</a></span><span class="kw">pub enum </span>PieMenuMessage {
-<a href=#7 id=7 data-nosnippet>7</a>    <span class="doccomment">/// The pie menu was opened
-<a href=#8 id=8 data-nosnippet>8</a>    </span>Opened,
-<a href=#9 id=9 data-nosnippet>9</a>    <span class="doccomment">/// The pie menu was closed
-<a href=#10 id=10 data-nosnippet>10</a>    </span>Closed,
-<a href=#11 id=11 data-nosnippet>11</a>    <span class="doccomment">/// Rotation delta in degrees (from rotation gesture)
-<a href=#12 id=12 data-nosnippet>12</a>    </span>Rotate(f32),
-<a href=#13 id=13 data-nosnippet>13</a>    <span class="doccomment">/// Custom event triggered by clicking a menu item.
-<a href=#14 id=14 data-nosnippet>14</a>    /// The string is the `event` field of the clicked `MenuItem`.
-<a href=#15 id=15 data-nosnippet>15</a>    </span>Event(String),
-<a href=#16 id=16 data-nosnippet>16</a>}
+<a href=#5 id=5 data-nosnippet>5</a></span><span class="attr">#[non_exhaustive]
+<a href=#6 id=6 data-nosnippet>6</a>#[derive(Debug, Clone, Serialize, Deserialize)]
+<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">pub enum </span>PieMenuMessage {
+<a href=#8 id=8 data-nosnippet>8</a>    <span class="doccomment">/// The pie menu was opened
+<a href=#9 id=9 data-nosnippet>9</a>    </span>Opened,
+<a href=#10 id=10 data-nosnippet>10</a>    <span class="doccomment">/// The pie menu was closed
+<a href=#11 id=11 data-nosnippet>11</a>    </span>Closed,
+<a href=#12 id=12 data-nosnippet>12</a>    <span class="doccomment">/// Rotation delta in degrees (from rotation gesture)
+<a href=#13 id=13 data-nosnippet>13</a>    </span>Rotate(f32),
+<a href=#14 id=14 data-nosnippet>14</a>    <span class="doccomment">/// Custom event triggered by clicking a menu item.
+<a href=#15 id=15 data-nosnippet>15</a>    /// The string is the `event` field of the clicked `MenuItem`.
+<a href=#16 id=16 data-nosnippet>16</a>    </span>Event(String),
+<a href=#17 id=17 data-nosnippet>17</a>    <span class="doccomment">/// A submenu was opened. Contains the parent item's id.
+<a href=#18 id=18 data-nosnippet>18</a>    </span>SubmenuOpened(String),
+<a href=#19 id=19 data-nosnippet>19</a>    <span class="doccomment">/// The submenu was closed, returning to the parent ring.
+<a href=#20 id=20 data-nosnippet>20</a>    /// Contains the parent item's id.
+<a href=#21 id=21 data-nosnippet>21</a>    </span>SubmenuClosed(String),
+<a href=#22 id=22 data-nosnippet>22</a>}
 </code></pre></div></section></main></body></html>
