@@ -104,7 +104,7 @@ impl ObjectImpl for PieMenuWidgetImpl {
         self.parent_constructed();
         let widget = self.obj();
 
-        // No layout manager — child widgets are positioned manually in
+        // No layout manager - child widgets are positioned manually in
         // `size_allocate` based on their ring position and rotation.
 
         // Add motion controller for mouse hover detection
@@ -255,7 +255,7 @@ impl WidgetImpl for PieMenuWidgetImpl {
 
         // Position top-level item widgets on the main ring.
         // When content_rotates is true, widgets are positioned at their
-        // un-rotated angle — the rotation transform in `snapshot` handles
+        // un-rotated angle - the rotation transform in `snapshot` handles
         // the visual rotation.  When false, the position includes rotation.
         for item in menu_items.iter() {
             if let Some(child_widget) = item_widgets.get(&item.id) {
@@ -323,7 +323,7 @@ impl WidgetImpl for PieMenuWidgetImpl {
             }
         }
 
-        // Position center widget (unrotated — rotation is applied in snapshot)
+        // Position center widget (unrotated - rotation is applied in snapshot)
         let center_radius = self.center_radius.load(Ordering::Relaxed);
         if let Some(center) = self.center_widget.borrow().as_ref()
             && center.is_visible()
@@ -488,7 +488,7 @@ impl WidgetImpl for PieMenuWidgetImpl {
         }
 
         // All items are rendered as child widgets by the widget
-        // registry — no manual drawing needed.
+        // registry - no manual drawing needed.
         let item_widgets = self.item_widgets.borrow();
 
         // Draw submenu rings for each open submenu level
@@ -538,7 +538,7 @@ impl WidgetImpl for PieMenuWidgetImpl {
 
             // Draw submenu items on the submenu ring
             // All submenu items are rendered as child widgets by the widget
-            // registry — no manual drawing needed.
+            // registry - no manual drawing needed.
             if let Some(parent_item) = self.menu_items.find_item_recursive(parent_id)
                 && let Some(_submenu_items) = &parent_item.submenu
             {

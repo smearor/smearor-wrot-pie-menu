@@ -11,7 +11,7 @@ use typed_builder::TypedBuilder;
 
 /// Typed configuration for the `"square"` widget type.
 ///
-/// All visual properties (icon, label, colors) are defined here —
+/// All visual properties (icon, label, colors) are defined here -
 /// `MenuItem` no longer carries presentation fields.
 #[derive(Debug, Clone, Serialize, Deserialize, TypedBuilder, Default)]
 pub struct SquareConfig {
@@ -37,7 +37,7 @@ pub struct SquareConfig {
 
 /// Factory for creating square menu item widgets.
 ///
-/// Produces a `SquareItemWidget` — a custom GTK4 widget subclass
+/// Produces a `SquareItemWidget` - a custom GTK4 widget subclass
 /// that draws a square background, icon, and label in its own
 /// `snapshot` method. Registered under the `"square"` type name.
 pub struct SquareWidgetFactory;

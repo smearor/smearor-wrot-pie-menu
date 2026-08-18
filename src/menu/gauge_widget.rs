@@ -51,7 +51,7 @@ impl Default for GaugeConfig {
 
 /// Factory for creating gauge menu item widgets.
 ///
-/// Produces a `GaugeItemWidget` — a custom GTK4 widget subclass
+/// Produces a `GaugeItemWidget` - a custom GTK4 widget subclass
 /// that draws a tachometer-style gauge with color-coded zones and
 /// a needle indicator. Registered under the `"gauge"` type name.
 pub struct GaugeWidgetFactory;

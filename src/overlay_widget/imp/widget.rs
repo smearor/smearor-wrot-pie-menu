@@ -331,7 +331,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
             debug!("Click distance from center: {distance}, threshold: {center_radius}");
 
             if distance <= center_radius {
-                // Check if a center widget is set — if so, let the event propagate
+                // Check if a center widget is set - if so, let the event propagate
                 let has_center_widget = widget
                     .imp()
                     .pie_menu_widget
@@ -341,7 +341,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                     .is_some();
 
                 if has_center_widget {
-                    debug!("Center click with center widget set — propagating to widget");
+                    debug!("Center click with center widget set - propagating to widget");
                 } else {
                     debug!("Center circle clicked, closing submenu or menu");
                     gesture.set_state(EventSequenceState::Claimed);
@@ -710,7 +710,7 @@ mod tests {
         // Without a center widget, the overlay should have no center widget
         assert!(overlay.center_widget().is_none());
         // The built-in close logic should be active (verified by the absence
-        // of a center widget — the click handler checks this at runtime)
+        // of a center widget - the click handler checks this at runtime)
     }
 
     #[test]

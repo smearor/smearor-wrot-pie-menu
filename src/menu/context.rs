@@ -9,7 +9,7 @@
 ///
 /// `MenuItemContext` is `!Clone`, `!Send`, and `!Sync` because
 /// `trigger_event` contains a `Box<dyn Fn()>`. This is unproblematic
-/// since `MenuItemContext` is not stored in `MenuItem` — it is
+/// since `MenuItemContext` is not stored in `MenuItem` - it is
 /// constructed fresh at build time and passed by reference to the
 /// factory's `build` method.
 pub struct MenuItemContext {

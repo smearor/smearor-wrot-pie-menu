@@ -194,7 +194,7 @@ fn main() -> glib::ExitCode {
 fn build_ui(app: &Application) {
     let window = ApplicationWindow::builder()
         .application(app)
-        .title("Games Menu — 3-Level Submenu Demo")
+        .title("Games Menu - 3-Level Submenu Demo")
         .default_width(1024)
         .default_height(1024)
         .build();
@@ -217,7 +217,7 @@ fn build_ui(app: &Application) {
         .build();
 
     let title_label = Label::builder()
-        .label("Games Menu — Genre -> Publisher -> Game")
+        .label("Games Menu - Genre -> Publisher -> Game")
         .css_classes(["title-1"])
         .halign(Align::Center)
         .build();
@@ -242,14 +242,14 @@ fn build_ui(app: &Application) {
         .build();
 
     let game_label = Label::builder()
-        .label("— No game selected —")
+        .label("- No game selected -")
         .css_classes(["title-2"])
         .halign(Align::Center)
         .build();
 
-    let genre_label = Label::builder().label("Genre: —").halign(Align::Center).build();
+    let genre_label = Label::builder().label("Genre: -").halign(Align::Center).build();
 
-    let publisher_label = Label::builder().label("Publisher: —").halign(Align::Center).build();
+    let publisher_label = Label::builder().label("Publisher: -").halign(Align::Center).build();
 
     info_box.append(&game_label);
     info_box.append(&genre_label);

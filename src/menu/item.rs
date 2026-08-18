@@ -61,7 +61,7 @@ pub struct MenuItem {
     pub submenu: Option<Vec<MenuItem>>,
 
     /// The widget type name used to resolve the factory from the
-    /// registry. When `None`, defaults to `"circle"` — preserving
+    /// registry. When `None`, defaults to `"circle"` - preserving
     /// existing behavior.
     ///
     /// This field is serializable so that widget types can be
@@ -78,7 +78,7 @@ pub struct MenuItem {
     ///
     /// This field is serializable so that widget configuration can
     /// be stored in JSON/TOML configuration files. The schema is
-    /// defined by the factory's `Config` type — type safety is
+    /// defined by the factory's `Config` type - type safety is
     /// provided at the factory level, not at the `MenuItem` level.
     #[builder(default, setter(strip_option))]
     #[serde(default)]

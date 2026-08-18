@@ -11,7 +11,7 @@ use typed_builder::TypedBuilder;
 
 /// Typed configuration for the `"circle"` widget type.
 ///
-/// All visual properties (icon, label, colors) are defined here —
+/// All visual properties (icon, label, colors) are defined here -
 /// `MenuItem` no longer carries presentation fields.
 #[derive(Debug, Clone, Serialize, Deserialize, TypedBuilder, Default)]
 pub struct CircleConfig {
@@ -37,9 +37,9 @@ pub struct CircleConfig {
 
 /// Factory for creating circular menu item widgets.
 ///
-/// Produces a `CircleItemWidget` — a custom GTK4 widget subclass
+/// Produces a `CircleItemWidget` - a custom GTK4 widget subclass
 /// that draws a circular background, icon, and label in its own
-/// `snapshot` method. This is the default widget type — when
+/// `snapshot` method. This is the default widget type - when
 /// `MenuItem::widget_type` is `None`, the registry resolves
 /// `"circle"`.
 pub struct CircleWidgetFactory;

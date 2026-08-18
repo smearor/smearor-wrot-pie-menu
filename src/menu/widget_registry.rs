@@ -18,10 +18,10 @@ impl MenuItemWidgetRegistry {
     /// Creates a new registry pre-populated with standard implementations.
     ///
     /// Standard implementations:
-    /// - `"circle"` — circular item with icon + label (existing behavior)
-    /// - `"square"` — square item with icon + label
-    /// - `"button"` — simple GTK4 Button with label (debug widget)
-    /// - `"gauge"` — tachometer-style gauge with color-coded zones
+    /// - `"circle"` - circular item with icon + label (existing behavior)
+    /// - `"square"` - square item with icon + label
+    /// - `"button"` - simple GTK4 Button with label (debug widget)
+    /// - `"gauge"` - tachometer-style gauge with color-coded zones
     pub fn new() -> Self {
         let mut registry = Self { factories: HashMap::new() };
         registry.register(Box::new(crate::menu::circle_widget::CircleWidgetFactory));

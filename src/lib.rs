@@ -2,7 +2,7 @@
 //!
 //! This crate provides a circular menu widget that appears when a pinch-to-zoom
 //! gesture is detected. The menu items are arranged in a ring layout for easy
-//! touch access. The widget is fully configurable — consumers add menu items
+//! touch access. The widget is fully configurable - consumers add menu items
 //! via the [`MenuItem`] API and receive events via [`PieMenuMessage`].
 
 pub mod color;
