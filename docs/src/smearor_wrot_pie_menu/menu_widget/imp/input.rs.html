@@ -101,7 +101,7 @@
 <a href=#101 id=101 data-nosnippet>101</a>
 <a href=#102 id=102 data-nosnippet>102</a>        <span class="comment">// If new widgets were created, trigger a new allocate pass so
 <a href=#103 id=103 data-nosnippet>103</a>        // `size_allocate` positions them. `queue_resize` is insufficient
-<a href=#104 id=104 data-nosnippet>104</a>        // here because the widget's own size request does not change —
+<a href=#104 id=104 data-nosnippet>104</a>        // here because the widget's own size request does not change -
 <a href=#105 id=105 data-nosnippet>105</a>        // `queue_allocate` forces a reallocation regardless.
 <a href=#106 id=106 data-nosnippet>106</a>        </span><span class="kw">if </span>created_any {
 <a href=#107 id=107 data-nosnippet>107</a>            pie_widget.queue_allocate();
@@ -354,7 +354,7 @@
 <a href=#354 id=354 data-nosnippet>354</a>        <span class="kw">let </span>imp = PieMenuWidgetImpl::default();
 <a href=#355 id=355 data-nosnippet>355</a>        imp.menu_items.insert(<span class="string">"a"</span>.to_string(), make_item(<span class="string">"a"</span>, <span class="number">10.0</span>));
 <a href=#356 id=356 data-nosnippet>356</a>        imp.menu_items.insert(<span class="string">"b"</span>.to_string(), make_item(<span class="string">"b"</span>, <span class="number">350.0</span>));
-<a href=#357 id=357 data-nosnippet>357</a>        <span class="comment">// At 0°, both are 10° away — the result depends on iteration order (DashMap).
+<a href=#357 id=357 data-nosnippet>357</a>        <span class="comment">// At 0°, both are 10° away - the result depends on iteration order (DashMap).
 <a href=#358 id=358 data-nosnippet>358</a>        // Test with non-ambiguous angles instead:
 <a href=#359 id=359 data-nosnippet>359</a>        </span><span class="macro">assert_eq!</span>(imp.find_nearest_item(<span class="number">5.0</span>), <span class="prelude-val">Some</span>(<span class="string">"a"</span>.to_string()));
 <a href=#360 id=360 data-nosnippet>360</a>        <span class="macro">assert_eq!</span>(imp.find_nearest_item(<span class="number">355.0</span>), <span class="prelude-val">Some</span>(<span class="string">"b"</span>.to_string()));

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ARC_SEGMENTS","GAUGE_START_DEGREES","GAUGE_SWEEP_DEGREES"],"fn":["draw_arc","format_value_text"],"mod":["imp"],"struct":["GaugeItemWidget","GaugeItemWidgetParams"]};

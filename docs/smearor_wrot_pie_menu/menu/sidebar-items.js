@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["button_widget","circle_item_widget","circle_widget","context","item","menu","size","square_item_widget","square_widget","widget_factory","widget_factory_erased","widget_registry"]};
+window.SIDEBAR_ITEMS = {"mod":["button_widget","circle_item_widget","circle_widget","context","gauge_item_widget","gauge_widget","item","menu","size","square_item_widget","square_widget","widget_factory","widget_factory_erased","widget_registry"]};
