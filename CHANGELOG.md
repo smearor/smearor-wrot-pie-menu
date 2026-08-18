@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+#### Optional Center Widget
+- `set_center_widget(Option<&Widget>)` / `center_widget()` - set, remove, or get an optional GTK4 widget rendered in the center of the pie menu ring
+- `with_center_widget(&Widget)` - builder method for fluent center widget setup
+- Center widget rotates with the ring via the `snapshot.rotate()` transform
+- Center widget is clamped to `2 * center_radius` pixels in `size_allocate`
+- When a center widget is set, the built-in center-click-to-close logic is bypassed - the consumer handles events (e.g. close-menu, close-submenu) via the widget's own event controllers
+- When no center widget is set (default), the built-in center-click-to-close behavior remains active
+- Reentrancy-safe `set_center_widget` implementation: old widget is taken out of `RefCell` before `unparent()` to avoid `BorrowMutError` from GTK signal callbacks
+- `ObjectImpl::dispose` override to explicitly unparent the center widget and clear the `RefCell`, preventing GTK memory leaks
+- `GaugeItemWidget::set_value(f64)` - dynamic value updates for gauge widgets
+- `GaugeItemWidget` and `GaugeItemWidgetParams` exported as public API
+- Unit tests: `test_center_widget_default_none`, `test_set_center_widget_some`, `test_set_center_widget_none_after_some`, `test_set_center_widget_replaces_existing`
+- Integration tests: `test_center_click_default_closes_menu`, `test_center_click_with_center_widget_propagates`
+- Book documentation: center widget section in `widget.md`, API entries in `api.md`, builder method in `builder_pattern.md`
+- `sysinfo_dashboard` example updated with a `GaugeItemWidget` center widget showing live CPU usage
+
+---
+
 ## [0.2.0] - 2026-08-18
 
 ### Added
