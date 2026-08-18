@@ -9,12 +9,23 @@ pub mod color;
 pub mod menu;
 pub mod menu_widget;
 pub mod overlay_widget;
+#[cfg(test)]
+pub mod test_util;
 
+pub use menu::ButtonConfig;
+pub use menu::CircleConfig;
 pub use menu::DEFAULT_MENU_ITEM_RADIUS;
+pub use menu::ItemSize;
 pub use menu::MenuItem;
+pub use menu::MenuItemContext;
+pub use menu::MenuItemWidgetFactory;
+pub use menu::MenuItemWidgetFactoryErased;
+pub use menu::MenuItemWidgetRegistry;
+pub use menu::SquareConfig;
 pub use menu_widget::PieMenuWidget;
 pub use menu_widget::imp::PieMenuWidgetImpl;
 pub use menu_widget::menu_item::submenu_error::SubmenuError;
+pub use menu_widget::menu_item::widget_config_error::SetWidgetConfigError;
 pub use menu_widget::rotation::handler::RotationHandler;
 pub use overlay_widget::PieMenuOverlayWidget;
 pub use overlay_widget::imp::PieMenuOverlayWidgetImpl;

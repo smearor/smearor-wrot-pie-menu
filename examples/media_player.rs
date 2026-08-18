@@ -8,6 +8,7 @@
 //! - Disabled state (Prev disabled at first song, Next disabled at last song)
 //! - Progress bar, title, artist, album rendering
 
+use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
@@ -162,59 +163,79 @@ fn build_ui(app: &Application) {
         .with_menu_item(
             MenuItem::builder()
                 .id("next")
-                .label("Next")
-                .icon_name("media-skip-forward-symbolic")
-                .color("#0044AA77")
                 .angle(0.0)
                 .fixed_position(true)
                 .close_on_click(false)
                 .event("next")
+                .config(
+                    CircleConfig::builder()
+                        .icon_name("media-skip-forward-symbolic")
+                        .label("Next")
+                        .color("#0044AA77")
+                        .build(),
+                )
                 .build(),
         )
         .expect("Failed to add 'next' menu item")
         .with_menu_item(
             MenuItem::builder()
                 .id("prev")
-                .label("Prev")
-                .icon_name("media-skip-backward-symbolic")
-                .color("#0044AA77")
                 .angle(180.0)
                 .fixed_position(true)
                 .close_on_click(false)
                 .event("prev")
+                .config(
+                    CircleConfig::builder()
+                        .icon_name("media-skip-backward-symbolic")
+                        .label("Prev")
+                        .color("#0044AA77")
+                        .build(),
+                )
                 .build(),
         )
         .expect("Failed to add 'prev' menu item")
         .with_menu_item(
             MenuItem::builder()
                 .id("play-pause")
-                .label("Play/Pause")
-                .icon_name("media-playback-start-symbolic")
-                .color("#00AA0077")
                 .angle(90.0)
                 .event("play-pause")
+                .config(
+                    CircleConfig::builder()
+                        .icon_name("media-playback-pause-symbolic")
+                        .label("Paused")
+                        .color("#00AA0077")
+                        .build(),
+                )
                 .build(),
         )
         .expect("Failed to add 'play-pause' menu item")
         .with_menu_item(
             MenuItem::builder()
                 .id("stop")
-                .label("Stop")
-                .icon_name("media-playback-stop-symbolic")
-                .color("#AA000077")
                 .angle(270.0)
                 .event("stop")
+                .config(
+                    CircleConfig::builder()
+                        .icon_name("media-playback-stop-symbolic")
+                        .label("Stop")
+                        .color("#AA000077")
+                        .build(),
+                )
                 .build(),
         )
         .expect("Failed to add 'stop' menu item")
         .with_menu_item(
             MenuItem::builder()
                 .id("exit")
-                .label("Exit")
-                .icon_name("window-close-symbolic")
-                .color("#44444477")
                 .angle(45.0)
                 .event("exit")
+                .config(
+                    CircleConfig::builder()
+                        .icon_name("window-close-symbolic")
+                        .label("Exit")
+                        .color("#44444477")
+                        .build(),
+                )
                 .build(),
         )
         .expect("Failed to add 'exit' menu item");
@@ -256,11 +277,9 @@ fn build_ui(app: &Application) {
             let _ = overlay_clone.add_menu_item_auto(
                 MenuItem::builder()
                     .id(id)
-                    .label(label)
-                    .icon_name(icon)
-                    .color(color)
                     .angle(0.0)
                     .event(id)
+                    .config(CircleConfig::builder().icon_name(icon).label(label).color(color).build())
                     .build(),
             );
             count_label_clone.set_label(&format!("{} items", 5 + current_count));
@@ -355,12 +374,20 @@ fn build_ui(app: &Application) {
                             }
                         }
                         if let Some(mut item) = overlay_for_messages.get_menu_item("play-pause") {
-                            item.label = if *playing { "Pause".to_string() } else { "Play".to_string() };
-                            item.icon_name = if *playing {
-                                "media-playback-pause-symbolic".to_string()
-                            } else {
-                                "media-playback-start-symbolic".to_string()
-                            };
+                            item.widget_config = Some(
+                                serde_json::to_value(
+                                    &CircleConfig::builder()
+                                        .icon_name(if *playing {
+                                            "media-playback-start-symbolic"
+                                        } else {
+                                            "media-playback-pause-symbolic"
+                                        })
+                                        .label(if *playing { "Playing" } else { "Paused" })
+                                        .color("#00AA0077")
+                                        .build(),
+                                )
+                                .unwrap(),
+                            );
                             let _ = overlay_for_messages.update_menu_item(item);
                         }
                     }
@@ -371,8 +398,16 @@ fn build_ui(app: &Application) {
                         let track = &PLAYLIST[*track_index_for_messages.borrow()];
                         progress_label_for_messages.set_label(&format!("0:00 / {}", format_time(track.duration_secs)));
                         if let Some(mut item) = overlay_for_messages.get_menu_item("play-pause") {
-                            item.label = "Play".to_string();
-                            item.icon_name = "media-playback-start-symbolic".to_string();
+                            item.widget_config = Some(
+                                serde_json::to_value(
+                                    &CircleConfig::builder()
+                                        .icon_name("media-playback-pause-symbolic")
+                                        .label("Paused")
+                                        .color("#00AA0077")
+                                        .build(),
+                                )
+                                .unwrap(),
+                            );
                             let _ = overlay_for_messages.update_menu_item(item);
                         }
                     }

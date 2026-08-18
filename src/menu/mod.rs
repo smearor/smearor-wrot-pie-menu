@@ -1,7 +1,25 @@
+pub mod button_widget;
+pub mod circle_item_widget;
+pub mod circle_widget;
+pub mod context;
 pub mod item;
 pub mod menu;
+pub mod size;
+pub mod square_item_widget;
+pub mod square_widget;
+pub mod widget_factory;
+pub mod widget_factory_erased;
+pub mod widget_registry;
 
+pub use button_widget::ButtonConfig;
+pub use circle_widget::CircleConfig;
+pub use context::MenuItemContext;
 pub use item::DEFAULT_MENU_ITEM_RADIUS;
 pub use item::MenuItem;
 pub use menu::Menu;
 pub use menu::MenuBuilder;
+pub use size::ItemSize;
+pub use square_widget::SquareConfig;
+pub use widget_factory::MenuItemWidgetFactory;
+pub use widget_factory_erased::MenuItemWidgetFactoryErased;
+pub use widget_registry::MenuItemWidgetRegistry;

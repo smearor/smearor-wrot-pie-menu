@@ -5,6 +5,8 @@ use crate::menu_widget::menu_item::error::RemoveMenuItemError;
 use crate::menu_widget::menu_item::error::SetMenuItemEnabledError;
 use crate::menu_widget::menu_item::error::UpdateMenuItemError;
 use crate::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
+use crate::menu_widget::menu_item::widget_config_error::SetWidgetConfigError;
+use glib::subclass::prelude::ObjectSubclassIsExt;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::prelude::ObjectSubclassExt;
 use std::sync::atomic::Ordering;
@@ -23,12 +25,14 @@ impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
 
     fn remove_menu_item(&self, id: &str) -> Result<(), RemoveMenuItemError> {
         self.menu_items.remove(id);
+        self.remove_item_widget(id);
         self.obj().queue_draw();
         Ok(())
     }
 
     fn remove_all_menu_items(&self) {
         self.menu_items.clear();
+        self.clear_item_widgets();
         self.obj().queue_draw();
     }
 
@@ -40,6 +44,8 @@ impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
         let mut item = self.menu_items.get_mut(id).ok_or(SetMenuItemEnabledError::NotFound { id: id.to_string() })?;
         item.enabled = enabled;
         drop(item);
+        self.remove_item_widget(id);
+        self.obj().queue_allocate();
         self.obj().queue_draw();
         Ok(())
     }
@@ -66,12 +72,14 @@ impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
             return Err(error);
         }
 
+        self.obj().queue_allocate();
         self.obj().queue_draw();
         Ok(())
     }
 
     fn redistribute(&self) {
         self.menu_items.redistribute_angles();
+        self.obj().queue_allocate();
         self.obj().queue_draw();
     }
 
@@ -97,7 +105,39 @@ impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
             });
         }
 
+        if previous.widget_type != menu_item.widget_type
+            || previous.widget_config != menu_item.widget_config
+            || previous.enabled != menu_item.enabled
+            || previous.radius != menu_item.radius
+        {
+            self.remove_item_widget(&menu_item.id);
+        }
+
+        self.obj().queue_allocate();
         self.obj().queue_draw();
+        Ok(())
+    }
+
+    fn refresh_widgets(&self) {
+        let obj = self.obj().clone();
+        glib::idle_add_local_once(move || {
+            obj.imp().clear_item_widgets();
+            obj.queue_allocate();
+            obj.queue_draw();
+        });
+    }
+
+    fn set_widget_config(&self, id: &str, config: serde_json::Value) -> Result<(), SetWidgetConfigError> {
+        let mut item = self.menu_items.get_mut(id).ok_or(SetWidgetConfigError::NotFound { id: id.to_string() })?;
+        item.widget_config = Some(config);
+        drop(item);
+
+        let obj = self.obj().clone();
+        let id_owned = id.to_string();
+        glib::idle_add_local_once(move || {
+            obj.imp().remove_item_widget(&id_owned);
+            obj.queue_draw();
+        });
         Ok(())
     }
 }
@@ -109,7 +149,7 @@ mod tests {
     use crate::menu_widget::menu_item::error::AddMenuItemError;
 
     fn make_item(id: &str, angle: f32) -> MenuItem {
-        MenuItem::builder().id(id).label(id).icon_name("icon").angle(angle).event(id).build()
+        MenuItem::builder().id(id).angle(angle).event(id).build()
     }
 
     #[test]
@@ -283,22 +323,8 @@ mod tests {
     #[test]
     fn test_redistribute_angles_with_fixed() {
         let menu = Menu::new();
-        let fixed_a = MenuItem::builder()
-            .id("fixed_a")
-            .label("F")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("e")
-            .fixed_position(true)
-            .build();
-        let fixed_b = MenuItem::builder()
-            .id("fixed_b")
-            .label("F")
-            .icon_name("icon")
-            .angle(180.0)
-            .event("e")
-            .fixed_position(true)
-            .build();
+        let fixed_a = MenuItem::builder().id("fixed_a").angle(0.0).event("e").fixed_position(true).build();
+        let fixed_b = MenuItem::builder().id("fixed_b").angle(180.0).event("e").fixed_position(true).build();
         let flex_a = make_item("flex_a", 999.0);
         let flex_b = make_item("flex_b", 999.0);
         menu.insert("fixed_a".to_string(), fixed_a);
@@ -324,22 +350,8 @@ mod tests {
     #[test]
     fn test_redistribute_angles_all_fixed_same_angle() {
         let menu = Menu::new();
-        let fixed_a = MenuItem::builder()
-            .id("fixed_a")
-            .label("F")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("e")
-            .fixed_position(true)
-            .build();
-        let fixed_b = MenuItem::builder()
-            .id("fixed_b")
-            .label("F")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("e")
-            .fixed_position(true)
-            .build();
+        let fixed_a = MenuItem::builder().id("fixed_a").angle(0.0).event("e").fixed_position(true).build();
+        let fixed_b = MenuItem::builder().id("fixed_b").angle(0.0).event("e").fixed_position(true).build();
         let flex = make_item("flex", 999.0);
         menu.insert("fixed_a".to_string(), fixed_a);
         menu.insert("fixed_b".to_string(), fixed_b);
@@ -372,20 +384,13 @@ mod tests {
 
     #[test]
     fn test_fixed_position_field_default() {
-        let item = MenuItem::builder().id("test").label("Test").icon_name("icon").angle(0.0).event("event").build();
+        let item = MenuItem::builder().id("test").angle(0.0).event("event").build();
         assert!(!item.fixed_position);
     }
 
     #[test]
     fn test_fixed_position_field_set() {
-        let item = MenuItem::builder()
-            .id("test")
-            .label("Test")
-            .icon_name("icon")
-            .angle(0.0)
-            .event("event")
-            .fixed_position(true)
-            .build();
+        let item = MenuItem::builder().id("test").angle(0.0).event("event").fixed_position(true).build();
         assert!(item.fixed_position);
     }
 
@@ -409,12 +414,12 @@ mod tests {
         let menu = Menu::new();
         menu.insert("a".to_string(), make_item("a", 0.0));
         let mut updated = menu.get("a").unwrap().value().clone();
-        updated.label = "Updated".to_string();
-        updated.icon_name = "new-icon".to_string();
+        updated.angle = 45.0;
+        updated.enabled = false;
         menu.insert("a".to_string(), updated);
         let item = menu.get("a").unwrap();
-        assert_eq!(item.label, "Updated");
-        assert_eq!(item.icon_name, "new-icon");
+        assert_eq!(item.angle, 45.0);
+        assert!(!item.enabled);
     }
 
     #[test]

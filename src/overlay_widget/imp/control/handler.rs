@@ -22,6 +22,7 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         };
         self.visible.store(true, Ordering::Relaxed);
         self.submenu_stack.borrow_mut().clear();
+        *pie_menu_widget.imp().keyboard_selection.borrow_mut() = None;
         pie_menu_widget.imp().set_submenu_stack(Vec::new());
         pie_menu_widget.set_visible(true);
         self.send_message(PieMenuMessage::Opened);
@@ -35,6 +36,7 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         };
         self.visible.store(false, Ordering::Relaxed);
         self.submenu_stack.borrow_mut().clear();
+        *pie_menu_widget.imp().keyboard_selection.borrow_mut() = None;
         pie_menu_widget.imp().set_submenu_stack(Vec::new());
         pie_menu_widget.set_visible(false);
         self.send_message(PieMenuMessage::Closed);
@@ -202,17 +204,9 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         self.submenu_stack.borrow_mut().push(parent_id.to_string());
         pie_menu_widget.imp().set_submenu_stack(self.submenu_stack.borrow().clone());
 
-        let submenu_items = pie_menu_widget
-            .imp()
-            .menu_items
-            .find_item_recursive(parent_id)
-            .and_then(|item| item.submenu)
-            .unwrap_or_default();
-        if let Some(first) = submenu_items.iter().filter(|item| item.enabled).min_by(|a, b| a.angle.total_cmp(&b.angle)) {
-            pie_menu_widget.imp().set_keyboard_selection(first.id.clone());
-        } else {
-            *pie_menu_widget.imp().keyboard_selection.borrow_mut() = None;
-        }
+        // Do not auto-select first submenu item — selection should only
+        // be set when keyboard navigation is actively used.
+        *pie_menu_widget.imp().keyboard_selection.borrow_mut() = None;
 
         pie_menu_widget.queue_draw();
         self.send_message(PieMenuMessage::SubmenuOpened(parent_id.to_string()));
@@ -225,7 +219,9 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
         if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
             pie_menu_widget.imp().set_submenu_stack(self.submenu_stack.borrow().clone());
-            pie_menu_widget.imp().set_keyboard_selection(parent_id.clone());
+            // Do not auto-select parent item — selection should only
+            // be set when keyboard navigation is actively used.
+            *pie_menu_widget.imp().keyboard_selection.borrow_mut() = None;
             pie_menu_widget.queue_draw();
         }
 

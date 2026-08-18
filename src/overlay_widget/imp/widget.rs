@@ -364,12 +364,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                             let item_radius = item.radius();
 
                             if item_distance <= item_radius {
-                                return Some((
-                                    item.id.clone(),
-                                    item.submenu.is_some(),
-                                    item.event.clone(),
-                                    item.close_on_click,
-                                ));
+                                return Some((item.id.clone(), item.submenu.is_some(), item.event.clone(), item.close_on_click));
                             }
                         }
                     }
@@ -377,7 +372,11 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                     // Check active submenu ring items (DashMap iter locks released by now)
                     if let Some(parent_id) = submenu_stack.last() {
                         let outer_radius = main_radius + submenu_stack.len() as f32 * radius_step;
-                        let inner_radius = if submenu_stack.len() == 1 { main_radius } else { main_radius + (submenu_stack.len() - 1) as f32 * radius_step };
+                        let inner_radius = if submenu_stack.len() == 1 {
+                            main_radius
+                        } else {
+                            main_radius + (submenu_stack.len() - 1) as f32 * radius_step
+                        };
                         let item_ring_radius = (inner_radius + outer_radius) / 2.0;
                         if let Some(parent_item) = menu_items.find_item_recursive(parent_id)
                             && let Some(submenu_items) = &parent_item.submenu
@@ -396,12 +395,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                                 let item_radius = item.radius();
 
                                 if item_distance <= item_radius {
-                                    return Some((
-                                        item.id.clone(),
-                                        item.submenu.is_some(),
-                                        item.event.clone(),
-                                        item.close_on_click,
-                                    ));
+                                    return Some((item.id.clone(), item.submenu.is_some(), item.event.clone(), item.close_on_click));
                                 }
                             }
                         }
@@ -449,7 +443,9 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                 let rotation_step = widget.scroll_rotation_step();
                 let current_rotation = widget.rotation();
                 let new_rotation = current_rotation + (dy as f32 * rotation_step);
-                widget.set_rotation(new_rotation.rem_euclid(360.0));
+                let new_rotation = new_rotation.rem_euclid(360.0);
+                widget.set_rotation(new_rotation);
+                widget.send_message(PieMenuMessage::Rotate(new_rotation));
 
                 glib::Propagation::Stop
             });
@@ -479,7 +475,9 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
 
                 let rotation_delta = stick_x * widget.scroll_rotation_step();
                 let current = widget.rotation();
-                widget.set_rotation((current + rotation_delta).rem_euclid(360.0));
+                let new_rotation = (current + rotation_delta).rem_euclid(360.0);
+                widget.set_rotation(new_rotation);
+                widget.send_message(PieMenuMessage::Rotate(new_rotation));
 
                 glib::ControlFlow::Continue
             });

@@ -90,7 +90,7 @@ impl From<RgbColor> for RgbaColor {
 }
 
 /// An RGBA color with f32 components in the range [0.0, 1.0]
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TypedBuilder)]
+#[derive(Debug, Clone, Copy, PartialEq, TypedBuilder)]
 pub struct RgbaColor {
     /// The RGB color components
     pub color: RgbColor,
@@ -146,6 +146,21 @@ impl RgbaColor {
             alpha as f32 / 255.0,
         ))
     }
+
+    /// Serializes the color to an 8-digit hex string (e.g. "#FF000077").
+    pub fn to_hex_string(&self) -> String {
+        let r = (self.color.red * 255.0).round() as u8;
+        let g = (self.color.green * 255.0).round() as u8;
+        let b = (self.color.blue * 255.0).round() as u8;
+        let a = (self.alpha * 255.0).round() as u8;
+        format!("#{r:02X}{g:02X}{b:02X}{a:02X}")
+    }
+}
+
+impl Default for RgbaColor {
+    fn default() -> Self {
+        Self::transparent()
+    }
 }
 
 impl Display for RgbaColor {
@@ -183,6 +198,25 @@ impl FromStr for RgbaColor {
 
     fn from_str(hex: &str) -> Result<Self, Self::Err> {
         RgbaColor::parse_hex_with_optional_alpha(hex)
+    }
+}
+
+impl Serialize for RgbaColor {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_hex_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for RgbaColor {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let hex = String::deserialize(deserializer)?;
+        RgbaColor::parse_hex_with_optional_alpha(&hex).map_err(serde::de::Error::custom)
     }
 }
 
