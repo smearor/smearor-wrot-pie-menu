@@ -10,10 +10,12 @@ The `add_menu_item_auto()` method automatically calculates item angles, distribu
 overlay.add_menu_item_auto(
     MenuItem::builder()
         .id("item-a")
-        .label("A")
-        .icon_name("icon-a")
         .angle(0.0) // ignored for flexible items
         .event("a")
+        .config(CircleConfig::builder()
+            .icon_name("icon-a")
+            .label("A")
+            .build())
         .build(),
 )?;
 ```
@@ -37,20 +39,24 @@ Items with `fixed_position(true)` keep their angle as a semantic anchor. Flexibl
 // Fixed items define anchor points
 let rotate_cw = MenuItem::builder()
     .id("rotate-cw")
-    .label("Rotate CW")
-    .icon_name("object-rotate-right-symbolic")
     .angle(0.0)
     .fixed_position(true)
     .event("rotate-cw")
+    .config(CircleConfig::builder()
+        .icon_name("object-rotate-right-symbolic")
+        .label("Rotate CW")
+        .build())
     .build();
 
 let rotate_ccw = MenuItem::builder()
     .id("rotate-ccw")
-    .label("Rotate CCW")
-    .icon_name("object-rotate-left-symbolic")
     .angle(180.0)
     .fixed_position(true)
     .event("rotate-ccw")
+    .config(CircleConfig::builder()
+        .icon_name("object-rotate-left-symbolic")
+        .label("Rotate CCW")
+        .build())
     .build();
 ```
 

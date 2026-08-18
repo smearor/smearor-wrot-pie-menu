@@ -7,44 +7,58 @@ The `MenuItem` struct represents a single item in the pie menu. It is constructe
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `id` | `String` | Yes | — | Unique identifier |
-| `label` | `String` | Yes | — | Display text below the icon |
-| `label_color` | `RgbaColor` | No | White (`#FFFFFFFF`) | Color of the label text |
-| `icon_name` | `String` | Yes | — | GTK icon theme name |
-| `color` | `RgbaColor` | No | Grey (`#77777777`) | Background circle color |
 | `angle` | `f32` | Yes | — | Position in degrees (0 = right, 90 = down) |
-| `radius` | `Option<f32>` | No | `40.0` | Item circle radius in pixels |
 | `event` | `String` | Yes | — | Event name sent as `PieMenuMessage::Event` |
+| `radius` | `Option<f32>` | No | `40.0` | Item circle radius in pixels |
 | `enabled` | `bool` | No | `true` | Whether the item is clickable (disabled items render at reduced opacity) |
 | `fixed_position` | `bool` | No | `false` | When `true`, the item's angle is treated as a fixed semantic position that resists auto-redistribution |
 | `close_on_click` | `bool` | No | `true` | Whether the pie menu closes after this item is clicked |
-| `submenu` | `Option<Vec<MenuItem>>` | No | `None` | Optional nested submenu items. When present, clicking the item opens the submenu ring instead of sending an event. |
+| `submenu` | `Option<Vec<MenuItem>>` | No | `None` | Optional nested submenu items |
+| `widget_type` | `Option<String>` | No | `None` (`"circle"`) | Widget type name for registry lookup |
+| `widget_config` | `Option<serde_json::Value>` | No | `None` | Type-specific widget configuration |
+| `content_size` | `Option<ItemSize>` | No | `None` | Non-square allocation size |
+| `content_rotates` | `bool` | No | `true` | Whether the widget rotates with the ring |
+
+Visual properties (icon, label, colors) are defined in widget-specific config structs, not on `MenuItem`. See [Widget System](widget_system.md) for details.
 
 ## Construction
 
 ```rust
+use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 
 let item = MenuItem::builder()
     .id("rotate-cw")
-    .label("Rotate CW")
-    .icon_name("object-rotate-right-symbolic")
-    .color("#00000077")
-    .label_color("#FFFFFFFF")
     .angle(0.0)
-    .radius(30.0)
     .event("rotate-cw")
-    .enabled(true)
-    .fixed_position(false)
-    .close_on_click(true)
+    .widget_type("circle")
+    .config(CircleConfig::builder()
+        .icon_name("object-rotate-right-symbolic")
+        .label("Rotate CW")
+        .color("#00000077")
+        .build())
     .build();
 ```
 
-## Colors
+The `.config()` builder method accepts any `Serialize` type and serializes it to `serde_json::Value` internally.
 
-Colors accept any type that implements `Into<RgbaColor>`:
-- `&str` / `String` — hex string like `"#RRGGBBAA"` or `"#RRGGBB"`
-- `RgbColor` — RGB only (alpha defaults to 1.0)
-- `RgbaColor` — full RGBA
+## Widget Configuration
+
+### widget_type
+
+Resolves the factory from the registry. When `None`, defaults to `"circle"`. Standard types: `"circle"`, `"square"`, `"button"`. Custom types can be registered via `register_widget_factory()`.
+
+### widget_config
+
+Type-specific configuration stored as `serde_json::Value`. The factory's `Config` type defines the schema. When `None`, the factory's `Config::default()` is used.
+
+### content_size
+
+Optional non-square allocation for widgets that need dimensions other than `2 * radius`. See [Widget System](widget_system.md).
+
+### content_rotates
+
+When `true` (default), the widget rotates with the ring. When `false`, the widget stays upright.
 
 ## Equality
 
@@ -53,30 +67,35 @@ Colors accept any type that implements `Into<RgbaColor>`:
 ## Default Constants
 
 - `DEFAULT_MENU_ITEM_RADIUS: f32 = 40.0`
-- `DEFAULT_LABEL_COLOR: RgbaColor = white`
-- `DEFAULT_ICON_COLOR: RgbaColor = grey`
+- `DEFAULT_LABEL_COLOR: RgbaColor = white` — used by factories when `label_color` is `None`
+- `DEFAULT_ICON_COLOR: RgbaColor = grey` — used by factories when `color` is `None`
 
 ## Submenus
 
 A `MenuItem` can optionally contain a nested submenu via the `submenu` field. When a user clicks an item that has a submenu, the menu opens a new ring at a larger radius instead of sending an event.
 
 ```rust
+use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 
 let child = MenuItem::builder()
     .id("child")
-    .label("Child")
-    .icon_name("icon")
     .angle(0.0)
     .event("child-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Child")
+        .build())
     .build();
 
 let parent = MenuItem::builder()
     .id("parent")
-    .label("Parent")
-    .icon_name("icon")
     .angle(0.0)
     .event("parent-event")
+    .config(CircleConfig::builder()
+        .icon_name("icon")
+        .label("Parent")
+        .build())
     .submenu(vec![child])
     .build();
 ```

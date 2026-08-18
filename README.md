@@ -33,6 +33,11 @@ via the [`MenuItem`] API and receive events via [`PieMenuMessage`].
 - **Click-to-select**: Click an enabled menu item to trigger its event
 - **Center close button**: Click the center circle to close the menu (or close the current submenu if one is open)
 - **Submenus**: Hierarchical nested rings with configurable radii, tiered Escape/center-click navigation, and automatic angle redistribution
+- **Registry-based widget system**: All menu items are GTK4 child widgets resolved by type name from a registry
+- **Standard widget implementations**: `"circle"`, `"square"`, and `"button"` item types with icon + label rendering
+- **Custom widget factories**: Register custom GTK4 widgets as menu item content (gauges, sliders, toggles, charts)
+- **Serializable widget configuration**: `widget_type` and `widget_config` fields are serializable for JSON/TOML config files
+- **Dynamic widget updates**: `refresh_widgets()` and `set_widget_config()` for live-updating dashboards
 - **GTK4 native**: Built as a proper GTK4 widget with `BinLayout` overlay
 
 ## Feature Flags
@@ -61,6 +66,7 @@ smearor-wrot-pie-menu = { version = "0.1", default-features = false }
 ## Quick Start
 
 ```rust
+use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
 use smearor_wrot_pie_menu::PieMenuMessage;
@@ -75,9 +81,12 @@ let overlay = PieMenuOverlayWidget::new(Some(&child_widget))
     .with_menu_item(
         MenuItem::builder()
             .id("rotate-cw")
-            .label("Rotate CW")
-            .icon_name("object-rotate-right-symbolic")
-            .color("#00000077")
+            .widget_type("circle")
+            .config(CircleConfig::builder()
+                .icon_name("object-rotate-right-symbolic")
+                .label("Rotate CW")
+                .color("#00000077")
+                .build())
             .angle(0.0)
             .fixed_position(true)
             .event("rotate-cw")
@@ -114,7 +123,7 @@ The main widget. Wrap any child widget with this overlay to add pie menu functio
 
 ### `MenuItem`
 
-A single menu item with an id, label, icon, color, angle, radius, event name, enabled state, fixed-position flag, and optional submenu items.
+A single menu item with an id, angle, radius, event name, enabled state, fixed-position flag, optional submenu items, and widget configuration (`widget_type`, `widget_config`, `content_size`, `content_rotates`). Visual properties (icon, label, colors) are defined in widget-specific config structs (`CircleConfig`, `SquareConfig`, `ButtonConfig`).
 
 ### `PieMenuMessage`
 
