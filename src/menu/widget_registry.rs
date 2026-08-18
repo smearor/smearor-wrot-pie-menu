@@ -21,11 +21,13 @@ impl MenuItemWidgetRegistry {
     /// - `"circle"` — circular item with icon + label (existing behavior)
     /// - `"square"` — square item with icon + label
     /// - `"button"` — simple GTK4 Button with label (debug widget)
+    /// - `"gauge"` — tachometer-style gauge with color-coded zones
     pub fn new() -> Self {
         let mut registry = Self { factories: HashMap::new() };
         registry.register(Box::new(crate::menu::circle_widget::CircleWidgetFactory));
         registry.register(Box::new(crate::menu::square_widget::SquareWidgetFactory));
         registry.register(Box::new(crate::menu::button_widget::ButtonWidgetFactory));
+        registry.register(Box::new(crate::menu::gauge_widget::GaugeWidgetFactory));
         registry
     }
 

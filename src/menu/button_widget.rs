@@ -12,17 +12,11 @@ use typed_builder::TypedBuilder;
 ///
 /// A simple debug widget that renders a GTK4 `Button` with a label.
 /// Useful for verifying that the child widget positioning pipeline works.
-#[derive(Debug, Clone, Serialize, Deserialize, TypedBuilder)]
+#[derive(Debug, Clone, Serialize, Deserialize, TypedBuilder, Default)]
 pub struct ButtonConfig {
     /// Label text displayed on the button.
     #[builder(setter(into))]
     pub label: String,
-}
-
-impl Default for ButtonConfig {
-    fn default() -> Self {
-        Self { label: String::new() }
-    }
 }
 
 /// Factory for creating simple button menu item widgets.

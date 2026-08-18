@@ -72,6 +72,35 @@ impl PieMenuOverlayWidget {
         self
     }
 
+    /// Sets the radius of the main pie menu ring and returns self for chaining.
+    /// Default: `160.0`.
+    pub fn with_pie_menu_radius(self, radius: f32) -> Self {
+        self.set_pie_menu_radius(radius);
+        self
+    }
+
+    /// Sets the inner radius of the pie menu ring (transparent center)
+    /// and returns self for chaining. Default: `64.0`.
+    pub fn with_pie_menu_center_radius(self, radius: f32) -> Self {
+        self.set_pie_menu_center_radius(radius);
+        self
+    }
+
+    /// Sets the step width between consecutive submenu ring levels and returns self for chaining.
+    /// Each submenu level's radius is computed as: `main_radius + level * step`.
+    /// Default: `80.0`.
+    pub fn with_submenu_radius_step(self, step: f32) -> Self {
+        self.set_submenu_radius_step(step);
+        self
+    }
+
+    /// Sets the radius for a specific submenu level and returns self for chaining.
+    /// Level 0 is the main ring, level 1 is the first submenu, etc.
+    pub fn with_submenu_radius(self, level: u32, radius: f32) -> Self {
+        self.set_submenu_radius(level, radius);
+        self
+    }
+
     /// Adds a menu item and returns self for chaining.
     /// Returns `Err` if the item could not be added.
     pub fn with_menu_item(self, item: MenuItem) -> Result<Self, AddMenuItemError> {

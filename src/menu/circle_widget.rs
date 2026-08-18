@@ -13,7 +13,7 @@ use typed_builder::TypedBuilder;
 ///
 /// All visual properties (icon, label, colors) are defined here —
 /// `MenuItem` no longer carries presentation fields.
-#[derive(Debug, Clone, Serialize, Deserialize, TypedBuilder)]
+#[derive(Debug, Clone, Serialize, Deserialize, TypedBuilder, Default)]
 pub struct CircleConfig {
     /// Icon name for GTK4 icon theme lookup.
     #[builder(setter(into))]
@@ -33,19 +33,6 @@ pub struct CircleConfig {
     /// Whether to show the label. Defaults to `true`.
     #[builder(default)]
     pub show_label: Option<bool>,
-}
-
-impl Default for CircleConfig {
-    fn default() -> Self {
-        Self {
-            icon_name: String::new(),
-            label: String::new(),
-            color: None,
-            label_color: None,
-            icon_size: None,
-            show_label: None,
-        }
-    }
 }
 
 /// Factory for creating circular menu item widgets.
