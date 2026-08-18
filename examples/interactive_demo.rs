@@ -9,7 +9,6 @@ use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
 use smearor_wrot_pie_menu::RotationHandler;
-use smearor_wrot_pie_menu::SquareConfig;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
 use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
@@ -162,9 +161,10 @@ fn build_ui(app: &Application) {
                 .angle(0.0)
                 .radius(30.0)
                 .event("rotate-cw")
-                .widget_type("square")
+                .widget_type("circle")
+                .close_on_click(false)
                 .config(
-                    SquareConfig::builder()
+                    CircleConfig::builder()
                         .icon_name("object-rotate-right-symbolic")
                         .label("Rotate CW")
                         .color("#00000077")
@@ -182,6 +182,7 @@ fn build_ui(app: &Application) {
                 .radius(30.0)
                 .event("rotate-ccw")
                 .widget_type("circle")
+                .close_on_click(false)
                 .config(
                     CircleConfig::builder()
                         .icon_name("object-rotate-left-symbolic")
