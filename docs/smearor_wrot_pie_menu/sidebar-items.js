@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["color","menu","menu_widget","overlay_widget"]};
+window.SIDEBAR_ITEMS = {"mod":["menu","menu_widget","overlay_widget"],"struct":["Color"]};
