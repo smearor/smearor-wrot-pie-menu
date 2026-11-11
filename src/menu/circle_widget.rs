@@ -1,4 +1,3 @@
-use crate::color::RgbaColor;
 use crate::menu::MenuItem;
 use crate::menu::circle_item_widget::CircleItemWidget;
 use crate::menu::context::MenuItemContext;
@@ -7,6 +6,7 @@ use gtk4::Widget;
 use gtk4::prelude::*;
 use serde::Deserialize;
 use serde::Serialize;
+use smearor_commons_color::Color;
 use typed_builder::TypedBuilder;
 
 /// Typed configuration for the `"circle"` widget type.
@@ -21,12 +21,12 @@ pub struct CircleConfig {
     /// Text label displayed alongside the icon.
     #[builder(default, setter(into))]
     pub label: String,
-    /// Background color as an `RgbaColor`. When `None`, uses the factory default.
+    /// Background color as an `Color<f32>`. When `None`, uses the factory default.
     #[builder(default, setter(into, strip_option))]
-    pub color: Option<RgbaColor>,
-    /// Label text color as an `RgbaColor`. When `None`, uses the factory default.
+    pub color: Option<Color<f32>>,
+    /// Label text color as an `Color<f32>`. When `None`, uses the factory default.
     #[builder(default, setter(into, strip_option))]
-    pub label_color: Option<RgbaColor>,
+    pub label_color: Option<Color<f32>>,
     /// Icon size in pixels. When `None`, uses the default icon size.
     #[builder(default)]
     pub icon_size: Option<u32>,

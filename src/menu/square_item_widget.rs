@@ -1,4 +1,3 @@
-use crate::color::RgbaColor;
 use glib::subclass::prelude::*;
 use gtk4::gdk;
 use gtk4::glib;
@@ -6,6 +5,7 @@ use gtk4::graphene;
 use gtk4::gsk;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
+use smearor_commons_color::Color;
 use std::cell::RefCell;
 
 mod imp {
@@ -168,7 +168,7 @@ glib::wrapper! {
 }
 
 impl SquareItemWidget {
-    pub fn new(icon_name: &str, label: &str, bg_color: RgbaColor, label_color: RgbaColor, item_radius: f32, enabled: bool) -> Self {
+    pub fn new(icon_name: &str, label: &str, bg_color: Color<f32>, label_color: Color<f32>, item_radius: f32, enabled: bool) -> Self {
         let widget: Self = glib::Object::builder().build();
         widget.imp().icon_name.replace(icon_name.to_string());
         widget.imp().label.replace(label.to_string());

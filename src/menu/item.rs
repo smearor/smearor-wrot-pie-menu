@@ -1,7 +1,7 @@
-use crate::color::RgbaColor;
 use crate::menu::size::ItemSize;
 use serde::Deserialize;
 use serde::Serialize;
+use smearor_commons_color::Color;
 use std::hash::Hash;
 use std::hash::Hasher;
 use typed_builder::TypedBuilder;
@@ -10,10 +10,10 @@ use typed_builder::TypedBuilder;
 pub const DEFAULT_MENU_ITEM_RADIUS: f32 = 40.0;
 
 /// Default label color (white, fully opaque)
-pub const DEFAULT_LABEL_COLOR: RgbaColor = RgbaColor::new_rgba(1.0, 1.0, 1.0, 1.0);
+pub const DEFAULT_LABEL_COLOR: Color<f32> = Color::<f32>::new_rgba(1.0, 1.0, 1.0, 1.0);
 
 /// Default icon color (grey, ~47% transparent)
-pub const DEFAULT_ICON_COLOR: RgbaColor = RgbaColor::new_rgba(0.4667, 0.4667, 0.4667, 0.4667);
+pub const DEFAULT_ICON_COLOR: Color<f32> = Color::<f32>::new_rgba(0.4667, 0.4667, 0.4667, 0.4667);
 
 /// Default value for `content_rotates` field.
 fn default_content_rotates() -> bool {

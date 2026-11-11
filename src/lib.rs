@@ -5,12 +5,13 @@
 //! touch access. The widget is fully configurable - consumers add menu items
 //! via the [`MenuItem`] API and receive events via [`PieMenuMessage`].
 
-pub mod color;
 pub mod menu;
 pub mod menu_widget;
 pub mod overlay_widget;
 #[cfg(test)]
 pub mod test_util;
+
+pub use smearor_commons_color::Color;
 
 pub use menu::ButtonConfig;
 pub use menu::CircleConfig;

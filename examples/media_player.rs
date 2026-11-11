@@ -8,11 +8,11 @@
 //! - Disabled state (Prev disabled at first song, Next disabled at last song)
 //! - Progress bar, title, artist, album rendering
 
+use smearor_commons_color::Color;
 use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
-use smearor_wrot_pie_menu::color::RgbaColor;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 
 use gtk4::Align;
@@ -172,7 +172,7 @@ fn build_ui(app: &Application) {
                     CircleConfig::builder()
                         .icon_name("media-skip-forward-symbolic")
                         .label("Next")
-                        .color("#0044AA77".parse::<RgbaColor>().unwrap_or_default())
+                        .color("#0044AA77".parse::<Color<f32>>().unwrap_or_default())
                         .build(),
                 )
                 .build(),
@@ -189,7 +189,7 @@ fn build_ui(app: &Application) {
                     CircleConfig::builder()
                         .icon_name("media-skip-backward-symbolic")
                         .label("Prev")
-                        .color("#0044AA77".parse::<RgbaColor>().unwrap_or_default())
+                        .color("#0044AA77".parse::<Color<f32>>().unwrap_or_default())
                         .build(),
                 )
                 .build(),
@@ -204,7 +204,7 @@ fn build_ui(app: &Application) {
                     CircleConfig::builder()
                         .icon_name("media-playback-pause-symbolic")
                         .label("Paused")
-                        .color("#00AA0077".parse::<RgbaColor>().unwrap_or_default())
+                        .color("#00AA0077".parse::<Color<f32>>().unwrap_or_default())
                         .build(),
                 )
                 .build(),
@@ -219,7 +219,7 @@ fn build_ui(app: &Application) {
                     CircleConfig::builder()
                         .icon_name("media-playback-stop-symbolic")
                         .label("Stop")
-                        .color("#AA000077".parse::<RgbaColor>().unwrap_or_default())
+                        .color("#AA000077".parse::<Color<f32>>().unwrap_or_default())
                         .build(),
                 )
                 .build(),
@@ -234,7 +234,7 @@ fn build_ui(app: &Application) {
                     CircleConfig::builder()
                         .icon_name("window-close-symbolic")
                         .label("Exit")
-                        .color("#44444477".parse::<RgbaColor>().unwrap_or_default())
+                        .color("#44444477".parse::<Color<f32>>().unwrap_or_default())
                         .build(),
                 )
                 .build(),
@@ -284,7 +284,7 @@ fn build_ui(app: &Application) {
                         CircleConfig::builder()
                             .icon_name(icon)
                             .label(label)
-                            .color(color.parse::<RgbaColor>().unwrap_or_default())
+                            .color(color.parse::<Color<f32>>().unwrap_or_default())
                             .build(),
                     )
                     .build(),
@@ -390,7 +390,7 @@ fn build_ui(app: &Application) {
                                             "media-playback-pause-symbolic"
                                         })
                                         .label(if *playing { "Playing" } else { "Paused" })
-                                        .color("#00AA0077".parse::<RgbaColor>().unwrap_or_default())
+                                        .color("#00AA0077".parse::<Color<f32>>().unwrap_or_default())
                                         .build(),
                                 )
                                 .unwrap(),
@@ -410,7 +410,7 @@ fn build_ui(app: &Application) {
                                     &CircleConfig::builder()
                                         .icon_name("media-playback-pause-symbolic")
                                         .label("Paused")
-                                        .color("#00AA0077".parse::<RgbaColor>().unwrap_or_default())
+                                        .color("#00AA0077".parse::<Color<f32>>().unwrap_or_default())
                                         .build(),
                                 )
                                 .unwrap(),

@@ -7,13 +7,13 @@
 //! Selecting a game displays its title, genre, and publisher in the window.
 //! Menu data is loaded from `games_menu.json` at compile time.
 
+use smearor_commons_color::Color;
 use smearor_wrot_pie_menu::ButtonConfig;
 use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
 use smearor_wrot_pie_menu::SquareConfig;
-use smearor_wrot_pie_menu::color::RgbaColor;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
 use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
@@ -49,8 +49,8 @@ struct GenreEntry {
     label: String,
     #[allow(unused)]
     icon: String,
-    color: RgbaColor,
-    publisher_color: RgbaColor,
+    color: Color<f32>,
+    publisher_color: Color<f32>,
     angle: f32,
     publishers: Vec<PublisherEntry>,
 }
@@ -66,7 +66,7 @@ struct PublisherEntry {
     #[serde(skip)]
     icon: String,
     #[serde(skip)]
-    color: RgbaColor,
+    color: Color<f32>,
     #[serde(skip)]
     angle: f32,
 }
@@ -108,7 +108,7 @@ struct GameEntry {
     #[serde(skip)]
     icon: String,
     #[serde(skip)]
-    color: RgbaColor,
+    color: Color<f32>,
     #[serde(skip)]
     angle: f32,
 }
