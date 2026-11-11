@@ -5,6 +5,7 @@ pub mod context;
 pub mod gauge_item_widget;
 pub mod gauge_widget;
 pub mod item;
+#[allow(clippy::module_inception)]
 pub mod menu;
 pub mod size;
 pub mod square_item_widget;

@@ -1,159 +1,74 @@
 use gtk4::gdk;
 use serde::Deserialize;
+use serde::Deserializer;
 use serde::Serialize;
+use serde::Serializer;
+use smearor_commons_color::Color;
+use smearor_commons_color::ParseColorError;
 use std::fmt::Display;
 use std::fmt::Formatter;
+use std::ops::Deref;
 use std::str::FromStr;
-use thiserror::Error;
-use typed_builder::TypedBuilder;
 
-/// Error encountered when parsing a hex color string
-#[derive(Debug, Clone, Error)]
-pub enum ParseHexError {
-    #[error("Invalid size")]
-    InvalidSize,
-    #[error("Invalid red component")]
-    InvalidRed,
-    #[error("Invalid green component")]
-    InvalidGreen,
-    #[error("Invalid blue component")]
-    InvalidBlue,
-    #[error("Invalid alpha component")]
-    InvalidAlpha,
-}
+/// Error encountered when parsing a hex color string.
+///
+/// Compatibility alias for [`ParseColorError`] (previously a dedicated
+/// `ParseHexError` enum in this module).
+pub type ParseHexError = ParseColorError;
 
-/// An RGB color with f32 components in the range [0.0, 1.0]
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TypedBuilder)]
-pub struct RgbColor {
-    /// The red component
-    pub red: f32,
-    /// The green component
-    pub green: f32,
-    /// The blue component
-    pub blue: f32,
-}
+/// An RGB color with f32 components in the range [0.0, 1.0].
+///
+/// Alias for [`Color<f32>`] (the alpha channel is always 1.0 for
+/// colors created via [`Color::new`]).
+pub type RgbColor = Color<f32>;
 
-impl RgbColor {
-    /// Creates a new RGB color from f32 components
-    pub const fn new(red: f32, green: f32, blue: f32) -> Self {
-        Self { red, green, blue }
-    }
-
-    /// Creates a new RGB color from u8 components
-    pub fn new_from_u8(red: u8, green: u8, blue: u8) -> Self {
-        Self {
-            red: (red as f32 / 255.0).clamp(0.0, 1.0),
-            green: (green as f32 / 255.0).clamp(0.0, 1.0),
-            blue: (blue as f32 / 255.0).clamp(0.0, 1.0),
-        }
-    }
-
-    /// Clamps all components to the range [0.0, 1.0]
-    pub fn clamp(&self) -> Self {
-        Self {
-            red: self.red.clamp(0.0, 1.0),
-            green: self.green.clamp(0.0, 1.0),
-            blue: self.blue.clamp(0.0, 1.0),
-        }
-    }
-
-    /// Parses a 6-digit hex color string (e.g. "#FF0000" or "FF0000")
-    pub fn parse_hex(hex: &str) -> Result<Self, ParseHexError> {
-        let hex = hex.trim_start_matches('#');
-        if hex.len() != 6 {
-            return Err(ParseHexError::InvalidSize);
-        }
-        Ok(RgbColor::new_from_u8(
-            u8::from_str_radix(&hex[0..2], 16).map_err(|_| ParseHexError::InvalidRed)?,
-            u8::from_str_radix(&hex[2..4], 16).map_err(|_| ParseHexError::InvalidGreen)?,
-            u8::from_str_radix(&hex[4..6], 16).map_err(|_| ParseHexError::InvalidBlue)?,
-        ))
-    }
-}
-
-impl Default for RgbColor {
-    fn default() -> Self {
-        Self::new(0.0, 0.0, 0.0)
-    }
-}
-
-impl Display for RgbColor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "RgbColor(r={}, g={}, b={})", self.red, self.green, self.blue)
-    }
-}
-
-impl From<RgbColor> for RgbaColor {
-    fn from(color: RgbColor) -> Self {
-        RgbaColor::new(color, 1.0)
-    }
-}
-
-/// An RGBA color with f32 components in the range [0.0, 1.0]
-#[derive(Debug, Clone, Copy, PartialEq, TypedBuilder)]
-pub struct RgbaColor {
-    /// The RGB color components
-    pub color: RgbColor,
-    /// The alpha (opacity) component
-    pub alpha: f32,
-}
+/// An RGBA color with f32 components in the range [0.0, 1.0].
+///
+/// Thin newtype around [`Color<f32>`]; all parsing, formatting and
+/// conversion logic is provided by `smearor-commons-color`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(transparent)]
+pub struct RgbaColor(pub Color<f32>);
 
 impl RgbaColor {
     /// Creates a new RGBA color from an RGB color and alpha
     pub const fn new(color: RgbColor, alpha: f32) -> Self {
-        Self { color, alpha }
+        Self(Color::<f32>::new_rgba(color.r, color.g, color.b, alpha))
     }
 
     /// Creates a new RGBA color from individual f32 components
     pub const fn with_rgb(red: f32, green: f32, blue: f32, alpha: f32) -> Self {
-        Self {
-            color: RgbColor::new(red, green, blue),
-            alpha,
-        }
+        Self(Color::<f32>::new_rgba(red, green, blue, alpha))
     }
 
     /// Creates a fully transparent color
-    pub fn transparent() -> Self {
-        Self::new(RgbColor::default(), 0.0)
+    pub const fn transparent() -> Self {
+        Self(Color::<f32>::new_rgba(0.0, 0.0, 0.0, 0.0))
     }
 
     /// Clamps all components to the range [0.0, 1.0]
     pub fn clamp(&self) -> Self {
-        Self {
-            color: self.color.clamp(),
-            alpha: self.alpha.clamp(0.0, 1.0),
-        }
+        Self(Color::<f32>::new_rgba(
+            self.0.r.clamp(0.0, 1.0),
+            self.0.g.clamp(0.0, 1.0),
+            self.0.b.clamp(0.0, 1.0),
+            self.0.a.clamp(0.0, 1.0),
+        ))
     }
 
     /// Parses a hex color string with optional alpha (e.g. "#FF0000" or "#FF000077")
     pub fn parse_hex_with_optional_alpha(hex: &str) -> Result<Self, ParseHexError> {
-        Self::parse_hex(hex).or_else(|_| RgbColor::parse_hex(hex).map(|rgb| RgbaColor::new(rgb, 1.0)))
+        hex.parse()
     }
 
     /// Parses an 8-digit hex color string (e.g. "#FF000077" or "FF000077")
     pub fn parse_hex(hex: &str) -> Result<Self, ParseHexError> {
-        let hex = hex.trim_start_matches('#');
-        if hex.len() != 8 {
-            return Err(ParseHexError::InvalidSize);
-        }
-        let alpha = u8::from_str_radix(&hex[6..8], 16).map_err(|_| ParseHexError::InvalidAlpha)?;
-        Ok(RgbaColor::new(
-            RgbColor::new_from_u8(
-                u8::from_str_radix(&hex[0..2], 16).map_err(|_| ParseHexError::InvalidRed)?,
-                u8::from_str_radix(&hex[2..4], 16).map_err(|_| ParseHexError::InvalidGreen)?,
-                u8::from_str_radix(&hex[4..6], 16).map_err(|_| ParseHexError::InvalidBlue)?,
-            ),
-            alpha as f32 / 255.0,
-        ))
+        hex.parse()
     }
 
-    /// Serializes the color to an 8-digit hex string (e.g. "#FF000077").
+    /// Serializes the color to a hex string (e.g. "#FF000077").
     pub fn to_hex_string(&self) -> String {
-        let r = (self.color.red * 255.0).round() as u8;
-        let g = (self.color.green * 255.0).round() as u8;
-        let b = (self.color.blue * 255.0).round() as u8;
-        let a = (self.alpha * 255.0).round() as u8;
-        format!("#{r:02X}{g:02X}{b:02X}{a:02X}")
+        self.0.to_string()
     }
 }
 
@@ -163,27 +78,41 @@ impl Default for RgbaColor {
     }
 }
 
+impl Deref for RgbaColor {
+    type Target = Color<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl Display for RgbaColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "RgbaColor(r={}, g={}, b={} a={})", self.color.red, self.color.green, self.color.blue, self.alpha)
+        self.0.fmt(f)
+    }
+}
+
+impl From<RgbColor> for RgbaColor {
+    fn from(color: RgbColor) -> Self {
+        Self::new(color, 1.0)
     }
 }
 
 impl From<RgbaColor> for gdk::RGBA {
     fn from(color: RgbaColor) -> Self {
-        gdk::RGBA::new(color.color.red, color.color.green, color.color.blue, color.alpha)
+        gdk::RGBA::new(color.0.r, color.0.g, color.0.b, color.0.a)
     }
 }
 
 impl From<&RgbaColor> for gdk::RGBA {
     fn from(color: &RgbaColor) -> Self {
-        gdk::RGBA::new(color.color.red, color.color.green, color.color.blue, color.alpha)
+        gdk::RGBA::new(color.0.r, color.0.g, color.0.b, color.0.a)
     }
 }
 
 impl From<&str> for RgbaColor {
     fn from(hex: &str) -> Self {
-        RgbaColor::parse_hex_with_optional_alpha(hex).unwrap_or_else(|_| panic!("Invalid hex color string: '{hex}'"))
+        RgbaColor::from_str(hex).unwrap_or_else(|_| panic!("Invalid hex color string: '{hex}'"))
     }
 }
 
@@ -197,26 +126,20 @@ impl FromStr for RgbaColor {
     type Err = ParseHexError;
 
     fn from_str(hex: &str) -> Result<Self, Self::Err> {
-        RgbaColor::parse_hex_with_optional_alpha(hex)
+        Ok(Self(Color::from_str(hex)?))
     }
 }
 
 impl Serialize for RgbaColor {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(&self.to_hex_string())
     }
 }
 
 impl<'de> Deserialize<'de> for RgbaColor {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let hex = String::deserialize(deserializer)?;
-        RgbaColor::parse_hex_with_optional_alpha(&hex).map_err(serde::de::Error::custom)
+        RgbaColor::from_str(&hex).map_err(serde::de::Error::custom)
     }
 }
 
@@ -228,44 +151,44 @@ mod tests {
     fn test_rgba_color_from_rgb_color() {
         let rgb = RgbColor::new(0.5, 0.3, 0.7);
         let rgba: RgbaColor = rgb.into();
-        assert_eq!(rgba.color.red, 0.5);
-        assert_eq!(rgba.color.green, 0.3);
-        assert_eq!(rgba.color.blue, 0.7);
-        assert_eq!(rgba.alpha, 1.0);
+        assert_eq!(rgba.0.r, 0.5);
+        assert_eq!(rgba.0.g, 0.3);
+        assert_eq!(rgba.0.b, 0.7);
+        assert_eq!(rgba.0.a, 1.0);
     }
 
     #[test]
     fn test_rgba_color_from_str_hex() {
         let rgba: RgbaColor = "#FF0000".into();
-        assert_eq!(rgba.color.red, 1.0);
-        assert_eq!(rgba.color.green, 0.0);
-        assert_eq!(rgba.color.blue, 0.0);
-        assert_eq!(rgba.alpha, 1.0);
+        assert_eq!(rgba.0.r, 1.0);
+        assert_eq!(rgba.0.g, 0.0);
+        assert_eq!(rgba.0.b, 0.0);
+        assert_eq!(rgba.0.a, 1.0);
     }
 
     #[test]
     fn test_rgba_color_from_str_hex_with_alpha() {
         let rgba: RgbaColor = "#FF000077".into();
-        assert_eq!(rgba.color.red, 1.0);
-        assert_eq!(rgba.color.green, 0.0);
-        assert_eq!(rgba.color.blue, 0.0);
-        assert!((rgba.alpha - 0.4667).abs() < 0.01);
+        assert_eq!(rgba.0.r, 1.0);
+        assert_eq!(rgba.0.g, 0.0);
+        assert_eq!(rgba.0.b, 0.0);
+        assert!((rgba.0.a - 0.4667).abs() < 0.01);
     }
 
     #[test]
     fn test_rgba_color_from_string() {
         let rgba: RgbaColor = String::from("#00FF00").into();
-        assert_eq!(rgba.color.red, 0.0);
-        assert_eq!(rgba.color.green, 1.0);
-        assert_eq!(rgba.color.blue, 0.0);
+        assert_eq!(rgba.0.r, 0.0);
+        assert_eq!(rgba.0.g, 1.0);
+        assert_eq!(rgba.0.b, 0.0);
     }
 
     #[test]
     fn test_rgba_color_from_str_trait() {
         let rgba = RgbaColor::from_str("#0000FF").unwrap();
-        assert_eq!(rgba.color.red, 0.0);
-        assert_eq!(rgba.color.green, 0.0);
-        assert_eq!(rgba.color.blue, 1.0);
+        assert_eq!(rgba.0.r, 0.0);
+        assert_eq!(rgba.0.g, 0.0);
+        assert_eq!(rgba.0.b, 1.0);
     }
 
     #[test]

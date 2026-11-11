@@ -129,6 +129,7 @@ impl<__id, __angle, __radius, __event, __enabled, __fixed_position, __close_on_c
     ///
     /// The config is serialized to `serde_json::Value` internally.
     /// This is the typed equivalent of `.widget_config(serde_json::to_value(&config).unwrap())`.
+    #[allow(clippy::type_complexity)]
     pub fn config<T: Serialize>(
         self,
         config: T,
