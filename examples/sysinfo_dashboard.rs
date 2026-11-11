@@ -97,7 +97,7 @@ fn build_ui(app: &Application) {
                 .id("temp")
                 .angle(45.0)
                 .event("temp")
-                .radius(70.0)
+                .radius(70.0_f32)
                 .widget_type("gauge")
                 .config(
                     GaugeConfig::builder()
@@ -118,7 +118,7 @@ fn build_ui(app: &Application) {
                 .id("mem")
                 .angle(135.0)
                 .event("mem")
-                .radius(70.0)
+                .radius(70.0_f32)
                 .widget_type("gauge")
                 .config(
                     GaugeConfig::builder()
@@ -139,7 +139,7 @@ fn build_ui(app: &Application) {
                 .id("disk")
                 .angle(270.0)
                 .event("disk")
-                .radius(70.0)
+                .radius(70.0_f32)
                 .widget_type("gauge")
                 .config(
                     GaugeConfig::builder()
@@ -168,9 +168,17 @@ fn build_ui(app: &Application) {
     });
     center_gauge.add_controller(center_click);
 
-    let system = Rc::new(RefCell::new(System::new()));
-    let components = Rc::new(RefCell::new(Components::new_with_refreshed_list()));
-    let disks = Rc::new(RefCell::new(Disks::new_with_refreshed_list()));
+    let (system, components, disks) = match init_sysinfo() {
+        Ok(value) => value,
+        Err(error) => {
+            eprintln!("Failed to initialize sysinfo: {error}");
+            app.quit();
+            return;
+        }
+    };
+    let system = Rc::new(RefCell::new(system));
+    let components = Rc::new(RefCell::new(components));
+    let disks = Rc::new(RefCell::new(disks));
 
     // Initial refresh so CPU usage is available on next refresh
     system.borrow_mut().refresh_cpu_usage();
@@ -219,10 +227,9 @@ fn build_ui(app: &Application) {
         let disk_percent = {
             let disks = disks_clone.borrow();
             disks
-                .list()
                 .iter()
                 .find(|disk| disk.mount_point() == std::path::Path::new("/"))
-                .or_else(|| disks.list().first())
+                .or_else(|| disks.first())
                 .map(|disk| {
                     let total = disk.total_space() as f64;
                     let available = disk.available_space() as f64;
@@ -243,6 +250,10 @@ fn build_ui(app: &Application) {
 
     window.set_child(Some(&container));
     window.present();
+}
+
+fn init_sysinfo() -> Result<(System, Components, Disks), sysinfo::Error> {
+    Ok((System::new()?, Components::new_with_refreshed_list()?, Disks::new_with_refreshed_list()?))
 }
 
 fn update_gauge(overlay: &PieMenuOverlayWidget, id: &str, value: f64) {
