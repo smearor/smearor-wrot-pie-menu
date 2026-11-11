@@ -13,6 +13,9 @@ use gtk4::gsk::RoundedRect;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::widget::WidgetImplExt;
+use smearor_commons_geometry::Pixels;
+use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::Vec2;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -160,10 +163,9 @@ impl ObjectImpl for PieMenuWidgetImpl {
                 return;
             }
 
-            // Calculate angle of mouse position
-            let angle_rad = dy.atan2(dx);
-            let angle_deg = angle_rad.to_degrees();
-            let normalized_angle = (angle_deg - rotation).rem_euclid(360.0);
+            // Angle of the mouse position relative to the menu rotation.
+            let pointer_angle = Vec2::<Pixels>::new(dx, dy).direction();
+            let menu_rotation = RotationRad::from_degrees(rotation);
 
             // Get the active ring's items
             let menu_items = imp.active_ring_items();
@@ -179,9 +181,8 @@ impl ObjectImpl for PieMenuWidgetImpl {
                 if !item.enabled {
                     continue;
                 }
-                let item_angle = item.angle as f64;
-                let angle_diff = (normalized_angle - item_angle).abs();
-                let angle_diff = angle_diff.min(360.0 - angle_diff); // Handle wrap-around
+                let item_angle = RotationRad::from_degrees(item.angle as f64) + menu_rotation;
+                let angle_diff = item_angle.signed_delta_to(pointer_angle).as_f64().abs().to_degrees();
                 if angle_diff < closest_distance {
                     closest_distance = angle_diff;
                     closest_index = index as i32;
@@ -260,9 +261,9 @@ impl WidgetImpl for PieMenuWidgetImpl {
         for item in menu_items.iter() {
             if let Some(child_widget) = item_widgets.get(&item.id) {
                 let effective_angle = if item.content_rotates { item.angle } else { item.angle + rotation };
-                let angle_rad = effective_angle.to_radians();
-                let item_x = center_x + (radius * 0.7) * angle_rad.cos();
-                let item_y = center_y + (radius * 0.7) * angle_rad.sin();
+                let offset = Vec2::<Pixels>::from_polar((radius * 0.7) as f64, RotationRad::from_degrees(effective_angle as f64));
+                let item_x = center_x + offset.x as f32;
+                let item_y = center_y + offset.y as f32;
 
                 let (w, h) = match &item.content_size {
                     Some(size) => (size.width, size.height),
@@ -301,9 +302,9 @@ impl WidgetImpl for PieMenuWidgetImpl {
                 for item in submenu_items {
                     if let Some(child_widget) = item_widgets.get(&item.id) {
                         let effective_angle = if item.content_rotates { item.angle } else { item.angle + rotation };
-                        let angle_rad = effective_angle.to_radians();
-                        let item_x = center_x + item_ring_radius * angle_rad.cos();
-                        let item_y = center_y + item_ring_radius * angle_rad.sin();
+                        let offset = Vec2::<Pixels>::from_polar(item_ring_radius as f64, RotationRad::from_degrees(effective_angle as f64));
+                        let item_x = center_x + offset.x as f32;
+                        let item_y = center_y + offset.y as f32;
 
                         let (w, h) = match &item.content_size {
                             Some(size) => (size.width, size.height),
@@ -522,10 +523,10 @@ impl WidgetImpl for PieMenuWidgetImpl {
 
             // Draw parent item indicator on the parent ring
             if let Some(parent_item) = self.menu_items.find_item_recursive(parent_id) {
-                let parent_angle_rad = parent_item.angle.to_radians();
                 let parent_ring_radius = if level == 0 { main_radius } else { main_radius + level as f32 * radius_step };
-                let indicator_x = center_x + parent_ring_radius * 0.7 * parent_angle_rad.cos();
-                let indicator_y = center_y + parent_ring_radius * 0.7 * parent_angle_rad.sin();
+                let offset = Vec2::<Pixels>::from_polar((parent_ring_radius * 0.7) as f64, RotationRad::from_degrees(parent_item.angle as f64));
+                let indicator_x = center_x + offset.x as f32;
+                let indicator_y = center_y + offset.y as f32;
 
                 let indicator_color = RGBA::new(1.0, 0.8, 0.2, 0.9);
                 let indicator_radius = 4.0;
