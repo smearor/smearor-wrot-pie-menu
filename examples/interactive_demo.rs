@@ -115,6 +115,11 @@ fn build_ui(app: &Application) {
     controls_box.append(&pie_menu_state_label);
     controls_box.append(&pie_menu_state_switch);
 
+    let natural_child_size_label = Label::new(Some("Natural Child Size"));
+    let natural_child_size_switch = Switch::builder().active(false).build();
+    controls_box.append(&natural_child_size_label);
+    controls_box.append(&natural_child_size_switch);
+
     let activation_label = Label::new(Some("Activation: 3.50"));
     let activation_scale = Scale::with_range(Orientation::Horizontal, 1.0, 10.0, 0.1);
     activation_scale.set_value(3.5);
@@ -329,6 +334,15 @@ fn build_ui(app: &Application) {
             let value = scale.value();
             pie_menu.set_deactivation_threshold(value);
             deactivation_label.set_label(&format!("Deactivation Threshold: {:.2}", value));
+        }
+    ));
+
+    // --- Natural child size switch connection ---
+    natural_child_size_switch.connect_active_notify(glib::clone!(
+        #[weak]
+        rotation_widget,
+        move |switch| {
+            rotation_widget.set_natural_child_size_enabled(switch.is_active());
         }
     ));
 
