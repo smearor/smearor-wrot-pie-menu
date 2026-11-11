@@ -9,6 +9,7 @@ use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
 use smearor_wrot_pie_menu::PieMenuOverlayWidget;
 use smearor_wrot_pie_menu::RotationHandler;
+use smearor_wrot_pie_menu::color::RgbaColor;
 use smearor_wrot_pie_menu::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use smearor_wrot_pie_menu::overlay_widget::control::handler::PieMenuControlHandler;
 use smearor_wrot_pie_menu::overlay_widget::message::handler::PieMenuMessageSender;
@@ -167,7 +168,7 @@ fn build_ui(app: &Application) {
                     CircleConfig::builder()
                         .icon_name("object-rotate-right-symbolic")
                         .label("Rotate CW")
-                        .color("#00000077")
+                        .color("#00000077".parse::<RgbaColor>().unwrap_or_default())
                         .build(),
                 )
                 .build(),
@@ -187,7 +188,7 @@ fn build_ui(app: &Application) {
                     CircleConfig::builder()
                         .icon_name("object-rotate-left-symbolic")
                         .label("Rotate CCW")
-                        .color("#00000077")
+                        .color("#00000077".parse::<RgbaColor>().unwrap_or_default())
                         .build(),
                 )
                 .build(),
