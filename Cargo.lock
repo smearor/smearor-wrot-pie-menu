@@ -890,6 +890,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90"
 
 [[package]]
+name = "smearor-commons-color"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "smearor-wrot-pie-menu"
 version = "0.3.0"
 dependencies = [
@@ -901,6 +909,7 @@ dependencies = [
  "sdl2",
  "serde",
  "serde_json",
+ "smearor-commons-color",
  "smearor-wrot-rotation",
  "sysinfo",
  "thiserror",
