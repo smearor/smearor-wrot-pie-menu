@@ -892,7 +892,7 @@ checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
 [[package]]
 name = "smearor-commons-color"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#0efeb283f89d22404c29e727a6914211594edc9d"
+source = "git+https://github.com/smearor/smearor-commons.git#ead5abab697a92099a35588333bcf5ccf0fcb76d"
 dependencies = [
  "gtk4",
  "serde",
@@ -902,7 +902,7 @@ dependencies = [
 [[package]]
 name = "smearor-commons-geometry"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#0efeb283f89d22404c29e727a6914211594edc9d"
+source = "git+https://github.com/smearor/smearor-commons.git#ead5abab697a92099a35588333bcf5ccf0fcb76d"
 dependencies = [
  "serde",
  "thiserror",
