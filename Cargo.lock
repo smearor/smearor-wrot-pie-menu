@@ -892,7 +892,7 @@ checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
 [[package]]
 name = "smearor-commons-color"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#df2154151a8f427d6fdbebcc26da528889fa7809"
+source = "git+https://github.com/smearor/smearor-commons.git#95beb109011910ca9247e6d8021c47dc9438322d"
 dependencies = [
  "gtk4",
  "serde",
@@ -902,8 +902,10 @@ dependencies = [
 [[package]]
 name = "smearor-commons-geometry"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#df2154151a8f427d6fdbebcc26da528889fa7809"
+source = "git+https://github.com/smearor/smearor-commons.git#95beb109011910ca9247e6d8021c47dc9438322d"
 dependencies = [
+ "cairo-rs",
+ "gtk4",
  "serde",
  "thiserror",
 ]
@@ -931,15 +933,15 @@ dependencies = [
 
 [[package]]
 name = "smearor-wrot-rotation"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4d8ae51ae9bcb1e0498b8ebb56f34957e61d747bca6342a533b08e7e0942b09"
+version = "0.3.0"
+source = "git+https://github.com/smearor/smearor-wrot-rotation.git#8a153a76c75898203386e052ea7a7b8b060284d0"
 dependencies = [
  "glib",
  "gtk4",
  "gtk4-layer-shell",
  "miette",
  "serde",
+ "smearor-commons-geometry",
  "tracing",
 ]
 

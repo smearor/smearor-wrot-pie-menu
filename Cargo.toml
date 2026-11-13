@@ -33,7 +33,7 @@ controller-sdl2 = ["dep:sdl2"]
 controller-evdev = ["dep:evdev"]
 
 [dev-dependencies]
-smearor-wrot-rotation = { version = "0.2.2" }
+smearor-wrot-rotation = { git = "https://github.com/smearor/smearor-wrot-rotation.git" }
 sysinfo = "0.40"
 
 [workspace.lints.rust]
