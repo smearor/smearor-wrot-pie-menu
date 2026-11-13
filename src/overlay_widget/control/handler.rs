@@ -7,6 +7,7 @@ use crate::overlay_widget::imp::widget::DEFAULT_ACTIVATION_THRESHOLD;
 use crate::overlay_widget::imp::widget::DEFAULT_DEACTIVATION_THRESHOLD;
 use crate::overlay_widget::imp::widget::MAX_SUBMENU_DEPTH;
 use glib::subclass::prelude::ObjectSubclassIsExt;
+use smearor_commons_geometry::RotationRad;
 
 pub trait PieMenuControlHandler {
     fn show_pie_menu(&self) -> Result<(), ShowPieMenuError>;
@@ -77,9 +78,9 @@ pub trait PieMenuControlHandler {
     /// Must be called on the GTK main thread.
     fn handle_right_stick(&self, x: f32, y: f32);
 
-    /// Finds the menu item whose angle is closest to `target_angle` (in degrees).
+    /// Finds the menu item whose angle is closest to `target_angle`.
     /// Returns the item ID, or `None` if the menu is empty.
-    fn find_nearest_item(&self, target_angle: f32) -> Option<String>;
+    fn find_nearest_item(&self, target_angle: RotationRad) -> Option<String>;
 
     /// Sets the keyboard selection to the given item ID and triggers a redraw.
     fn set_keyboard_selection(&self, id: String);
@@ -208,7 +209,7 @@ impl PieMenuControlHandler for PieMenuOverlayWidget {
         self.imp().handle_right_stick(x, y);
     }
 
-    fn find_nearest_item(&self, target_angle: f32) -> Option<String> {
+    fn find_nearest_item(&self, target_angle: RotationRad) -> Option<String> {
         self.imp().find_nearest_item(target_angle)
     }
 

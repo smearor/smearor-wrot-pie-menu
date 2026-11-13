@@ -5,6 +5,7 @@
 //! trigger clockwise / counter-clockwise rotation snaps.
 
 use smearor_commons_color::Color;
+use smearor_commons_geometry::RotationRad;
 use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
 use smearor_wrot_pie_menu::PieMenuMessage;
@@ -143,7 +144,7 @@ fn build_ui(app: &Application) {
     picture.set_halign(Align::Center);
     picture.set_valign(Align::Center);
 
-    let rotation_widget = RotationWidget::new(SmearorRotation::Deg0)
+    let rotation_widget = RotationWidget::new(SmearorRotation::DEG_0)
         .with_gesture_rotation_enabled(true)
         .with_animations_enabled(true);
     rotation_widget.set_animation_speed(500);
@@ -238,9 +239,9 @@ fn build_ui(app: &Application) {
         #[weak]
         pie_menu,
         move |_| {
-            rotation_widget.set_rotation_with_animation(0.0);
+            rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(0.0));
             manual_scale.set_value(0.0);
-            pie_menu.set_rotation(0.0);
+            pie_menu.set_rotation(RotationRad::ZERO);
             current_angle_label.set_label("Angle: 0.00°");
         }
     ));
@@ -255,9 +256,9 @@ fn build_ui(app: &Application) {
         #[weak]
         pie_menu,
         move |_| {
-            rotation_widget.set_rotation_with_animation(90.0);
+            rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(90.0));
             manual_scale.set_value(90.0);
-            pie_menu.set_rotation(90.0);
+            pie_menu.set_rotation(RotationRad::from_degrees(90));
             current_angle_label.set_label("Angle: 90.00°");
         }
     ));
@@ -272,9 +273,9 @@ fn build_ui(app: &Application) {
         #[weak]
         pie_menu,
         move |_| {
-            rotation_widget.set_rotation_with_animation(180.0);
+            rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(180.0));
             manual_scale.set_value(180.0);
-            pie_menu.set_rotation(180.0);
+            pie_menu.set_rotation(RotationRad::from_degrees(180));
             current_angle_label.set_label("Angle: 180.00°");
         }
     ));
@@ -289,9 +290,9 @@ fn build_ui(app: &Application) {
         #[weak]
         pie_menu,
         move |_| {
-            rotation_widget.set_rotation_with_animation(270.0);
+            rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(270.0));
             manual_scale.set_value(270.0);
-            pie_menu.set_rotation(270.0);
+            pie_menu.set_rotation(RotationRad::from_degrees(270));
             current_angle_label.set_label("Angle: 270.00°");
         }
     ));
@@ -306,8 +307,8 @@ fn build_ui(app: &Application) {
         pie_menu,
         move |scale| {
             let angle = scale.value();
-            rotation_widget.set_rotation(SmearorRotation::Deg(angle as f32));
-            pie_menu.set_rotation(angle as f32);
+            rotation_widget.set_rotation(SmearorRotation::free(angle));
+            pie_menu.set_rotation(RotationRad::from_degrees(angle));
             current_angle_label.set_label(&format!("Angle: {:.2}°", angle));
         }
     ));
@@ -356,11 +357,11 @@ fn build_ui(app: &Application) {
     glib::timeout_add_local(Duration::from_millis(16), move || {
         let current = rotation_widget_clone.rotation();
         let mut last = last_rotation.borrow_mut();
-        if (current - *last).abs() > 0.1 {
-            *last = current;
+        if (current.to_degrees_f32() - *last).abs() > 0.1 {
+            *last = current.to_degrees_f32();
             pie_menu_clone.set_rotation(current);
-            manual_scale_clone.set_value(current as f64);
-            angle_label_clone.set_label(&format!("Angle: {:.2}°", current));
+            manual_scale_clone.set_value(current.to_degrees());
+            angle_label_clone.set_label(&format!("Angle: {:.2}°", current.to_degrees()));
         }
         glib::ControlFlow::Continue
     });
@@ -383,7 +384,7 @@ fn build_ui(app: &Application) {
     let state_switch_clone = pie_menu_state_switch.clone();
 
     glib::idle_add_local(move || {
-        let mut last_rotation_msg: Option<f32> = None;
+        let mut last_rotation_msg: Option<RotationRad> = None;
 
         loop {
             match receiver.try_recv() {
@@ -393,19 +394,19 @@ fn build_ui(app: &Application) {
                 Ok(PieMenuMessage::Closed) => {
                     state_switch_clone.set_active(false);
                 }
-                Ok(PieMenuMessage::Rotate(degrees)) => {
-                    last_rotation_msg = Some(degrees);
+                Ok(PieMenuMessage::Rotate(rotation)) => {
+                    last_rotation_msg = Some(rotation);
                 }
                 Ok(PieMenuMessage::Event(event)) => match event.as_str() {
                     "rotate-cw" => {
                         let current = rotation_widget_for_messages.rotation();
-                        let new_rotation = (current + 90.0) % 360.0;
-                        rotation_widget_for_messages.set_rotation_with_animation(new_rotation as f64);
+                        let new_rotation = RotationRad::from_degrees(current.to_degrees() + 90.0);
+                        rotation_widget_for_messages.set_rotation_with_animation(new_rotation);
                     }
                     "rotate-ccw" => {
                         let current = rotation_widget_for_messages.rotation();
-                        let new_rotation = (current - 90.0 + 360.0) % 360.0;
-                        rotation_widget_for_messages.set_rotation_with_animation(new_rotation as f64);
+                        let new_rotation = RotationRad::from_degrees(current.to_degrees() - 90.0);
+                        rotation_widget_for_messages.set_rotation_with_animation(new_rotation);
                     }
                     _ => {}
                 },
@@ -415,7 +416,7 @@ fn build_ui(app: &Application) {
         }
 
         if let Some(rotation) = last_rotation_msg {
-            rotation_widget_for_messages.set_rotation(SmearorRotation::Deg(rotation));
+            rotation_widget_for_messages.set_rotation(SmearorRotation::free(rotation.to_degrees()));
         }
 
         glib::ControlFlow::Continue

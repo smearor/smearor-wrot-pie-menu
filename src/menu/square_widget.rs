@@ -70,7 +70,6 @@ impl MenuItemWidgetFactory for SquareWidgetFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gtk4::prelude::Cast;
     use gtk4::prelude::ObjectExt;
 
     #[test]

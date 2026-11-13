@@ -3,6 +3,8 @@ use crate::overlay_widget::control::handler::PieMenuControlHandler;
 use crate::overlay_widget::message::handler::PieMenuMessageSender;
 use crate::overlay_widget::message::message::PieMenuMessage;
 use glib::subclass::prelude::ObjectSubclassIsExt;
+use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::Vec2;
 use std::sync::atomic::Ordering;
 
 impl PieMenuOverlayWidgetImpl {
@@ -50,9 +52,9 @@ impl PieMenuOverlayWidgetImpl {
         }
     }
 
-    /// Finds the menu item whose angle is closest to `target_angle` (in degrees).
+    /// Finds the menu item whose angle is closest to `target_angle`.
     /// Returns the item ID, or `None` if the menu is empty.
-    pub(crate) fn find_nearest_item(&self, target_angle: f32) -> Option<String> {
+    pub(crate) fn find_nearest_item(&self, target_angle: RotationRad) -> Option<String> {
         let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
         pie_menu_widget_borrow.as_ref().and_then(|widget| widget.imp().find_nearest_item(target_angle))
     }
@@ -80,11 +82,12 @@ impl PieMenuOverlayWidgetImpl {
         if !self.is_pie_menu_open() {
             return;
         }
-        let magnitude = (x * x + y * y).sqrt();
-        if magnitude < 0.3 {
+        let stick = Vec2::<()>::new(f64::from(x), f64::from(y));
+        if stick.magnitude_f64() < 0.3 {
             return;
         }
-        let stick_angle = (-y).atan2(x).to_degrees().rem_euclid(360.0);
+        // `-y` because stick up maps to angle 0 at the top of the ring.
+        let stick_angle = Vec2::<()>::new(stick.x, -stick.y).direction();
         if let Some(nearest) = self.find_nearest_item(stick_angle) {
             self.set_keyboard_selection(nearest);
         }

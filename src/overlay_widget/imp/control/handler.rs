@@ -12,6 +12,7 @@ use glib::subclass::prelude::ObjectSubclassIsExt;
 use gtk4::PropagationPhase;
 use gtk4::prelude::EventControllerExt;
 use gtk4::prelude::WidgetExt;
+use smearor_commons_geometry::RotationRad;
 use std::sync::atomic::Ordering;
 
 impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
@@ -142,22 +143,11 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
     }
 
     fn handle_right_stick(&self, x: f32, y: f32) {
-        if !self.is_pie_menu_open() {
-            return;
-        }
-        let magnitude = (x * x + y * y).sqrt();
-        if magnitude < 0.3 {
-            return;
-        }
-        let stick_angle = (-y).atan2(x).to_degrees().rem_euclid(360.0);
-        if let Some(nearest) = self.find_nearest_item(stick_angle) {
-            self.set_keyboard_selection(nearest);
-        }
+        self.handle_right_stick(x, y);
     }
 
-    fn find_nearest_item(&self, target_angle: f32) -> Option<String> {
-        let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
-        pie_menu_widget_borrow.as_ref().and_then(|widget| widget.imp().find_nearest_item(target_angle))
+    fn find_nearest_item(&self, target_angle: RotationRad) -> Option<String> {
+        self.find_nearest_item(target_angle)
     }
 
     fn set_keyboard_selection(&self, id: String) {

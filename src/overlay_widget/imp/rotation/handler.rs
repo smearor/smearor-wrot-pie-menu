@@ -1,8 +1,9 @@
 use crate::PieMenuOverlayWidgetImpl;
 use crate::menu_widget::rotation::handler::RotationHandler;
+use smearor_commons_geometry::RotationRad;
 
 impl RotationHandler for PieMenuOverlayWidgetImpl {
-    fn set_rotation(&self, rotation: f32) {
+    fn set_rotation(&self, rotation: RotationRad) {
         let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
         let Some(pie_menu_widget) = pie_menu_widget_borrow.clone() else {
             return;
@@ -10,10 +11,10 @@ impl RotationHandler for PieMenuOverlayWidgetImpl {
         pie_menu_widget.set_rotation(rotation);
     }
 
-    fn rotation(&self) -> f32 {
+    fn rotation(&self) -> RotationRad {
         let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
         let Some(pie_menu_widget) = pie_menu_widget_borrow.clone() else {
-            return 0.0;
+            return RotationRad::ZERO;
         };
         pie_menu_widget.rotation()
     }

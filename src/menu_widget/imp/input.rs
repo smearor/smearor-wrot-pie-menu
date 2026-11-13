@@ -4,13 +4,14 @@ use crate::menu::context::MenuItemContext;
 use gtk4::prelude::Cast;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::prelude::ObjectSubclassExt;
+use smearor_commons_geometry::RotationRad;
 use std::sync::atomic::Ordering;
 use tracing::debug;
 
 impl PieMenuWidgetImpl {
-    /// Returns the current rotation in degrees.
-    pub(crate) fn rotation(&self) -> f32 {
-        self.rotation.load(Ordering::Relaxed)
+    /// Returns the current rotation.
+    pub(crate) fn rotation(&self) -> RotationRad {
+        RotationRad::from_degrees(self.rotation.load(Ordering::Relaxed))
     }
 
     /// Builds widgets for all menu items that don't have a cached widget yet.
@@ -185,22 +186,17 @@ impl PieMenuWidgetImpl {
         }
     }
 
-    /// Finds the enabled menu item whose angle is closest to `target_angle` (in degrees).
+    /// Finds the enabled menu item whose angle is closest to `target_angle`.
     /// Returns the item ID, or `None` if the menu has no enabled items.
-    pub(crate) fn find_nearest_item(&self, target_angle: f32) -> Option<String> {
+    pub(crate) fn find_nearest_item(&self, target_angle: RotationRad) -> Option<String> {
         let mut items = self.active_ring_items();
         items.retain(|item| item.enabled);
         if items.is_empty() {
             return None;
         }
 
-        let nearest = items.iter().min_by(|a, b| {
-            let angle_a = a.angle.rem_euclid(360.0);
-            let dist_a = (angle_a - target_angle).abs().min(360.0 - (angle_a - target_angle).abs());
-            let angle_b = b.angle.rem_euclid(360.0);
-            let dist_b = (angle_b - target_angle).abs().min(360.0 - (angle_b - target_angle).abs());
-            dist_a.total_cmp(&dist_b)
-        })?;
+        let angular_distance = |item: &MenuItem| RotationRad::from_degrees(item.angle).signed_delta_to(target_angle).abs().as_f64();
+        let nearest = items.iter().min_by(|a, b| angular_distance(a).total_cmp(&angular_distance(b)))?;
 
         Some(nearest.id.clone())
     }
@@ -338,15 +334,15 @@ mod tests {
         imp.menu_items.insert("a".to_string(), make_item("a", 0.0));
         imp.menu_items.insert("b".to_string(), make_item("b", 90.0));
         imp.menu_items.insert("c".to_string(), make_item("c", 180.0));
-        assert_eq!(imp.find_nearest_item(5.0), Some("a".to_string()));
-        assert_eq!(imp.find_nearest_item(85.0), Some("b".to_string()));
-        assert_eq!(imp.find_nearest_item(175.0), Some("c".to_string()));
+        assert_eq!(imp.find_nearest_item(RotationRad::from_degrees(5.0)), Some("a".to_string()));
+        assert_eq!(imp.find_nearest_item(RotationRad::from_degrees(85.0)), Some("b".to_string()));
+        assert_eq!(imp.find_nearest_item(RotationRad::from_degrees(175.0)), Some("c".to_string()));
     }
 
     #[test]
     fn test_find_nearest_item_empty() {
         let imp = PieMenuWidgetImpl::default();
-        assert!(imp.find_nearest_item(0.0).is_none());
+        assert!(imp.find_nearest_item(RotationRad::from_degrees(0.0)).is_none());
     }
 
     #[test]
@@ -356,8 +352,8 @@ mod tests {
         imp.menu_items.insert("b".to_string(), make_item("b", 350.0));
         // At 0°, both are 10° away - the result depends on iteration order (DashMap).
         // Test with non-ambiguous angles instead:
-        assert_eq!(imp.find_nearest_item(5.0), Some("a".to_string()));
-        assert_eq!(imp.find_nearest_item(355.0), Some("b".to_string()));
+        assert_eq!(imp.find_nearest_item(RotationRad::from_degrees(5.0)), Some("a".to_string()));
+        assert_eq!(imp.find_nearest_item(RotationRad::from_degrees(355.0)), Some("b".to_string()));
     }
 
     #[test]
@@ -404,7 +400,7 @@ mod tests {
         let imp = PieMenuWidgetImpl::default();
         imp.menu_items.insert("a".to_string(), make_disabled_item("a", 0.0));
         imp.menu_items.insert("b".to_string(), make_item("b", 90.0));
-        assert_eq!(imp.find_nearest_item(5.0), Some("b".to_string()));
+        assert_eq!(imp.find_nearest_item(RotationRad::from_degrees(5.0)), Some("b".to_string()));
     }
 
     #[test]
@@ -414,7 +410,7 @@ mod tests {
         imp.menu_items.insert("b".to_string(), make_disabled_item("b", 90.0));
         assert!(imp.compute_next_selection(1).is_none());
         assert!(imp.compute_first_selection().is_none());
-        assert!(imp.find_nearest_item(0.0).is_none());
+        assert!(imp.find_nearest_item(RotationRad::from_degrees(0.0)).is_none());
     }
 
     #[test]

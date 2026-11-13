@@ -225,7 +225,7 @@ mod tests {
 
     #[test]
     fn test_menu_item_radius_custom() {
-        let item = MenuItem::builder().id("test").angle(0.0).radius(60.0).event("event").build();
+        let item = MenuItem::builder().id("test").angle(0.0).radius(60.0_f32).event("event").build();
         assert_eq!(item.radius(), 60.0);
     }
 

@@ -4,6 +4,8 @@ use crate::menu_widget::menu_item::error::AddMenuItemError;
 use dashmap::DashMap;
 use serde::Deserialize;
 use serde::Serialize;
+use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::Vec2;
 use std::cmp::Ordering;
 use std::ops::Deref;
 
@@ -34,17 +36,18 @@ impl Menu {
         if ring_radius == 0.0 {
             return Ok(());
         }
-        let new_angle_rad = new_item.angle.to_radians();
-        let new_position = (new_angle_rad.cos(), new_angle_rad.sin());
+        // Chord distance on the unit circle: items at `angle` map to
+        // polar points, their distance is the geometric chord length.
+        let new_position = Vec2::<()>::from_polar(1.0, RotationRad::from_degrees(new_item.angle));
         for entry in self.iter() {
             let existing_item = entry.value();
             if existing_item.id == new_item.id {
                 continue;
             }
-            let existing_angle_rad = existing_item.angle.to_radians();
-            let existing_position = (existing_angle_rad.cos(), existing_angle_rad.sin());
-            let distance = ((new_position.0 - existing_position.0).powi(2) + (new_position.1 - existing_position.1).powi(2)).sqrt();
-            let min_distance = (new_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS) + existing_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS)) / ring_radius;
+            let existing_position = Vec2::<()>::from_polar(1.0, RotationRad::from_degrees(existing_item.angle));
+            let distance = new_position.distance_f64(&existing_position);
+            let min_distance = f64::from(new_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS) + existing_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS))
+                / f64::from(ring_radius);
             if distance < min_distance {
                 return Err(AddMenuItemError::ItemOverlap {
                     id: new_item.id.clone(),

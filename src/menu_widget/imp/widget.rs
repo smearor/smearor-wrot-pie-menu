@@ -123,7 +123,6 @@ impl ObjectImpl for PieMenuWidgetImpl {
             let imp = widget.imp();
             let radius = imp.radius.load(Ordering::Relaxed) as f64;
             let center_radius = imp.center_radius.load(Ordering::Relaxed) as f64;
-            let rotation = imp.rotation.load(Ordering::Relaxed) as f64;
             let radius_step = imp.submenu_radius_step.load(Ordering::Relaxed) as f64;
 
             // Calculate distance from center (center is middle of widget)
@@ -165,7 +164,7 @@ impl ObjectImpl for PieMenuWidgetImpl {
 
             // Angle of the mouse position relative to the menu rotation.
             let pointer_angle = Vec2::<Pixels>::new(dx, dy).direction();
-            let menu_rotation = RotationRad::from_degrees(rotation);
+            let menu_rotation = imp.rotation();
 
             // Get the active ring's items
             let menu_items = imp.active_ring_items();
@@ -181,8 +180,8 @@ impl ObjectImpl for PieMenuWidgetImpl {
                 if !item.enabled {
                     continue;
                 }
-                let item_angle = RotationRad::from_degrees(item.angle as f64) + menu_rotation;
-                let angle_diff = item_angle.signed_delta_to(pointer_angle).as_f64().abs().to_degrees();
+                let item_angle = RotationRad::from_degrees(item.angle) + menu_rotation;
+                let angle_diff = item_angle.signed_delta_to(pointer_angle).abs().to_degrees();
                 if angle_diff < closest_distance {
                     closest_distance = angle_diff;
                     closest_index = index as i32;
@@ -386,26 +385,22 @@ impl WidgetImpl for PieMenuWidgetImpl {
 
         // Outer circle - clockwise
         for i in 0..=360 {
-            let angle = (i as f32).to_radians();
-            let x = center_x + radius * angle.cos();
-            let y = center_y + radius * angle.sin();
+            let point = Vec2::<()>::from_polar(f64::from(radius), RotationRad::from_degrees(i)).to_f32();
             if i == 0 {
-                builder.move_to(x, y);
+                builder.move_to(center_x + point.x, center_y + point.y);
             } else {
-                builder.line_to(x, y);
+                builder.line_to(center_x + point.x, center_y + point.y);
             }
         }
         builder.close();
 
         // Inner circle - counter-clockwise (creates hole with even-odd fill)
         for i in (0..=360).rev() {
-            let angle = (i as f32).to_radians();
-            let x = center_x + center_radius * angle.cos();
-            let y = center_y + center_radius * angle.sin();
+            let point = Vec2::<()>::from_polar(f64::from(center_radius), RotationRad::from_degrees(i)).to_f32();
             if i == 360 {
-                builder.move_to(x, y);
+                builder.move_to(center_x + point.x, center_y + point.y);
             } else {
-                builder.line_to(x, y);
+                builder.line_to(center_x + point.x, center_y + point.y);
             }
         }
         builder.close();
@@ -437,7 +432,7 @@ impl WidgetImpl for PieMenuWidgetImpl {
 
             for angle in (0i32..360).step_by(5) {
                 let shifted_angle = angle.rem_euclid(360);
-                let angle_rad = (angle as f32).to_radians();
+                let marking_angle = RotationRad::from_degrees(angle);
                 let is_zero_degree = shifted_angle == 90;
                 let is_current_angle = shifted_angle == nearest_angle;
                 let (outer_color, marking_line_width_outer) = if is_current_angle {
@@ -452,34 +447,24 @@ impl WidgetImpl for PieMenuWidgetImpl {
                 };
 
                 // Draw outer edge marking
-                let outer_inner_radius = radius - marking_length_outer_current_angle;
-                let outer_outer_radius = radius;
-
-                let outer_start_x = center_x + outer_inner_radius * angle_rad.cos();
-                let outer_start_y = center_y + outer_inner_radius * angle_rad.sin();
-                let outer_end_x = center_x + outer_outer_radius * angle_rad.cos();
-                let outer_end_y = center_y + outer_outer_radius * angle_rad.sin();
+                let outer_start = Vec2::<()>::from_polar(f64::from(radius - marking_length_outer_current_angle), marking_angle).to_f32();
+                let outer_end = Vec2::<()>::from_polar(f64::from(radius), marking_angle).to_f32();
 
                 let builder = gtk4::gsk::PathBuilder::new();
-                builder.move_to(outer_start_x, outer_start_y);
-                builder.line_to(outer_end_x, outer_end_y);
+                builder.move_to(center_x + outer_start.x, center_y + outer_start.y);
+                builder.line_to(center_x + outer_end.x, center_y + outer_end.y);
                 let path = builder.to_path();
 
                 let stroke = gtk4::gsk::Stroke::new(marking_line_width_outer);
                 snapshot.append_stroke(&path, &stroke, &outer_color);
 
                 // Draw inner edge marking
-                let inner_inner_radius = center_radius;
-                let inner_outer_radius = center_radius + marking_length_inner_zero_angle;
-
-                let inner_start_x = center_x + inner_inner_radius * angle_rad.cos();
-                let inner_start_y = center_y + inner_inner_radius * angle_rad.sin();
-                let inner_end_x = center_x + inner_outer_radius * angle_rad.cos();
-                let inner_end_y = center_y + inner_outer_radius * angle_rad.sin();
+                let inner_start = Vec2::<()>::from_polar(f64::from(center_radius), marking_angle).to_f32();
+                let inner_end = Vec2::<()>::from_polar(f64::from(center_radius + marking_length_inner_zero_angle), marking_angle).to_f32();
 
                 let builder = gtk4::gsk::PathBuilder::new();
-                builder.move_to(inner_start_x, inner_start_y);
-                builder.line_to(inner_end_x, inner_end_y);
+                builder.move_to(center_x + inner_start.x, center_y + inner_start.y);
+                builder.line_to(center_x + inner_end.x, center_y + inner_end.y);
                 let path = builder.to_path();
 
                 let stroke = gtk4::gsk::Stroke::new(marking_line_width_inner);
@@ -506,13 +491,11 @@ impl WidgetImpl for PieMenuWidgetImpl {
             // Draw submenu ring outline
             let builder = gtk4::gsk::PathBuilder::new();
             for i in 0..=360 {
-                let angle = (i as f32).to_radians();
-                let x = center_x + submenu_radius * angle.cos();
-                let y = center_y + submenu_radius * angle.sin();
+                let point = Vec2::<()>::from_polar(f64::from(submenu_radius), RotationRad::from_degrees(i)).to_f32();
                 if i == 0 {
-                    builder.move_to(x, y);
+                    builder.move_to(center_x + point.x, center_y + point.y);
                 } else {
-                    builder.line_to(x, y);
+                    builder.line_to(center_x + point.x, center_y + point.y);
                 }
             }
             builder.close();
@@ -524,9 +507,9 @@ impl WidgetImpl for PieMenuWidgetImpl {
             // Draw parent item indicator on the parent ring
             if let Some(parent_item) = self.menu_items.find_item_recursive(parent_id) {
                 let parent_ring_radius = if level == 0 { main_radius } else { main_radius + level as f32 * radius_step };
-                let offset = Vec2::<Pixels>::from_polar((parent_ring_radius * 0.7) as f64, RotationRad::from_degrees(parent_item.angle as f64));
-                let indicator_x = center_x + offset.x as f32;
-                let indicator_y = center_y + offset.y as f32;
+                let offset = Vec2::<()>::from_polar(f64::from(parent_ring_radius * 0.7), RotationRad::from_degrees(parent_item.angle)).to_f32();
+                let indicator_x = center_x + offset.x;
+                let indicator_y = center_y + offset.y;
 
                 let indicator_color = RGBA::new(1.0, 0.8, 0.2, 0.9);
                 let indicator_radius = 4.0;

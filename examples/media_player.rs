@@ -155,7 +155,7 @@ fn build_ui(app: &Application) {
     // --- Pie menu with builder pattern ---
     let (sender, receiver) = channel::<PieMenuMessage>();
 
-    let overlay = PieMenuOverlayWidget::new(Some(&main_box.clone().upcast_ref()))
+    let overlay = PieMenuOverlayWidget::new(Some(main_box.clone().upcast_ref()))
         .with_message_sender(sender)
         .with_activation_threshold(2.0)
         .with_deactivation_threshold(0.4)
@@ -383,7 +383,7 @@ fn build_ui(app: &Application) {
                         if let Some(mut item) = overlay_for_messages.get_menu_item("play-pause") {
                             item.widget_config = Some(
                                 serde_json::to_value(
-                                    &CircleConfig::builder()
+                                    CircleConfig::builder()
                                         .icon_name(if *playing {
                                             "media-playback-start-symbolic"
                                         } else {
@@ -407,7 +407,7 @@ fn build_ui(app: &Application) {
                         if let Some(mut item) = overlay_for_messages.get_menu_item("play-pause") {
                             item.widget_config = Some(
                                 serde_json::to_value(
-                                    &CircleConfig::builder()
+                                    CircleConfig::builder()
                                         .icon_name("media-playback-pause-symbolic")
                                         .label("Paused")
                                         .color("#00AA0077".parse::<Color<f32>>().unwrap_or_default())

@@ -19,6 +19,7 @@ use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::widget::WidgetImplExt;
+use smearor_commons_geometry::RotationRad;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -47,13 +48,13 @@ pub struct PieMenuOverlayWidgetImpl {
     pub(crate) message_sender: RefCell<Option<Sender<PieMenuMessage>>>,
 
     /// Initial rotation when rotation gesture starts
-    pub(crate) initial_rotation: RefCell<Option<f32>>,
+    pub(crate) initial_rotation: RefCell<Option<RotationRad>>,
 
     /// Whether rotation gesture is active
     pub(crate) is_rotating: Arc<AtomicBool>,
 
     /// Last rotation value sent to main application
-    pub(crate) last_sent_rotation: RefCell<Option<f32>>,
+    pub(crate) last_sent_rotation: RefCell<Option<RotationRad>>,
 
     /// Pinch-to-zoom scale threshold above which the pie menu opens.
     /// Configurable via `set_activation_threshold()`. Default: `3.5`.
@@ -215,7 +216,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
         rotate_gesture.set_propagation_phase(PropagationPhase::Capture);
 
         let widget_weak = widget.downgrade();
-        let initial_rotation = Rc::new(RefCell::new(0.0f32));
+        let initial_rotation = Rc::new(RefCell::new(RotationRad::ZERO));
         let initial_rotation_clone = initial_rotation.clone();
 
         rotate_gesture.connect_begin(move |_gesture, _sequence| {
@@ -228,11 +229,11 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
 
             // Get current rotation from pie menu widget
             if let Some(pie_menu_widget) = widget.imp().pie_menu_widget.borrow().as_ref() {
-                let current_rotation = pie_menu_widget.imp().rotation.load(Ordering::Relaxed);
+                let current_rotation = pie_menu_widget.imp().rotation();
                 *initial_rotation_clone.borrow_mut() = current_rotation;
                 widget.imp().initial_rotation.replace(Some(current_rotation));
                 widget.imp().is_rotating.store(true, Ordering::Relaxed);
-                debug!("Rotation gesture started, initial rotation: {}", current_rotation);
+                debug!("Rotation gesture started, initial rotation: {}", current_rotation.to_degrees());
             }
         });
 
@@ -252,20 +253,22 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
             // Check if gesture exceeds 10 degrees in either direction
             if angle_degrees.abs() > 10.0 {
                 let direction = if angle_degrees > 0.0 { 1.0 } else { -1.0 };
-                let new_rotation = initial_rot + angle_degrees + (10.0 * direction);
-                let new_rotation = new_rotation.rem_euclid(360.0);
-
+                let new_rotation = (initial_rot + RotationRad::from_degrees(angle_degrees + 10.0 * direction)).normalized();
                 // Round to nearest degree for 1-degree steps
-                let rounded_rotation = new_rotation.round();
+                let rounded_rotation = RotationRad::from_degrees(new_rotation.to_degrees().round());
 
                 // Check if rotation changed by at least 1 degree from last sent value
                 let should_send = match widget.imp().last_sent_rotation.borrow().as_ref() {
-                    Some(last) => (rounded_rotation - *last).abs() >= 1.0,
+                    Some(last) => last.signed_delta_to(rounded_rotation).abs().to_degrees() >= 1.0,
                     None => true,
                 };
 
                 if should_send {
-                    debug!("Rotation gesture exceeded 10 degrees: angle_delta={}, new_rotation={}", angle_degrees, rounded_rotation);
+                    debug!(
+                        "Rotation gesture exceeded 10 degrees: angle_delta={}, new_rotation={}",
+                        angle_degrees,
+                        rounded_rotation.to_degrees()
+                    );
 
                     // Update pie menu rotation
                     widget.set_rotation(rounded_rotation);
@@ -455,8 +458,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
 
                 let rotation_step = widget.scroll_rotation_step();
                 let current_rotation = widget.rotation();
-                let new_rotation = current_rotation + (dy as f32 * rotation_step);
-                let new_rotation = new_rotation.rem_euclid(360.0);
+                let new_rotation = (current_rotation + RotationRad::from_degrees(dy * f64::from(rotation_step))).normalized();
                 widget.set_rotation(new_rotation);
                 widget.send_message(PieMenuMessage::Rotate(new_rotation));
 
@@ -488,7 +490,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
 
                 let rotation_delta = stick_x * widget.scroll_rotation_step();
                 let current = widget.rotation();
-                let new_rotation = (current + rotation_delta).rem_euclid(360.0);
+                let new_rotation = (current + RotationRad::from_degrees(rotation_delta)).normalized();
                 widget.set_rotation(new_rotation);
                 widget.send_message(PieMenuMessage::Rotate(new_rotation));
 

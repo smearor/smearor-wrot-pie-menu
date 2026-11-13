@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use serde::Serialize;
+use smearor_commons_geometry::RotationRad;
 
 /// Messages sent from the pie menu to the consumer application
 #[non_exhaustive]
@@ -9,8 +10,8 @@ pub enum PieMenuMessage {
     Opened,
     /// The pie menu was closed
     Closed,
-    /// Rotation delta in degrees (from rotation gesture)
-    Rotate(f32),
+    /// Absolute rotation reached by a gesture, scroll or stick update.
+    Rotate(RotationRad),
     /// Custom event triggered by clicking a menu item.
     /// The string is the `event` field of the clicked `MenuItem`.
     Event(String),
