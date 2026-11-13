@@ -123,13 +123,13 @@ impl ObjectImpl for PieMenuWidgetImpl {
                 return;
             };
             let imp = widget.imp();
-            let radius = imp.radius.load(Ordering::Relaxed) as f64;
-            let center_radius = imp.center_radius.load(Ordering::Relaxed) as f64;
-            let radius_step = imp.submenu_radius_step.load(Ordering::Relaxed) as f64;
+            let radius = imp.radius();
+            let center_radius = imp.center_radius();
+            let radius_step = imp.submenu_radius_step();
 
             // Calculate distance from center (center is middle of widget)
             let widget_obj = imp.obj();
-            let center = widget_obj.allocated_size().with_unit::<Pixels>().to_f64().half();
+            let center = widget_obj.center();
             let pointer = Vec2::<Pixels>::new(x, y);
             let pointer_offset = pointer - center;
 
@@ -139,18 +139,18 @@ impl ObjectImpl for PieMenuWidgetImpl {
             let (ring_inner, ring_outer) = if submenu_depth == 0 {
                 (center_radius, radius)
             } else {
-                let outer = radius + submenu_depth as f64 * radius_step;
+                let outer = radius + radius_step * submenu_depth as f64;
                 let inner = if submenu_depth == 1 {
                     radius
                 } else {
-                    radius + (submenu_depth - 1) as f64 * radius_step
+                    radius + radius_step * (submenu_depth - 1) as f64
                 };
                 (inner, outer)
             };
             drop(submenu_stack);
 
             // Check if mouse is in the active ring area
-            let active_ring = Annulus::<Pixels>::new(center, ring_inner, ring_outer);
+            let active_ring = Annulus::<Pixels>::new(center, ring_inner.into(), ring_outer.into());
             if !active_ring.contains(&pointer) {
                 // Outside the active ring, no item hovered
                 let mut hovered_index = imp.hovered_item_index.borrow_mut();

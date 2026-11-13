@@ -19,7 +19,9 @@ use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::widget::WidgetImplExt;
+use smearor_commons_geometry::Annulus;
 use smearor_commons_geometry::Circle;
+use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
 use smearor_commons_geometry::WidgetSizeExt;
@@ -319,12 +321,12 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                 debug!("No pie menu widget set, ignoring click");
                 return;
             };
-            let center_radius = menu_widget.imp().center_radius.load(Ordering::Relaxed);
+            let center_radius = menu_widget.imp().center_radius();
 
             // Check if click is in center circle
-            let center = widget.allocated_size().to_f64().half();
-            let pointer = Vec2::<()>::new(x, y);
-            let center_circle = Circle::new(center, f64::from(center_radius));
+            let center = widget.center();
+            let pointer = Vec2::<Pixels>::new(x, y);
+            let center_circle = Circle::<Pixels>::new(center, center_radius.into());
 
             debug!("Click distance from center: {}, threshold: {center_radius}", center.distance_f64(&pointer));
 
@@ -347,9 +349,9 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                 // Check if click is on a menu item (main ring or active submenu ring)
                 let clicked_item = widget.imp().pie_menu_widget.borrow().as_ref().and_then(|menu_widget| {
                     let imp = menu_widget.imp();
-                    let main_radius = imp.radius.load(Ordering::Relaxed);
-                    let rotation = imp.rotation.load(Ordering::Relaxed);
-                    let radius_step = imp.submenu_radius_step.load(Ordering::Relaxed);
+                    let main_radius = imp.radius();
+                    let rotation = imp.rotation();
+                    let radius_step = imp.submenu_radius_step();
                     let submenu_stack = imp.submenu_stack.borrow();
 
                     // Check main ring items only when no submenu is open
@@ -359,8 +361,8 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                             if !item.enabled {
                                 continue;
                             }
-                            let item_circle = Circle::new(
-                                center + Vec2::<()>::from_polar(f64::from(main_radius * 0.7), RotationRad::from_degrees(item.angle + rotation)),
+                            let item_circle = Circle::<Pixels>::new(
+                                center + Vec2::<Pixels>::from_polar((main_radius * 0.7).into(), RotationRad::from_degrees(item.angle) + rotation),
                                 f64::from(item.radius()),
                             );
 
@@ -372,13 +374,14 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
 
                     // Check active submenu ring items (DashMap iter locks released by now)
                     if let Some(parent_id) = submenu_stack.last() {
-                        let outer_radius = main_radius + submenu_stack.len() as f32 * radius_step;
+                        let outer_radius = main_radius + radius_step * submenu_stack.len() as f64;
                         let inner_radius = if submenu_stack.len() == 1 {
                             main_radius
                         } else {
-                            main_radius + (submenu_stack.len() - 1) as f32 * radius_step
+                            main_radius + radius_step * (submenu_stack.len() - 1) as f64
                         };
-                        let item_ring_radius = (inner_radius + outer_radius) / 2.0;
+                        let item_ring = Annulus::<Pixels>::new(center, inner_radius.into(), outer_radius.into());
+                        let item_ring_radius: f64 = item_ring.mid_radius().into();
                         if let Some(parent_item) = menu_items.find_item_recursive(parent_id)
                             && let Some(submenu_items) = &parent_item.submenu
                         {
@@ -386,8 +389,8 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                                 if !item.enabled {
                                     continue;
                                 }
-                                let item_circle = Circle::new(
-                                    center + Vec2::<()>::from_polar(f64::from(item_ring_radius), RotationRad::from_degrees(item.angle + rotation)),
+                                let item_circle = Circle::<Pixels>::new(
+                                    center + Vec2::<Pixels>::from_polar(item_ring_radius, RotationRad::from_degrees(item.angle) + rotation),
                                     f64::from(item.radius()),
                                 );
 
