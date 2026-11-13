@@ -4,6 +4,7 @@ use crate::menu::context::MenuItemContext;
 use gtk4::prelude::Cast;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::prelude::ObjectSubclassExt;
+use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use std::sync::atomic::Ordering;
 use tracing::debug;
@@ -12,6 +13,21 @@ impl PieMenuWidgetImpl {
     /// Returns the current rotation.
     pub(crate) fn rotation(&self) -> RotationRad {
         RotationRad::from_degrees(self.rotation.load(Ordering::Relaxed))
+    }
+
+    /// Returns the main ring radius in pixels.
+    pub(crate) fn radius(&self) -> Pixels {
+        Pixels::from(f64::from(self.radius.load(Ordering::Relaxed)))
+    }
+
+    /// Returns the center circle radius in pixels.
+    pub(crate) fn center_radius(&self) -> Pixels {
+        Pixels::from(f64::from(self.center_radius.load(Ordering::Relaxed)))
+    }
+
+    /// Returns the radial step between submenu ring levels in pixels.
+    pub(crate) fn submenu_radius_step(&self) -> Pixels {
+        Pixels::from(f64::from(self.submenu_radius_step.load(Ordering::Relaxed)))
     }
 
     /// Builds widgets for all menu items that don't have a cached widget yet.
