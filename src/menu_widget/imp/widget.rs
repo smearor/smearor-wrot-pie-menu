@@ -16,6 +16,7 @@ use gtk4::subclass::widget::WidgetImplExt;
 use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
+use smearor_commons_geometry::WidgetSizeExt;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -127,13 +128,9 @@ impl ObjectImpl for PieMenuWidgetImpl {
 
             // Calculate distance from center (center is middle of widget)
             let widget_obj = imp.obj();
-            let width = widget_obj.width() as f64;
-            let height = widget_obj.height() as f64;
-            let center_x = width / 2.0;
-            let center_y = height / 2.0;
-            let dx = x - center_x;
-            let dy = y - center_y;
-            let distance = (dx * dx + dy * dy).sqrt();
+            let center = widget_obj.allocated_size().with_unit::<Pixels>().to_f64().half();
+            let pointer_offset = Vec2::<Pixels>::new(x, y) - center;
+            let distance = pointer_offset.magnitude_f64();
 
             // Determine the active ring bounds
             let submenu_stack = imp.submenu_stack.borrow();
@@ -163,7 +160,7 @@ impl ObjectImpl for PieMenuWidgetImpl {
             }
 
             // Angle of the mouse position relative to the menu rotation.
-            let pointer_angle = Vec2::<Pixels>::new(dx, dy).direction();
+            let pointer_angle = pointer_offset.direction();
             let menu_rotation = imp.rotation();
 
             // Get the active ring's items

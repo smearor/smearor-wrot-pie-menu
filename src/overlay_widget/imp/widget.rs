@@ -20,6 +20,8 @@ use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::widget::WidgetImplExt;
 use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::Vec2;
+use smearor_commons_geometry::WidgetSizeExt;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -312,10 +314,6 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                 return;
             }
 
-            let width = widget.width() as f32;
-            let height = widget.height() as f32;
-            let center_x = width / 2.0;
-            let center_y = height / 2.0;
             let center_radius = widget
                 .imp()
                 .pie_menu_widget
@@ -327,13 +325,13 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                 .load(Ordering::Relaxed);
 
             // Check if click is in center circle
-            let dx = x as f32 - center_x;
-            let dy = y as f32 - center_y;
-            let distance = (dx * dx + dy * dy).sqrt();
+            let center = widget.allocated_size().to_f64().half();
+            let pointer = Vec2::<()>::new(x, y);
+            let distance = center.distance_f64(&pointer);
 
             debug!("Click distance from center: {distance}, threshold: {center_radius}");
 
-            if distance <= center_radius {
+            if distance <= f64::from(center_radius) {
                 // Check if a center widget is set - if so, let the event propagate
                 let has_center_widget = widget
                     .imp()
@@ -370,16 +368,9 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                             if !item.enabled {
                                 continue;
                             }
-                            let angle_rad = (item.angle + rotation).to_radians();
-                            let item_x = center_x + (main_radius * 0.7) * angle_rad.cos();
-                            let item_y = center_y + (main_radius * 0.7) * angle_rad.sin();
+                            let item_position = center + Vec2::<()>::from_polar(f64::from(main_radius * 0.7), RotationRad::from_degrees(item.angle + rotation));
 
-                            let item_dx = x as f32 - item_x;
-                            let item_dy = y as f32 - item_y;
-                            let item_distance = (item_dx * item_dx + item_dy * item_dy).sqrt();
-                            let item_radius = item.radius();
-
-                            if item_distance <= item_radius {
+                            if item_position.distance_f64(&pointer) <= f64::from(item.radius()) {
                                 return Some((item.id.clone(), item.submenu.is_some(), item.event.clone(), item.close_on_click));
                             }
                         }
@@ -401,16 +392,10 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                                 if !item.enabled {
                                     continue;
                                 }
-                                let angle_rad = (item.angle + rotation).to_radians();
-                                let item_x = center_x + item_ring_radius * angle_rad.cos();
-                                let item_y = center_y + item_ring_radius * angle_rad.sin();
+                                let item_position =
+                                    center + Vec2::<()>::from_polar(f64::from(item_ring_radius), RotationRad::from_degrees(item.angle + rotation));
 
-                                let item_dx = x as f32 - item_x;
-                                let item_dy = y as f32 - item_y;
-                                let item_distance = (item_dx * item_dx + item_dy * item_dy).sqrt();
-                                let item_radius = item.radius();
-
-                                if item_distance <= item_radius {
+                                if item_position.distance_f64(&pointer) <= f64::from(item.radius()) {
                                     return Some((item.id.clone(), item.submenu.is_some(), item.event.clone(), item.close_on_click));
                                 }
                             }
