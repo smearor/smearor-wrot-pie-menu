@@ -944,7 +944,7 @@ dependencies = [
 [[package]]
 name = "smearor-wrot-rotation"
 version = "0.3.0"
-source = "git+https://github.com/smearor/smearor-wrot-rotation.git#383ab883c0fab4badf68bd0116ba454096116a60"
+source = "git+https://github.com/smearor/smearor-wrot-rotation.git#7ba9e5c5650181a681875756fd15f48f65c10860"
 dependencies = [
  "glib",
  "gtk4",
