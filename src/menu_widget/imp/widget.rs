@@ -13,6 +13,7 @@ use gtk4::gsk::RoundedRect;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::widget::WidgetImplExt;
+use smearor_commons_geometry::Annulus;
 use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
@@ -129,8 +130,8 @@ impl ObjectImpl for PieMenuWidgetImpl {
             // Calculate distance from center (center is middle of widget)
             let widget_obj = imp.obj();
             let center = widget_obj.allocated_size().with_unit::<Pixels>().to_f64().half();
-            let pointer_offset = Vec2::<Pixels>::new(x, y) - center;
-            let distance = pointer_offset.magnitude_f64();
+            let pointer = Vec2::<Pixels>::new(x, y);
+            let pointer_offset = pointer - center;
 
             // Determine the active ring bounds
             let submenu_stack = imp.submenu_stack.borrow();
@@ -149,7 +150,8 @@ impl ObjectImpl for PieMenuWidgetImpl {
             drop(submenu_stack);
 
             // Check if mouse is in the active ring area
-            if distance < ring_inner || distance > ring_outer {
+            let active_ring = Annulus::<Pixels>::new(center, ring_inner, ring_outer);
+            if !active_ring.contains(&pointer) {
                 // Outside the active ring, no item hovered
                 let mut hovered_index = imp.hovered_item_index.borrow_mut();
                 if *hovered_index != -1 {

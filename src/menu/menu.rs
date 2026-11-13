@@ -4,6 +4,8 @@ use crate::menu_widget::menu_item::error::AddMenuItemError;
 use dashmap::DashMap;
 use serde::Deserialize;
 use serde::Serialize;
+use smearor_commons_geometry::Arc;
+use smearor_commons_geometry::Circle;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
 use std::cmp::Ordering;
@@ -36,19 +38,24 @@ impl Menu {
         if ring_radius == 0.0 {
             return Ok(());
         }
-        // Chord distance on the unit circle: items at `angle` map to
-        // polar points, their distance is the geometric chord length.
-        let new_position = Vec2::<()>::from_polar(1.0, RotationRad::from_degrees(new_item.angle));
+        // Items are disks on the ring: at `angle` each centers a
+        // circle of `radius` around the polar point, so two items
+        // collide exactly when their radius-normalized disks overlap.
+        let ring = f64::from(ring_radius);
+        let new_circle = Circle::new(
+            Vec2::<()>::from_polar(1.0, RotationRad::from_degrees(new_item.angle)),
+            f64::from(new_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS)) / ring,
+        );
         for entry in self.iter() {
             let existing_item = entry.value();
             if existing_item.id == new_item.id {
                 continue;
             }
-            let existing_position = Vec2::<()>::from_polar(1.0, RotationRad::from_degrees(existing_item.angle));
-            let distance = new_position.distance_f64(&existing_position);
-            let min_distance = f64::from(new_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS) + existing_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS))
-                / f64::from(ring_radius);
-            if distance < min_distance {
+            let existing_circle = Circle::new(
+                Vec2::<()>::from_polar(1.0, RotationRad::from_degrees(existing_item.angle)),
+                f64::from(existing_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS)) / ring,
+            );
+            if new_circle.overlaps(&existing_circle) {
                 return Err(AddMenuItemError::ItemOverlap {
                     id: new_item.id.clone(),
                     overlapping_with: existing_item.id.clone(),
@@ -141,16 +148,10 @@ impl Menu {
         }
         fixed_sorted.sort_by(|a, b| a.angle.partial_cmp(&b.angle).unwrap_or(Ordering::Equal));
 
-        let segment_count = fixed_sorted.len();
-        let mut segments: Vec<(f32, f32)> = Vec::with_capacity(segment_count);
-        for window in fixed_sorted.windows(2) {
-            segments.push((window[0].angle, window[1].angle));
-        }
-        if let (Some(first), Some(last)) = (fixed_sorted.first(), fixed_sorted.last()) {
-            segments.push((last.angle, first.angle + 360.0));
-        }
+        let fixed_angles: Vec<RotationRad> = fixed_sorted.iter().map(|item| RotationRad::from_degrees(item.angle)).collect();
+        let segments = Arc::gaps_between(&fixed_angles);
 
-        let total_width: f32 = segments.iter().map(|(start, end)| end - start).sum();
+        let total_width: f64 = segments.iter().map(|arc| arc.width.as_f64()).sum();
 
         if total_width == 0.0 {
             let flexible_count = flexible.len() as f32;
@@ -164,26 +165,17 @@ impl Menu {
         }
 
         let flexible_count = flexible.len();
+        let quota_of = |arc: &Arc| flexible_count as f64 * arc.width.as_f64() / total_width;
 
-        let mut allocations: Vec<usize> = segments
-            .iter()
-            .map(|(start, end)| {
-                let width = end - start;
-                (flexible_count as f32 * width / total_width).floor() as usize
-            })
-            .collect();
+        let mut allocations: Vec<usize> = segments.iter().map(|arc| quota_of(arc).floor() as usize).collect();
 
         let allocated: usize = allocations.iter().sum();
         let remainder = flexible_count.saturating_sub(allocated);
         if remainder > 0 {
-            let mut remainders: Vec<(usize, f32)> = segments
+            let mut remainders: Vec<(usize, f64)> = segments
                 .iter()
                 .enumerate()
-                .map(|(index, (start, end))| {
-                    let width = end - start;
-                    let fractional = flexible_count as f32 * width / total_width - (flexible_count as f32 * width / total_width).floor();
-                    (index, fractional)
-                })
+                .map(|(index, arc)| (index, quota_of(arc) - quota_of(arc).floor()))
                 .collect();
             remainders.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(Ordering::Equal));
             for (index, _) in remainders.iter().take(remainder) {
@@ -192,16 +184,12 @@ impl Menu {
         }
 
         let mut flexible_index = 0;
-        for (segment_index, (start_angle, end_angle)) in segments.iter().enumerate() {
+        for (segment_index, arc) in segments.iter().enumerate() {
             let count = allocations[segment_index];
-            if count == 0 {
-                continue;
-            }
-            let segment_size = end_angle - start_angle;
             for offset in 0..count {
-                let angle = start_angle + segment_size * (offset + 1) as f32 / (count + 1) as f32;
+                let angle = arc.at((offset + 1) as f64 / (count + 1) as f64);
                 let item = &flexible[flexible_index];
-                self.update_angle(&item.id, angle.rem_euclid(360.0));
+                self.update_angle(&item.id, angle.to_degrees() as f32);
                 flexible_index += 1;
             }
         }

@@ -19,6 +19,7 @@ use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::widget::WidgetImplExt;
+use smearor_commons_geometry::Circle;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
 use smearor_commons_geometry::WidgetSizeExt;
@@ -323,11 +324,11 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
             // Check if click is in center circle
             let center = widget.allocated_size().to_f64().half();
             let pointer = Vec2::<()>::new(x, y);
-            let distance = center.distance_f64(&pointer);
+            let center_circle = Circle::new(center, f64::from(center_radius));
 
-            debug!("Click distance from center: {distance}, threshold: {center_radius}");
+            debug!("Click distance from center: {}, threshold: {center_radius}", center.distance_f64(&pointer));
 
-            if distance <= f64::from(center_radius) {
+            if center_circle.contains(&pointer) {
                 // Check if a center widget is set - if so, let the event propagate
                 let has_center_widget = menu_widget.imp().center_widget.borrow().is_some();
 
@@ -358,9 +359,12 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                             if !item.enabled {
                                 continue;
                             }
-                            let item_position = center + Vec2::<()>::from_polar(f64::from(main_radius * 0.7), RotationRad::from_degrees(item.angle + rotation));
+                            let item_circle = Circle::new(
+                                center + Vec2::<()>::from_polar(f64::from(main_radius * 0.7), RotationRad::from_degrees(item.angle + rotation)),
+                                f64::from(item.radius()),
+                            );
 
-                            if item_position.distance_f64(&pointer) <= f64::from(item.radius()) {
+                            if item_circle.contains(&pointer) {
                                 return Some((item.id.clone(), item.submenu.is_some(), item.event.clone(), item.close_on_click));
                             }
                         }
@@ -382,10 +386,12 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                                 if !item.enabled {
                                     continue;
                                 }
-                                let item_position =
-                                    center + Vec2::<()>::from_polar(f64::from(item_ring_radius), RotationRad::from_degrees(item.angle + rotation));
+                                let item_circle = Circle::new(
+                                    center + Vec2::<()>::from_polar(f64::from(item_ring_radius), RotationRad::from_degrees(item.angle + rotation)),
+                                    f64::from(item.radius()),
+                                );
 
-                                if item_position.distance_f64(&pointer) <= f64::from(item.radius()) {
+                                if item_circle.contains(&pointer) {
                                     return Some((item.id.clone(), item.submenu.is_some(), item.event.clone(), item.close_on_click));
                                 }
                             }
