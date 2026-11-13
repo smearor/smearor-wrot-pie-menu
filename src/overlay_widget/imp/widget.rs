@@ -314,15 +314,11 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                 return;
             }
 
-            let center_radius = widget
-                .imp()
-                .pie_menu_widget
-                .borrow()
-                .as_ref()
-                .unwrap()
-                .imp()
-                .center_radius
-                .load(Ordering::Relaxed);
+            let Some(menu_widget) = widget.imp().pie_menu_widget.borrow().clone() else {
+                debug!("No pie menu widget set, ignoring click");
+                return;
+            };
+            let center_radius = menu_widget.imp().center_radius.load(Ordering::Relaxed);
 
             // Check if click is in center circle
             let center = widget.allocated_size().to_f64().half();
@@ -333,13 +329,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
 
             if distance <= f64::from(center_radius) {
                 // Check if a center widget is set - if so, let the event propagate
-                let has_center_widget = widget
-                    .imp()
-                    .pie_menu_widget
-                    .borrow()
-                    .as_ref()
-                    .and_then(|menu_widget| menu_widget.imp().center_widget.borrow().clone())
-                    .is_some();
+                let has_center_widget = menu_widget.imp().center_widget.borrow().is_some();
 
                 if has_center_widget {
                     debug!("Center click with center widget set - propagating to widget");
