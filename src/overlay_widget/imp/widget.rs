@@ -252,13 +252,14 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                 return;
             }
 
-            let angle_degrees = angle_delta.to_degrees() as f32;
+            let delta = RotationRad::new(angle_delta);
             let initial_rot = *initial_rotation_clone.borrow();
+            let threshold = RotationRad::from_degrees(10.0);
 
             // Check if gesture exceeds 10 degrees in either direction
-            if angle_degrees.abs() > 10.0 {
-                let direction = if angle_degrees > 0.0 { 1.0 } else { -1.0 };
-                let new_rotation = (initial_rot + RotationRad::from_degrees(angle_degrees + 10.0 * direction)).normalized();
+            if delta.abs() > threshold {
+                let nudge = threshold * delta.as_f64().signum();
+                let new_rotation = (initial_rot + delta + nudge).normalized();
                 // Round to nearest degree for 1-degree steps
                 let rounded_rotation = RotationRad::from_degrees(new_rotation.to_degrees().round());
 
@@ -269,11 +270,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                 };
 
                 if should_send {
-                    debug!(
-                        "Rotation gesture exceeded 10 degrees: angle_delta={}, new_rotation={}",
-                        angle_degrees,
-                        rounded_rotation.to_degrees()
-                    );
+                    debug!("Rotation gesture exceeded 10 degrees: angle_delta={delta}, new_rotation={rounded_rotation}");
 
                     // Update pie menu rotation
                     widget.set_rotation(rounded_rotation);

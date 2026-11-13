@@ -6,6 +6,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use smearor_commons_geometry::Arc;
 use smearor_commons_geometry::Circle;
+use smearor_commons_geometry::Fraction;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
 use std::cmp::Ordering;
@@ -187,7 +188,7 @@ impl Menu {
         for (segment_index, arc) in segments.iter().enumerate() {
             let count = allocations[segment_index];
             for offset in 0..count {
-                let angle = arc.at((offset + 1) as f64 / (count + 1) as f64);
+                let angle = arc.at(Fraction::new((offset + 1) as f64 / (count + 1) as f64));
                 let item = &flexible[flexible_index];
                 self.update_angle(&item.id, angle.to_degrees() as f32);
                 flexible_index += 1;
