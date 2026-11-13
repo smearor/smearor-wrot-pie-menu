@@ -225,7 +225,7 @@
 <a href=#225 id=225 data-nosnippet>225</a>
 <a href=#226 id=226 data-nosnippet>226</a>    <span class="attr">#[test]
 <a href=#227 id=227 data-nosnippet>227</a>    </span><span class="kw">fn </span>test_menu_item_radius_custom() {
-<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let </span>item = MenuItem::builder().id(<span class="string">"test"</span>).angle(<span class="number">0.0</span>).radius(<span class="number">60.0</span>).event(<span class="string">"event"</span>).build();
+<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let </span>item = MenuItem::builder().id(<span class="string">"test"</span>).angle(<span class="number">0.0</span>).radius(<span class="number">60.0_f32</span>).event(<span class="string">"event"</span>).build();
 <a href=#229 id=229 data-nosnippet>229</a>        <span class="macro">assert_eq!</span>(item.radius(), <span class="number">60.0</span>);
 <a href=#230 id=230 data-nosnippet>230</a>    }
 <a href=#231 id=231 data-nosnippet>231</a>
