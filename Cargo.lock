@@ -892,7 +892,7 @@ checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
 [[package]]
 name = "smearor-commons-animation"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#ff10cd331f7217b0d80318cc65dd52f363d969f5"
+source = "git+https://github.com/smearor/smearor-commons.git#f282838ad95a3a516fc3ed50c969dd572d8b37ec"
 dependencies = [
  "gtk4",
  "serde",
@@ -902,7 +902,7 @@ dependencies = [
 [[package]]
 name = "smearor-commons-color"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#ff10cd331f7217b0d80318cc65dd52f363d969f5"
+source = "git+https://github.com/smearor/smearor-commons.git#f282838ad95a3a516fc3ed50c969dd572d8b37ec"
 dependencies = [
  "gtk4",
  "serde",
@@ -912,7 +912,7 @@ dependencies = [
 [[package]]
 name = "smearor-commons-geometry"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#ff10cd331f7217b0d80318cc65dd52f363d969f5"
+source = "git+https://github.com/smearor/smearor-commons.git#f282838ad95a3a516fc3ed50c969dd572d8b37ec"
 dependencies = [
  "cairo-rs",
  "gtk4",
@@ -944,7 +944,7 @@ dependencies = [
 [[package]]
 name = "smearor-wrot-rotation"
 version = "0.3.0"
-source = "git+https://github.com/smearor/smearor-wrot-rotation.git#7ba9e5c5650181a681875756fd15f48f65c10860"
+source = "git+https://github.com/smearor/smearor-wrot-rotation.git#96eed8d6c3ac1c197849b9473f3b36a3a3b3b55d"
 dependencies = [
  "glib",
  "gtk4",
