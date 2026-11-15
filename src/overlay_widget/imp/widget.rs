@@ -10,6 +10,8 @@ use glib::subclass::prelude::*;
 use gtk4::BinLayout;
 use gtk4::EventController;
 use gtk4::EventControllerLegacy;
+use gtk4::EventControllerScroll;
+use gtk4::EventControllerScrollFlags;
 use gtk4::EventSequenceState;
 use gtk4::GestureRotate;
 use gtk4::GestureZoom;
@@ -424,17 +426,17 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
         // --- Mouse scroll rotation controller (feature: mouse-scroll) ---
         #[cfg(feature = "mouse-scroll")]
         {
-            let scroll_controller = gtk4::EventControllerScroll::new(gtk4::EventControllerScrollFlags::VERTICAL);
+            let scroll_controller = EventControllerScroll::new(EventControllerScrollFlags::VERTICAL);
             scroll_controller.set_propagation_phase(PropagationPhase::Capture);
 
             let widget_weak = widget.downgrade();
             scroll_controller.connect_scroll(move |_controller, _dx, dy| {
                 let Some(widget) = widget_weak.upgrade() else {
-                    return glib::Propagation::Proceed;
+                    return Propagation::Proceed;
                 };
 
                 if !widget.is_pie_menu_open() {
-                    return glib::Propagation::Proceed;
+                    return Propagation::Proceed;
                 }
 
                 let rotation_step = widget.scroll_rotation_step();
@@ -443,7 +445,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                 widget.set_rotation(new_rotation);
                 widget.send_message(PieMenuMessage::Rotate(new_rotation));
 
-                glib::Propagation::Stop
+                Propagation::Stop
             });
 
             widget.add_controller(scroll_controller);
