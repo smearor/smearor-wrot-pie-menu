@@ -261,7 +261,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
             // Check if gesture exceeds 10 degrees in either direction
             if delta.abs() > threshold {
                 let nudge = threshold * delta.as_f64().signum();
-                let new_rotation = (initial_rot + delta + nudge).normalized();
+                let new_rotation = initial_rot.rotated(delta + nudge);
                 // Round to nearest degree for 1-degree steps
                 let rounded_rotation = RotationRad::from_degrees(new_rotation.to_degrees().round());
 
@@ -441,7 +441,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
 
                 let rotation_step = widget.scroll_rotation_step();
                 let current_rotation = widget.rotation();
-                let new_rotation = (current_rotation + RotationRad::from_degrees(dy * f64::from(rotation_step))).normalized();
+                let new_rotation = current_rotation.rotated_degrees(dy * f64::from(rotation_step));
                 widget.set_rotation(new_rotation);
                 widget.send_message(PieMenuMessage::Rotate(new_rotation));
 
@@ -473,7 +473,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
 
                 let rotation_delta = stick_x * widget.scroll_rotation_step();
                 let current = widget.rotation();
-                let new_rotation = (current + RotationRad::from_degrees(rotation_delta)).normalized();
+                let new_rotation = current.rotated_degrees(rotation_delta);
                 widget.set_rotation(new_rotation);
                 widget.send_message(PieMenuMessage::Rotate(new_rotation));
 
