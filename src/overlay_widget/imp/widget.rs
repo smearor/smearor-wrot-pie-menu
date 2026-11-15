@@ -516,7 +516,7 @@ impl WidgetImpl for PieMenuOverlayWidgetImpl {
             let widget_weak = widget.downgrade();
             key_controller.connect_key_pressed(move |_controller, keyval, _keycode, state| {
                 let Some(widget) = widget_weak.upgrade() else {
-                    return glib::Propagation::Proceed;
+                    return Propagation::Proceed;
                 };
 
                 use gtk4::gdk::Key;
@@ -527,25 +527,25 @@ impl WidgetImpl for PieMenuOverlayWidgetImpl {
                     Key::space if state.contains(gtk4::gdk::ModifierType::CONTROL_MASK) => {
                         if !widget.is_pie_menu_open() {
                             let _ = widget.show_pie_menu();
-                            glib::Propagation::Stop
+                            Propagation::Stop
                         } else {
-                            glib::Propagation::Proceed
+                            Propagation::Proceed
                         }
                     }
                     Key::Menu => {
                         if !widget.is_pie_menu_open() {
                             let _ = widget.show_pie_menu();
-                            glib::Propagation::Stop
+                            Propagation::Stop
                         } else {
-                            glib::Propagation::Proceed
+                            Propagation::Proceed
                         }
                     }
                     Key::Return | Key::space => {
                         if widget.is_pie_menu_open() {
                             widget.confirm_selection();
-                            glib::Propagation::Stop
+                            Propagation::Stop
                         } else {
-                            glib::Propagation::Proceed
+                            Propagation::Proceed
                         }
                     }
                     Key::Escape => {
@@ -555,44 +555,44 @@ impl WidgetImpl for PieMenuOverlayWidgetImpl {
                             } else {
                                 let _ = widget.hide_pie_menu();
                             }
-                            glib::Propagation::Stop
+                            Propagation::Stop
                         } else {
-                            glib::Propagation::Proceed
+                            Propagation::Proceed
                         }
                     }
                     Key::Left | Key::Down => {
                         if widget.is_pie_menu_open() {
                             widget.cycle_selection(-1);
-                            glib::Propagation::Stop
+                            Propagation::Stop
                         } else {
-                            glib::Propagation::Proceed
+                            Propagation::Proceed
                         }
                     }
                     Key::Right | Key::Up => {
                         if widget.is_pie_menu_open() {
                             widget.cycle_selection(1);
-                            glib::Propagation::Stop
+                            Propagation::Stop
                         } else {
-                            glib::Propagation::Proceed
+                            Propagation::Proceed
                         }
                     }
                     Key::Home => {
                         if widget.is_pie_menu_open() {
                             widget.select_first_item();
-                            glib::Propagation::Stop
+                            Propagation::Stop
                         } else {
-                            glib::Propagation::Proceed
+                            Propagation::Proceed
                         }
                     }
                     Key::Tab => {
                         if widget.is_pie_menu_open() {
                             widget.cycle_selection(1);
-                            glib::Propagation::Stop
+                            Propagation::Stop
                         } else {
-                            glib::Propagation::Proceed
+                            Propagation::Proceed
                         }
                     }
-                    _ => glib::Propagation::Proceed,
+                    _ => Propagation::Proceed,
                 }
             });
 
