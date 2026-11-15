@@ -27,6 +27,7 @@ use gtk4::Orientation;
 use gtk4::Picture;
 use gtk4::glib;
 use gtk4::prelude::*;
+use smearor_commons_geometry::Pixels;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
@@ -80,7 +81,7 @@ fn build_ui(app: &Application) {
         warning: 80.0,
         critical: 90.0,
         max: 100.0,
-        item_radius: 90.0,
+        item_radius: Pixels::new(90.0),
         enabled: true,
     });
 

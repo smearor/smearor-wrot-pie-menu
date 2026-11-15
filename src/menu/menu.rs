@@ -7,6 +7,7 @@ use serde::Serialize;
 use smearor_commons_geometry::Arc;
 use smearor_commons_geometry::Circle;
 use smearor_commons_geometry::Fraction;
+use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
 use std::cmp::Ordering;
@@ -35,17 +36,17 @@ impl Menu {
 
     /// Checks whether the new item overlaps with any existing item on the ring.
     /// Returns `Ok(())` if `ring_radius` is zero (e.g. during initialization).
-    pub fn validate_no_overlap(&self, new_item: &MenuItem, ring_radius: f32) -> Result<(), AddMenuItemError> {
-        if ring_radius == 0.0 {
+    pub fn validate_no_overlap(&self, new_item: &MenuItem, ring_radius: Pixels) -> Result<(), AddMenuItemError> {
+        if ring_radius == Pixels::new(0.0) {
             return Ok(());
         }
         // Items are disks on the ring: at `angle` each centers a
         // circle of `radius` around the polar point, so two items
         // collide exactly when their radius-normalized disks overlap.
-        let ring = f64::from(ring_radius);
+        let ring = ring_radius.as_f64();
         let new_circle = Circle::new(
             Vec2::<()>::from_polar(1.0, RotationRad::from_degrees(new_item.angle)),
-            f64::from(new_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS)) / ring,
+            f64::from(new_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS).as_raw()) / ring,
         );
         for entry in self.iter() {
             let existing_item = entry.value();
@@ -54,7 +55,7 @@ impl Menu {
             }
             let existing_circle = Circle::new(
                 Vec2::<()>::from_polar(1.0, RotationRad::from_degrees(existing_item.angle)),
-                f64::from(existing_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS)) / ring,
+                f64::from(existing_item.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS).as_raw()) / ring,
             );
             if new_circle.overlaps(&existing_circle) {
                 return Err(AddMenuItemError::ItemOverlap {
@@ -69,7 +70,7 @@ impl Menu {
     /// Validates that no items in the menu overlap with each other.
     /// Used after `redistribute_angles` in `add_menu_item_auto` to check
     /// the full configuration, since all flexible items may have shifted.
-    pub fn validate_all_no_overlap(&self, ring_radius: f32) -> Result<(), AddMenuItemError> {
+    pub fn validate_all_no_overlap(&self, ring_radius: Pixels) -> Result<(), AddMenuItemError> {
         for item in self.iter() {
             self.validate_no_overlap(item.value(), ring_radius)?;
         }

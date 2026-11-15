@@ -1,9 +1,19 @@
+use crate::palette::DISABLED_ALPHA;
+use crate::palette::PieMenuSlot;
 use glib::subclass::prelude::*;
 use gtk4::gdk;
 use gtk4::glib;
+use gtk4::graphene;
 use gtk4::gsk;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
+use smearor_commons_color::Alpha;
+use smearor_commons_color::Color;
+use smearor_commons_geometry::Pixels;
+use smearor_commons_geometry::Rect;
+use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::Vec2;
+use smearor_commons_geometry::WidgetSizeExt;
 use std::cell::RefCell;
 
 /// Sweep angle of the gauge arc in degrees (80% of a full circle).
@@ -17,6 +27,36 @@ const GAUGE_START_DEGREES: f32 = 126.0;
 /// Number of line segments used to approximate each arc segment.
 const ARC_SEGMENTS: i32 = 64;
 
+/// Radius of the background track as a fraction of the item radius.
+const TRACK_RADIUS_FRACTION: f64 = 0.85;
+
+/// Radius of the inner value arc as a fraction of the item radius.
+const INNER_RADIUS_FRACTION: f64 = 0.70;
+
+/// Stroke width of the background track as a fraction of the item radius.
+const TRACK_WIDTH_FRACTION: f64 = 0.12;
+
+/// Stroke width of the colored zone segments as a fraction of the item radius.
+const ZONE_WIDTH_FRACTION: f64 = 0.14;
+
+/// Stroke width of the filled value arc as a fraction of the item radius.
+const VALUE_ARC_WIDTH_FRACTION: f64 = 0.10;
+
+/// Needle start radius as a fraction of the inner radius.
+const NEEDLE_INNER_FRACTION: f64 = 0.3;
+
+/// Stroke width of the value needle in pixels.
+const NEEDLE_STROKE_WIDTH: Pixels<f64> = Pixels::new(3.0);
+
+/// Radius of the center hub as a fraction of the inner radius.
+const HUB_RADIUS_FRACTION: f64 = 0.15;
+
+/// Vertical label offset as a fraction of the item radius (above center).
+const LABEL_OFFSET_FRACTION: f64 = 0.15;
+
+/// Vertical value text offset as a fraction of the item radius (below center).
+const VALUE_OFFSET_FRACTION: f64 = 0.05;
+
 mod imp {
     use super::*;
 
@@ -28,7 +68,7 @@ mod imp {
         pub warning: RefCell<f64>,
         pub critical: RefCell<f64>,
         pub max: RefCell<f64>,
-        pub item_radius: RefCell<f32>,
+        pub item_radius: RefCell<Pixels<f32>>,
         pub enabled: RefCell<bool>,
         pub selected: RefCell<bool>,
     }
@@ -43,7 +83,7 @@ mod imp {
                 warning: RefCell::new(0.0),
                 critical: RefCell::new(0.0),
                 max: RefCell::new(0.0),
-                item_radius: RefCell::new(60.0),
+                item_radius: RefCell::new(Pixels::new(60.0)),
                 enabled: RefCell::new(true),
                 selected: RefCell::new(false),
             }
@@ -68,11 +108,12 @@ mod imp {
     impl WidgetImpl for GaugeItemWidgetImpl {
         fn snapshot(&self, snapshot: &gtk4::Snapshot) {
             let obj = self.obj();
-            let width = obj.width() as f32;
-            let height = obj.height() as f32;
-            let center_x = width / 2.0;
-            let center_y = height / 2.0;
-            let item_radius = *self.item_radius.borrow();
+            let center = obj.center();
+            let item_radius = Pixels::from(f64::from(self.item_radius.borrow().as_raw()));
+
+            // Bounding square of a centered circle of the given radius -
+            // converts to graphene coordinates at the draw boundary.
+            let bounds_at = |radius: Pixels<f64>| graphene::Rect::from(Rect::<Pixels>::centered(center, Vec2::<Pixels>::splat(radius * 2.0)).to_f32());
 
             let label = self.label.borrow();
             let value = *self.value.borrow();
@@ -82,16 +123,17 @@ mod imp {
             let critical = *self.critical.borrow();
             let max = *self.max.borrow();
 
-            let disabled_alpha: f32 = if *self.enabled.borrow() { 1.0 } else { 0.4 };
+            let disabled_alpha = if *self.enabled.borrow() { Alpha::OPAQUE } else { DISABLED_ALPHA };
+            let apply_alpha = |color: Color<f32>| gdk::RGBA::from(color.fade(disabled_alpha));
 
             let outer_radius = item_radius;
-            let track_radius = item_radius * 0.85;
-            let inner_radius = item_radius * 0.70;
+            let track_radius = item_radius * TRACK_RADIUS_FRACTION;
+            let inner_radius = item_radius * INNER_RADIUS_FRACTION;
 
-            let green_color = gdk::RGBA::new(0.2, 0.8, 0.2, disabled_alpha);
-            let orange_color = gdk::RGBA::new(0.9, 0.6, 0.0, disabled_alpha);
-            let red_color = gdk::RGBA::new(0.9, 0.2, 0.2, disabled_alpha);
-            let track_color = gdk::RGBA::new(0.3, 0.3, 0.3, 0.3 * disabled_alpha);
+            let green_color = apply_alpha(PieMenuSlot::GaugeZoneGreen.color());
+            let orange_color = apply_alpha(PieMenuSlot::GaugeZoneOrange.color());
+            let red_color = apply_alpha(PieMenuSlot::GaugeZoneRed.color());
+            let track_color = apply_alpha(PieMenuSlot::GaugeTrack.color());
 
             let value_clamped = value.clamp(min, max);
             let range = max - min;
@@ -107,15 +149,31 @@ mod imp {
             let value_angle = start_angle + value_frac * sweep;
 
             // Draw background track (full arc)
-            draw_arc(snapshot, center_x, center_y, track_radius, start_angle, start_angle + sweep, track_color, item_radius * 0.12);
+            draw_arc(
+                snapshot,
+                center,
+                track_radius,
+                start_angle,
+                start_angle + sweep,
+                track_color,
+                item_radius * TRACK_WIDTH_FRACTION,
+            );
 
             // Draw colored zone segments
             // Green: min to warning
-            draw_arc(snapshot, center_x, center_y, outer_radius, start_angle, warning_angle, green_color, item_radius * 0.14);
+            draw_arc(snapshot, center, outer_radius, start_angle, warning_angle, green_color, item_radius * ZONE_WIDTH_FRACTION);
             // Orange: warning to critical
-            draw_arc(snapshot, center_x, center_y, outer_radius, warning_angle, critical_angle, orange_color, item_radius * 0.14);
+            draw_arc(snapshot, center, outer_radius, warning_angle, critical_angle, orange_color, item_radius * ZONE_WIDTH_FRACTION);
             // Red: critical to max
-            draw_arc(snapshot, center_x, center_y, outer_radius, critical_angle, start_angle + sweep, red_color, item_radius * 0.14);
+            draw_arc(
+                snapshot,
+                center,
+                outer_radius,
+                critical_angle,
+                start_angle + sweep,
+                red_color,
+                item_radius * ZONE_WIDTH_FRACTION,
+            );
 
             // Draw value indicator (filled arc from start to value)
             let value_color = if value_frac < warning_frac {
@@ -125,31 +183,27 @@ mod imp {
             } else {
                 red_color
             };
-            draw_arc(snapshot, center_x, center_y, inner_radius, start_angle, value_angle, value_color, item_radius * 0.10);
+            draw_arc(snapshot, center, inner_radius, start_angle, value_angle, value_color, item_radius * VALUE_ARC_WIDTH_FRACTION);
 
             // Draw needle at value position
-            let needle_angle_rad = value_angle.to_radians();
-            let needle_inner = inner_radius * 0.3;
-            let needle_outer = outer_radius;
-            let needle_start_x = center_x + needle_inner * needle_angle_rad.cos();
-            let needle_start_y = center_y + needle_inner * needle_angle_rad.sin();
-            let needle_end_x = center_x + needle_outer * needle_angle_rad.cos();
-            let needle_end_y = center_y + needle_outer * needle_angle_rad.sin();
+            let needle_angle = RotationRad::from_degrees(f64::from(value_angle));
+            let needle_start = (center + Vec2::<Pixels>::from_polar((inner_radius * NEEDLE_INNER_FRACTION).as_f64(), needle_angle)).to_f32();
+            let needle_end = (center + Vec2::<Pixels>::from_polar(outer_radius.as_f64(), needle_angle)).to_f32();
 
             let builder = gsk::PathBuilder::new();
-            builder.move_to(needle_start_x, needle_start_y);
-            builder.line_to(needle_end_x, needle_end_y);
+            builder.move_to(needle_start.x, needle_start.y);
+            builder.line_to(needle_end.x, needle_end.y);
             let needle_path = builder.to_path();
-            let needle_stroke = gsk::Stroke::new(3.0);
-            let needle_color = gdk::RGBA::new(1.0, 1.0, 1.0, disabled_alpha);
+            let needle_stroke = gsk::Stroke::new(NEEDLE_STROKE_WIDTH.as_f64() as f32);
+            let needle_color = apply_alpha(PieMenuSlot::GaugeNeedle.color());
             snapshot.append_stroke(&needle_path, &needle_stroke, &needle_color);
 
             // Draw center hub
-            let hub_radius = inner_radius * 0.15;
-            let hub_rect = gtk4::graphene::Rect::new(center_x - hub_radius, center_y - hub_radius, hub_radius * 2.0, hub_radius * 2.0);
-            let hub_rounded = gsk::RoundedRect::from_rect(hub_rect, hub_radius);
+            let hub_radius = inner_radius * HUB_RADIUS_FRACTION;
+            let hub_rect = bounds_at(hub_radius);
+            let hub_rounded = gsk::RoundedRect::from_rect(hub_rect, hub_radius.as_f64() as f32);
             snapshot.push_rounded_clip(&hub_rounded);
-            snapshot.append_color(&gdk::RGBA::new(0.5, 0.5, 0.5, disabled_alpha), &hub_rect);
+            snapshot.append_color(&apply_alpha(PieMenuSlot::GaugeHub.color()), &hub_rect);
             snapshot.pop();
 
             // Draw label in center
@@ -160,15 +214,14 @@ mod imp {
                 let font_desc = gtk4::pango::FontDescription::from_string("Sans 10");
                 pango_layout.set_font_description(Some(&font_desc));
 
-                let label_color = gdk::RGBA::new(1.0, 1.0, 1.0, disabled_alpha);
+                let label_color = apply_alpha(PieMenuSlot::Label.color());
                 let (_ink_rect, logical_rect) = pango_layout.extents();
-                let label_width = logical_rect.width() as f32 / gtk4::pango::SCALE as f32;
-                let label_x = center_x - label_width / 2.0;
-                let label_y = center_y - item_radius * 0.15;
+                let label_width = logical_rect.width() as f64 / gtk4::pango::SCALE as f64;
+                let label_pos = Vec2::<Pixels>::new(center.x - label_width / 2.0, center.y - item_radius.as_f64() * LABEL_OFFSET_FRACTION);
 
-                snapshot.translate(&gtk4::graphene::Point::new(label_x, label_y));
+                snapshot.translate(&graphene::Point::from(label_pos.to_f32()));
                 snapshot.append_layout(&pango_layout, &label_color);
-                snapshot.translate(&gtk4::graphene::Point::new(-label_x, -label_y));
+                snapshot.translate(&graphene::Point::from((-label_pos).to_f32()));
             }
 
             // Draw value + unit below label
@@ -180,28 +233,22 @@ mod imp {
                 let font_desc = gtk4::pango::FontDescription::from_string("Sans 9");
                 pango_layout.set_font_description(Some(&font_desc));
 
-                let value_color = gdk::RGBA::new(1.0, 1.0, 1.0, disabled_alpha);
+                let value_color = apply_alpha(PieMenuSlot::Label.color());
                 let (_ink_rect, logical_rect) = pango_layout.extents();
-                let value_width = logical_rect.width() as f32 / gtk4::pango::SCALE as f32;
-                let value_x = center_x - value_width / 2.0;
-                let value_y = center_y + item_radius * 0.05;
+                let value_width = logical_rect.width() as f64 / gtk4::pango::SCALE as f64;
+                let value_pos = Vec2::<Pixels>::new(center.x - value_width / 2.0, center.y + item_radius.as_f64() * VALUE_OFFSET_FRACTION);
 
-                snapshot.translate(&gtk4::graphene::Point::new(value_x, value_y));
+                snapshot.translate(&graphene::Point::from(value_pos.to_f32()));
                 snapshot.append_layout(&pango_layout, &value_color);
-                snapshot.translate(&gtk4::graphene::Point::new(-value_x, -value_y));
+                snapshot.translate(&graphene::Point::from((-value_pos).to_f32()));
             }
 
             // Draw selection ring outline when keyboard-selected
             if *self.selected.borrow() {
-                let selection_ring_radius = item_radius + 3.0;
-                let selection_ring_rect = gtk4::graphene::Rect::new(
-                    center_x - selection_ring_radius,
-                    center_y - selection_ring_radius,
-                    selection_ring_radius * 2.0,
-                    selection_ring_radius * 2.0,
-                );
-                let selection_ring_rounded = gsk::RoundedRect::from_rect(selection_ring_rect, selection_ring_radius);
-                let selection_ring_color = gdk::RGBA::new(1.0, 1.0, 1.0, 0.9);
+                let selection_ring_radius = item_radius + Pixels::new(3.0);
+                let selection_ring_rect = bounds_at(selection_ring_radius);
+                let selection_ring_rounded = gsk::RoundedRect::from_rect(selection_ring_rect, selection_ring_radius.as_f64() as f32);
+                let selection_ring_color = gdk::RGBA::from(PieMenuSlot::SelectionRing.color());
                 let stroke = gsk::Stroke::new(2.0);
                 let builder = gsk::PathBuilder::new();
                 builder.add_rounded_rect(&selection_ring_rounded);
@@ -211,7 +258,7 @@ mod imp {
         }
 
         fn measure(&self, _orientation: gtk4::Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
-            let item_radius = *self.item_radius.borrow();
+            let item_radius = self.item_radius.borrow().as_raw();
             let size = (item_radius * 2.0 + 20.0) as i32;
             (size, size, -1, -1)
         }
@@ -220,22 +267,28 @@ mod imp {
 
 /// Draws an arc segment approximated with line segments.
 #[allow(clippy::too_many_arguments)]
-fn draw_arc(snapshot: &gtk4::Snapshot, center_x: f32, center_y: f32, radius: f32, start_angle_deg: f32, end_angle_deg: f32, color: gdk::RGBA, line_width: f32) {
+fn draw_arc(
+    snapshot: &gtk4::Snapshot,
+    center: Vec2<Pixels>,
+    radius: Pixels<f64>,
+    start_angle_deg: f32,
+    end_angle_deg: f32,
+    color: gdk::RGBA,
+    line_width: Pixels<f64>,
+) {
     let builder = gsk::PathBuilder::new();
     for i in 0..=ARC_SEGMENTS {
         let frac = i as f32 / ARC_SEGMENTS as f32;
         let angle_deg = start_angle_deg + frac * (end_angle_deg - start_angle_deg);
-        let angle_rad = angle_deg.to_radians();
-        let x = center_x + radius * angle_rad.cos();
-        let y = center_y + radius * angle_rad.sin();
+        let point = (center + Vec2::<Pixels>::from_polar(radius.as_f64(), RotationRad::from_degrees(f64::from(angle_deg)))).to_f32();
         if i == 0 {
-            builder.move_to(x, y);
+            builder.move_to(point.x, point.y);
         } else {
-            builder.line_to(x, y);
+            builder.line_to(point.x, point.y);
         }
     }
     let path = builder.to_path();
-    let stroke = gsk::Stroke::new(line_width);
+    let stroke = gsk::Stroke::new(line_width.as_f64() as f32);
     snapshot.append_stroke(&path, &stroke, &color);
 }
 
@@ -256,7 +309,7 @@ pub struct GaugeItemWidgetParams {
     /// Maximum value on the gauge scale. Values between `critical` and `max` are red.
     pub max: f64,
     /// Radius of the gauge widget in pixels.
-    pub item_radius: f32,
+    pub item_radius: Pixels<f32>,
     /// Whether the widget is enabled (affects opacity).
     pub enabled: bool,
 }

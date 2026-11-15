@@ -1,6 +1,7 @@
 use crate::menu::menu::Menu;
 use crate::menu::widget_registry::MenuItemWidgetRegistry;
 use crate::menu_widget::widget::PieMenuWidget;
+use crate::palette::PieMenuSlot;
 use atomic_float::AtomicF32;
 use glib::subclass::prelude::*;
 use gtk4::EventControllerMotion;
@@ -8,13 +9,13 @@ use gtk4::Widget;
 use gtk4::gdk::RGBA;
 use gtk4::glib;
 use gtk4::graphene::Point;
-use gtk4::graphene::Rect;
 use gtk4::gsk::RoundedRect;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::widget::WidgetImplExt;
 use smearor_commons_geometry::Annulus;
 use smearor_commons_geometry::Pixels;
+use smearor_commons_geometry::Rect;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
 use smearor_commons_geometry::WidgetSizeExt;
@@ -223,8 +224,7 @@ impl ObjectImpl for PieMenuWidgetImpl {
 
 impl WidgetImpl for PieMenuWidgetImpl {
     fn measure(&self, orientation: gtk4::Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
-        let radius = self.radius.load(Ordering::Relaxed);
-        let diameter = (radius * 2.0) as i32;
+        let diameter = (self.radius() * 2.0).as_f64() as i32;
 
         match orientation {
             gtk4::Orientation::Horizontal => (diameter, diameter, -1, -1),
@@ -243,11 +243,10 @@ impl WidgetImpl for PieMenuWidgetImpl {
         // next layout pass.
         self.ensure_item_widgets();
 
-        let center_x = width as f32 / 2.0;
-        let center_y = height as f32 / 2.0;
-        let radius = self.radius.load(Ordering::Relaxed);
+        let center = Vec2::<Pixels>::new(f64::from(width) / 2.0, f64::from(height) / 2.0);
+        let radius = self.radius();
         let rotation = self.rotation.load(Ordering::Relaxed);
-        let radius_step = self.submenu_radius_step.load(Ordering::Relaxed);
+        let radius_step = self.submenu_radius_step();
 
         let item_widgets = self.item_widgets.borrow();
         let menu_items = self.menu_items.clone();
@@ -259,17 +258,17 @@ impl WidgetImpl for PieMenuWidgetImpl {
         for item in menu_items.iter() {
             if let Some(child_widget) = item_widgets.get(&item.id) {
                 let effective_angle = if item.content_rotates { item.angle } else { item.angle + rotation };
-                let offset = Vec2::<Pixels>::from_polar((radius * 0.7) as f64, RotationRad::from_degrees(effective_angle as f64));
-                let item_x = center_x + offset.x as f32;
-                let item_y = center_y + offset.y as f32;
+                let item_pos = (center + Vec2::<Pixels>::from_polar((radius * 0.7).as_f64(), RotationRad::from_degrees(effective_angle as f64))).to_f32();
+                let item_x = item_pos.x;
+                let item_y = item_pos.y;
 
                 let (w, h) = match &item.content_size {
                     Some(size) => (size.width, size.height),
                     None => {
                         let (min_w, nat_w, _, _) = child_widget.measure(gtk4::Orientation::Horizontal, -1);
                         let (min_h, nat_h, _, _) = child_widget.measure(gtk4::Orientation::Vertical, -1);
-                        let w = nat_w.max(min_w).max(item.radius() as i32 * 2);
-                        let h = nat_h.max(min_h).max(item.radius() as i32 * 2);
+                        let w = nat_w.max(min_w).max(item.radius().as_raw() as i32 * 2);
+                        let h = nat_h.max(min_h).max(item.radius().as_raw() as i32 * 2);
                         (w as f32, h as f32)
                     }
                 };
@@ -290,8 +289,8 @@ impl WidgetImpl for PieMenuWidgetImpl {
         // Position submenu item widgets on their respective rings
         let submenu_stack = self.submenu_stack.borrow();
         for (level, parent_id) in submenu_stack.iter().enumerate() {
-            let submenu_radius = radius + (level + 1) as f32 * radius_step;
-            let inner_radius = if level == 0 { radius } else { radius + level as f32 * radius_step };
+            let submenu_radius = radius + radius_step * ((level + 1) as f64);
+            let inner_radius = if level == 0 { radius } else { radius + radius_step * (level as f64) };
             let item_ring_radius = (inner_radius + submenu_radius) / 2.0;
 
             if let Some(parent_item) = menu_items.find_item_recursive(parent_id)
@@ -300,17 +299,18 @@ impl WidgetImpl for PieMenuWidgetImpl {
                 for item in submenu_items {
                     if let Some(child_widget) = item_widgets.get(&item.id) {
                         let effective_angle = if item.content_rotates { item.angle } else { item.angle + rotation };
-                        let offset = Vec2::<Pixels>::from_polar(item_ring_radius as f64, RotationRad::from_degrees(effective_angle as f64));
-                        let item_x = center_x + offset.x as f32;
-                        let item_y = center_y + offset.y as f32;
+                        let item_pos =
+                            (center + Vec2::<Pixels>::from_polar(item_ring_radius.as_f64(), RotationRad::from_degrees(effective_angle as f64))).to_f32();
+                        let item_x = item_pos.x;
+                        let item_y = item_pos.y;
 
                         let (w, h) = match &item.content_size {
                             Some(size) => (size.width, size.height),
                             None => {
                                 let (min_w, nat_w, _, _) = child_widget.measure(gtk4::Orientation::Horizontal, -1);
                                 let (min_h, nat_h, _, _) = child_widget.measure(gtk4::Orientation::Vertical, -1);
-                                let w = nat_w.max(min_w).max(item.radius() as i32 * 2);
-                                let h = nat_h.max(min_h).max(item.radius() as i32 * 2);
+                                let w = nat_w.max(min_w).max(item.radius().as_raw() as i32 * 2);
+                                let h = nat_h.max(min_h).max(item.radius().as_raw() as i32 * 2);
                                 (w as f32, h as f32)
                             }
                         };
@@ -323,16 +323,16 @@ impl WidgetImpl for PieMenuWidgetImpl {
         }
 
         // Position center widget (unrotated - rotation is applied in snapshot)
-        let center_radius = self.center_radius.load(Ordering::Relaxed);
-        if let Some(center) = self.center_widget.borrow().as_ref()
-            && center.is_visible()
+        let center_radius = self.center_radius();
+        if let Some(center_widget) = self.center_widget.borrow().as_ref()
+            && center_widget.is_visible()
         {
-            let (min_w, nat_w, _, _) = center.measure(gtk4::Orientation::Horizontal, -1);
-            let (min_h, nat_h, _, _) = center.measure(gtk4::Orientation::Vertical, -1);
-            let max_size = (center_radius * 2.0) as i32;
+            let (min_w, nat_w, _, _) = center_widget.measure(gtk4::Orientation::Horizontal, -1);
+            let (min_h, nat_h, _, _) = center_widget.measure(gtk4::Orientation::Vertical, -1);
+            let max_size = (center_radius * 2.0).as_f64() as i32;
             let w = nat_w.max(min_w).min(max_size);
             let h = nat_h.max(min_h).min(max_size);
-            let allocation = gtk4::Allocation::new((center_x - w as f32 / 2.0) as i32, (center_y - h as f32 / 2.0) as i32, w, h);
+            let allocation = gtk4::Allocation::new((center.x - f64::from(w) / 2.0) as i32, (center.y - f64::from(h) / 2.0) as i32, w, h);
             debug!(
                 "Allocating center widget at ({}, {}) size {}x{}",
                 allocation.x(),
@@ -340,7 +340,7 @@ impl WidgetImpl for PieMenuWidgetImpl {
                 allocation.width(),
                 allocation.height()
             );
-            center.size_allocate(&allocation, -1);
+            center_widget.size_allocate(&allocation, -1);
         }
     }
 
@@ -348,58 +348,58 @@ impl WidgetImpl for PieMenuWidgetImpl {
         self.ensure_item_widgets();
 
         let obj = self.obj();
-        let width = obj.width() as f32;
-        let height = obj.height() as f32;
+        let center = obj.center();
+        let radius = self.radius();
+        let center_radius = self.center_radius();
 
-        let center_x = width / 2.0;
-        let center_y = height / 2.0;
-        let radius = self.radius.load(Ordering::Relaxed);
+        // Centered square of the given edge length - converts to graphene
+        // coordinates at the draw boundary.
+        let rect_at = |pos: Vec2<Pixels>, size: Pixels<f64>| gtk4::graphene::Rect::from(Rect::<Pixels>::centered(pos, Vec2::<Pixels>::splat(size)).to_f32());
+
         let rotation = self.rotation.load(Ordering::Relaxed);
         let rotation_rad = rotation.to_radians();
         debug!("Rotation: {} degrees, {} radians", rotation, rotation_rad);
 
         // Apply rotation to the entire menu
         snapshot.save();
-        snapshot.translate(&Point::new(center_x, center_y));
+        snapshot.translate(&Point::from(center.to_f32()));
         snapshot.rotate(rotation); // rotation_rad
-        snapshot.translate(&Point::new(-center_x, -center_y));
+        snapshot.translate(&Point::from((-center).to_f32()));
 
         // Draw shadow for the ring
-        let shadow_color = RGBA::new(0.0, 0.0, 0.0, 0.3);
-        let shadow_offset = 8.0;
-        let shadow_radius = radius + shadow_offset;
-        let shadow_rect = Rect::new(center_x - shadow_radius, center_y - shadow_radius, shadow_radius * 2.0, shadow_radius * 2.0);
-        let shadow_rounded = RoundedRect::from_rect(shadow_rect, shadow_radius);
+        let shadow_color = RGBA::from(PieMenuSlot::Shadow.color());
+        let shadow_radius = radius + Pixels::new(8.0);
+        let shadow_rect = rect_at(center, shadow_radius * 2.0);
+        let shadow_rounded = RoundedRect::from_rect(shadow_rect, shadow_radius.as_f64() as f32);
         snapshot.push_rounded_clip(&shadow_rounded);
         snapshot.append_color(&shadow_color, &shadow_rect);
         snapshot.pop();
-        debug!("Drew shadow at ({}, {}) with radius {}", center_x, center_y, shadow_radius);
+        debug!("Drew shadow at ({}, {}) with radius {}", center.x, center.y, shadow_radius.as_f64());
 
         // Draw background circle with transparent center (ring shape)
-        let center_radius = self.center_radius.load(Ordering::Relaxed);
-        let bg_color = RGBA::new(0.2, 0.2, 0.2, 0.5);
+        let bg_color = RGBA::from(PieMenuSlot::Background.color());
 
         // Create path with outer circle (clockwise) and inner circle (counter-clockwise) for even-odd fill rule
         let builder = gtk4::gsk::PathBuilder::new();
 
         // Outer circle - clockwise
         for i in 0..=360 {
-            let point = Vec2::<()>::from_polar(f64::from(radius), RotationRad::from_degrees(i)).to_f32();
+            let point = (center + Vec2::<Pixels>::from_polar(radius.as_f64(), RotationRad::from_degrees(i))).to_f32();
             if i == 0 {
-                builder.move_to(center_x + point.x, center_y + point.y);
+                builder.move_to(point.x, point.y);
             } else {
-                builder.line_to(center_x + point.x, center_y + point.y);
+                builder.line_to(point.x, point.y);
             }
         }
         builder.close();
 
         // Inner circle - counter-clockwise (creates hole with even-odd fill)
         for i in (0..=360).rev() {
-            let point = Vec2::<()>::from_polar(f64::from(center_radius), RotationRad::from_degrees(i)).to_f32();
+            let point = (center + Vec2::<Pixels>::from_polar(center_radius.as_f64(), RotationRad::from_degrees(i))).to_f32();
             if i == 360 {
-                builder.move_to(center_x + point.x, center_y + point.y);
+                builder.move_to(point.x, point.y);
             } else {
-                builder.line_to(center_x + point.x, center_y + point.y);
+                builder.line_to(point.x, point.y);
             }
         }
         builder.close();
@@ -410,18 +410,20 @@ impl WidgetImpl for PieMenuWidgetImpl {
         snapshot.append_fill(&path, gtk4::gsk::FillRule::EvenOdd, &bg_color);
         debug!(
             "Drew background ring at ({}, {}) with outer radius {} and inner radius {}",
-            center_x, center_y, radius, center_radius
+            center.x,
+            center.y,
+            radius.as_f64(),
+            center_radius.as_f64()
         );
 
         // Draw markings every 5 degrees on both edges of the ring
         if self.markings_enabled.load(Ordering::Relaxed) {
             let marking_offset = -90.0;
-            let marking_color_outer_current_angle = RGBA::new(0.8, 0.8, 0.8, 0.5);
-            let marking_color_inner_zero_angle = RGBA::new(0.8, 0.8, 0.8, 0.5);
-            let marking_color_highlight_outer_zero_angle = RGBA::new(1.0, 0.6, 0.6, 1.0);
-            let marking_color_highlight_inner_current_angle = RGBA::new(0.6, 1.0, 0.6, 1.0);
-            let marking_length_outer_current_angle = 5.0;
-            let marking_length_inner_zero_angle = 5.0;
+            let marking_color = RGBA::from(PieMenuSlot::Marking.color());
+            let marking_color_current_angle = RGBA::from(PieMenuSlot::MarkingCurrentAngle.color());
+            let marking_color_zero_angle = RGBA::from(PieMenuSlot::MarkingZeroAngle.color());
+            let marking_length_outer_current_angle = Pixels::new(5.0);
+            let marking_length_inner_zero_angle = Pixels::new(5.0);
             let marking_line_width = 2.0;
             let marking_line_width_outer_current_angle = 6.0;
             let marking_line_width_inner_zero_angle = 4.0;
@@ -435,35 +437,35 @@ impl WidgetImpl for PieMenuWidgetImpl {
                 let is_zero_degree = shifted_angle == 90;
                 let is_current_angle = shifted_angle == nearest_angle;
                 let (outer_color, marking_line_width_outer) = if is_current_angle {
-                    (marking_color_highlight_outer_zero_angle, marking_line_width_outer_current_angle)
+                    (marking_color_current_angle, marking_line_width_outer_current_angle)
                 } else {
-                    (marking_color_outer_current_angle, marking_line_width)
+                    (marking_color, marking_line_width)
                 };
                 let (inner_color, marking_line_width_inner) = if is_zero_degree {
-                    (marking_color_highlight_inner_current_angle, marking_line_width_inner_zero_angle)
+                    (marking_color_zero_angle, marking_line_width_inner_zero_angle)
                 } else {
-                    (marking_color_inner_zero_angle, marking_line_width)
+                    (marking_color, marking_line_width)
                 };
 
                 // Draw outer edge marking
-                let outer_start = Vec2::<()>::from_polar(f64::from(radius - marking_length_outer_current_angle), marking_angle).to_f32();
-                let outer_end = Vec2::<()>::from_polar(f64::from(radius), marking_angle).to_f32();
+                let outer_start = (center + Vec2::<Pixels>::from_polar((radius - marking_length_outer_current_angle).as_f64(), marking_angle)).to_f32();
+                let outer_end = (center + Vec2::<Pixels>::from_polar(radius.as_f64(), marking_angle)).to_f32();
 
                 let builder = gtk4::gsk::PathBuilder::new();
-                builder.move_to(center_x + outer_start.x, center_y + outer_start.y);
-                builder.line_to(center_x + outer_end.x, center_y + outer_end.y);
+                builder.move_to(outer_start.x, outer_start.y);
+                builder.line_to(outer_end.x, outer_end.y);
                 let path = builder.to_path();
 
                 let stroke = gtk4::gsk::Stroke::new(marking_line_width_outer);
                 snapshot.append_stroke(&path, &stroke, &outer_color);
 
                 // Draw inner edge marking
-                let inner_start = Vec2::<()>::from_polar(f64::from(center_radius), marking_angle).to_f32();
-                let inner_end = Vec2::<()>::from_polar(f64::from(center_radius + marking_length_inner_zero_angle), marking_angle).to_f32();
+                let inner_start = (center + Vec2::<Pixels>::from_polar(center_radius.as_f64(), marking_angle)).to_f32();
+                let inner_end = (center + Vec2::<Pixels>::from_polar((center_radius + marking_length_inner_zero_angle).as_f64(), marking_angle)).to_f32();
 
                 let builder = gtk4::gsk::PathBuilder::new();
-                builder.move_to(center_x + inner_start.x, center_y + inner_start.y);
-                builder.line_to(center_x + inner_end.x, center_y + inner_end.y);
+                builder.move_to(inner_start.x, inner_start.y);
+                builder.line_to(inner_end.x, inner_end.y);
                 let path = builder.to_path();
 
                 let stroke = gtk4::gsk::Stroke::new(marking_line_width_inner);
@@ -478,42 +480,44 @@ impl WidgetImpl for PieMenuWidgetImpl {
 
         // Draw submenu rings for each open submenu level
         let submenu_stack = self.submenu_stack.borrow().clone();
-        let main_radius = self.radius.load(Ordering::Relaxed);
-        let radius_step = self.submenu_radius_step.load(Ordering::Relaxed);
+        let main_radius = radius;
+        let radius_step = self.submenu_radius_step();
         let stack_depth = self.submenu_depth() as usize;
 
         for (level, parent_id) in submenu_stack.iter().enumerate() {
-            let submenu_radius = main_radius + (level + 1) as f32 * radius_step;
+            let submenu_radius = main_radius + radius_step * ((level + 1) as f64);
             let is_active_level = level + 1 == stack_depth;
             let ring_opacity = if is_active_level { 0.5 } else { 0.25 };
 
             // Draw submenu ring outline
             let builder = gtk4::gsk::PathBuilder::new();
             for i in 0..=360 {
-                let point = Vec2::<()>::from_polar(f64::from(submenu_radius), RotationRad::from_degrees(i)).to_f32();
+                let point = (center + Vec2::<Pixels>::from_polar(submenu_radius.as_f64(), RotationRad::from_degrees(i))).to_f32();
                 if i == 0 {
-                    builder.move_to(center_x + point.x, center_y + point.y);
+                    builder.move_to(point.x, point.y);
                 } else {
-                    builder.line_to(center_x + point.x, center_y + point.y);
+                    builder.line_to(point.x, point.y);
                 }
             }
             builder.close();
             let path = builder.to_path();
             let stroke = gtk4::gsk::Stroke::new(2.0);
-            let ring_stroke_color = RGBA::new(0.5, 0.5, 0.5, ring_opacity);
+            let ring_stroke_color = RGBA::from(PieMenuSlot::SubmenuRing.color().fade(ring_opacity));
             snapshot.append_stroke(&path, &stroke, &ring_stroke_color);
 
             // Draw parent item indicator on the parent ring
             if let Some(parent_item) = self.menu_items.find_item_recursive(parent_id) {
-                let parent_ring_radius = if level == 0 { main_radius } else { main_radius + level as f32 * radius_step };
-                let offset = Vec2::<()>::from_polar(f64::from(parent_ring_radius * 0.7), RotationRad::from_degrees(parent_item.angle)).to_f32();
-                let indicator_x = center_x + offset.x;
-                let indicator_y = center_y + offset.y;
+                let parent_ring_radius = if level == 0 {
+                    main_radius
+                } else {
+                    main_radius + radius_step * (level as f64)
+                };
+                let indicator_pos = center + Vec2::<Pixels>::from_polar((parent_ring_radius * 0.7).as_f64(), RotationRad::from_degrees(parent_item.angle));
 
-                let indicator_color = RGBA::new(1.0, 0.8, 0.2, 0.9);
-                let indicator_radius = 4.0;
-                let indicator_rect = Rect::new(indicator_x - indicator_radius, indicator_y - indicator_radius, indicator_radius * 2.0, indicator_radius * 2.0);
-                let indicator_rounded = RoundedRect::from_rect(indicator_rect, indicator_radius);
+                let indicator_color = RGBA::from(PieMenuSlot::SubmenuIndicator.color());
+                let indicator_radius = Pixels::new(4.0);
+                let indicator_rect = rect_at(indicator_pos, indicator_radius * 2.0);
+                let indicator_rounded = RoundedRect::from_rect(indicator_rect, indicator_radius.as_f64() as f32);
                 snapshot.push_rounded_clip(&indicator_rounded);
                 snapshot.append_color(&indicator_color, &indicator_rect);
                 snapshot.pop();
@@ -529,17 +533,12 @@ impl WidgetImpl for PieMenuWidgetImpl {
             }
 
             // Draw breadcrumb dots between rings
-            let breadcrumb_color = RGBA::new(0.6, 0.6, 0.6, 0.6);
-            let breadcrumb_radius = 2.0;
+            let breadcrumb_color = RGBA::from(PieMenuSlot::Breadcrumb.color());
+            let breadcrumb_radius = Pixels::new(2.0);
             for i in 0..=level as i32 + 1 {
-                let breadcrumb_y = center_y - main_radius - (i as f32 + 0.5) * radius_step;
-                let breadcrumb_rect = Rect::new(
-                    center_x - breadcrumb_radius,
-                    breadcrumb_y - breadcrumb_radius,
-                    breadcrumb_radius * 2.0,
-                    breadcrumb_radius * 2.0,
-                );
-                let breadcrumb_rounded = RoundedRect::from_rect(breadcrumb_rect, breadcrumb_radius);
+                let breadcrumb_pos = Vec2::<Pixels>::new(center.x, center.y - (main_radius + radius_step * (i as f64 + 0.5)).as_f64());
+                let breadcrumb_rect = rect_at(breadcrumb_pos, breadcrumb_radius * 2.0);
+                let breadcrumb_rounded = RoundedRect::from_rect(breadcrumb_rect, breadcrumb_radius.as_f64() as f32);
                 snapshot.push_rounded_clip(&breadcrumb_rounded);
                 snapshot.append_color(&breadcrumb_color, &breadcrumb_rect);
                 snapshot.pop();
@@ -548,10 +547,10 @@ impl WidgetImpl for PieMenuWidgetImpl {
 
         // Snapshot center widget (rotates with ring)
         // Rendered after ring drawing, before item widgets
-        if let Some(center) = self.center_widget.borrow().as_ref()
-            && center.is_visible()
+        if let Some(center_widget) = self.center_widget.borrow().as_ref()
+            && center_widget.is_visible()
         {
-            self.obj().snapshot_child(center, snapshot);
+            self.obj().snapshot_child(center_widget, snapshot);
         }
 
         // Snapshot child widgets whose content rotates with the ring.

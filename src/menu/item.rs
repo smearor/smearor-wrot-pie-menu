@@ -2,12 +2,13 @@ use crate::menu::size::ItemSize;
 use serde::Deserialize;
 use serde::Serialize;
 use smearor_commons_color::Color;
+use smearor_commons_geometry::Pixels;
 use std::hash::Hash;
 use std::hash::Hasher;
 use typed_builder::TypedBuilder;
 
 /// Default radius for a menu item in pixels
-pub const DEFAULT_MENU_ITEM_RADIUS: f32 = 40.0;
+pub const DEFAULT_MENU_ITEM_RADIUS: Pixels<f32> = Pixels::new(40.0);
 
 /// Default label color (white, fully opaque)
 pub const DEFAULT_LABEL_COLOR: Color<f32> = Color::<f32>::new_rgba(1.0, 1.0, 1.0, 1.0);
@@ -30,7 +31,7 @@ pub struct MenuItem {
     pub angle: f32,
     /// The radius of the menu item in pixels (optional, uses default if not set)
     #[builder(default, setter(into, strip_option))]
-    pub radius: Option<f32>,
+    pub radius: Option<Pixels<f32>>,
     /// The name of the event to be triggered when the menu item is selected
     #[builder(setter(into))]
     pub event: String,
@@ -152,7 +153,7 @@ impl<__id, __angle, __radius, __event, __enabled, __fixed_position, __close_on_c
 
 impl MenuItem {
     /// Returns the radius, falling back to the default if not set
-    pub fn radius(&self) -> f32 {
+    pub fn radius(&self) -> Pixels<f32> {
         self.radius.unwrap_or(DEFAULT_MENU_ITEM_RADIUS)
     }
 
@@ -226,7 +227,7 @@ mod tests {
     #[test]
     fn test_menu_item_radius_custom() {
         let item = MenuItem::builder().id("test").angle(0.0).radius(60.0_f32).event("event").build();
-        assert_eq!(item.radius(), 60.0);
+        assert_eq!(item.radius(), Pixels::new(60.0));
     }
 
     #[test]

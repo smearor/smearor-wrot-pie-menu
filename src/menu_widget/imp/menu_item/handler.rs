@@ -9,12 +9,11 @@ use crate::menu_widget::menu_item::widget_config_error::SetWidgetConfigError;
 use glib::subclass::prelude::ObjectSubclassIsExt;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::prelude::ObjectSubclassExt;
-use std::sync::atomic::Ordering;
 
 impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
     fn add_menu_item(&self, menu_item: MenuItem) -> Result<(), AddMenuItemError> {
         self.menu_items.insert(menu_item.id.clone(), menu_item.clone());
-        let ring_radius = self.radius.load(Ordering::Relaxed);
+        let ring_radius = self.radius();
         if let Err(error) = self.menu_items.validate_no_overlap(&menu_item, ring_radius) {
             self.menu_items.remove(&menu_item.id);
             return Err(error);
@@ -57,7 +56,7 @@ impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
         self.menu_items.insert(menu_item.id.clone(), menu_item.clone());
         self.menu_items.redistribute_angles();
 
-        let ring_radius = self.radius.load(Ordering::Relaxed);
+        let ring_radius = self.radius();
         if let Err(error) = self.menu_items.validate_all_no_overlap(ring_radius) {
             if let Some(previous) = previous_item {
                 self.menu_items.insert(menu_item.id.clone(), previous);
@@ -96,7 +95,7 @@ impl PieMenuMenuItemHandler for PieMenuWidgetImpl {
 
         self.menu_items.insert(menu_item.id.clone(), menu_item.clone());
 
-        let ring_radius = self.radius.load(Ordering::Relaxed);
+        let ring_radius = self.radius();
         if let Err(error) = self.menu_items.validate_no_overlap(&menu_item, ring_radius) {
             self.menu_items.insert(previous.id.clone(), previous);
             return Err(match error {
@@ -147,6 +146,7 @@ mod tests {
     use crate::MenuItem;
     use crate::menu::Menu;
     use crate::menu_widget::menu_item::error::AddMenuItemError;
+    use smearor_commons_geometry::Pixels;
 
     fn make_item(id: &str, angle: f32) -> MenuItem {
         MenuItem::builder().id(id).angle(angle).event(id).build()
@@ -220,7 +220,7 @@ mod tests {
     fn test_validate_no_overlap_no_items() {
         let menu = Menu::new();
         let item = make_item("a", 0.0);
-        assert!(menu.validate_no_overlap(&item, 160.0).is_ok());
+        assert!(menu.validate_no_overlap(&item, Pixels::new(160.0)).is_ok());
     }
 
     #[test]
@@ -228,7 +228,7 @@ mod tests {
         let menu = Menu::new();
         menu.insert("a".to_string(), make_item("a", 0.0));
         let item = make_item("b", 0.0);
-        assert!(menu.validate_no_overlap(&item, 0.0).is_ok());
+        assert!(menu.validate_no_overlap(&item, Pixels::new(0.0)).is_ok());
     }
 
     #[test]
@@ -236,7 +236,7 @@ mod tests {
         let menu = Menu::new();
         menu.insert("a".to_string(), make_item("a", 0.0));
         let item = make_item("a", 0.0);
-        assert!(menu.validate_no_overlap(&item, 160.0).is_ok());
+        assert!(menu.validate_no_overlap(&item, Pixels::new(160.0)).is_ok());
     }
 
     #[test]
@@ -244,7 +244,7 @@ mod tests {
         let menu = Menu::new();
         menu.insert("a".to_string(), make_item("a", 0.0));
         let item = make_item("b", 180.0);
-        assert!(menu.validate_no_overlap(&item, 160.0).is_ok());
+        assert!(menu.validate_no_overlap(&item, Pixels::new(160.0)).is_ok());
     }
 
     #[test]
@@ -252,7 +252,7 @@ mod tests {
         let menu = Menu::new();
         menu.insert("a".to_string(), make_item("a", 0.0));
         let item = make_item("b", 0.0);
-        let result = menu.validate_no_overlap(&item, 160.0);
+        let result = menu.validate_no_overlap(&item, Pixels::new(160.0));
         assert!(result.is_err());
         match result {
             Err(AddMenuItemError::ItemOverlap { id, overlapping_with }) => {
@@ -269,7 +269,7 @@ mod tests {
         menu.insert("a".to_string(), make_item("a", 0.0));
         menu.insert("b".to_string(), make_item("b", 120.0));
         menu.insert("c".to_string(), make_item("c", 240.0));
-        assert!(menu.validate_all_no_overlap(160.0).is_ok());
+        assert!(menu.validate_all_no_overlap(Pixels::new(160.0)).is_ok());
     }
 
     #[test]
@@ -277,7 +277,7 @@ mod tests {
         let menu = Menu::new();
         menu.insert("a".to_string(), make_item("a", 0.0));
         menu.insert("b".to_string(), make_item("b", 0.0));
-        assert!(menu.validate_all_no_overlap(160.0).is_err());
+        assert!(menu.validate_all_no_overlap(Pixels::new(160.0)).is_err());
     }
 
     #[test]
@@ -285,11 +285,11 @@ mod tests {
         let menu = Menu::new();
         menu.insert("a".to_string(), make_item("a", 0.0));
         let overlapping_item = make_item("b", 0.0);
-        let result = menu.validate_no_overlap(&overlapping_item, 160.0);
+        let result = menu.validate_no_overlap(&overlapping_item, Pixels::new(160.0));
         assert!(result.is_err());
         // Simulate rollback: insert then remove on validation failure
         menu.insert("b".to_string(), overlapping_item);
-        if menu.validate_no_overlap(&menu.get("b").unwrap().clone(), 160.0).is_err() {
+        if menu.validate_no_overlap(&menu.get("b").unwrap().clone(), Pixels::new(160.0)).is_err() {
             menu.remove("b");
         }
         assert_eq!(menu.len(), 1);

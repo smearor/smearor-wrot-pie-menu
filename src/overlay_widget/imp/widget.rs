@@ -360,7 +360,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                             }
                             let item_circle = Circle::<Pixels>::new(
                                 center + Vec2::<Pixels>::from_polar((main_radius * 0.7).into(), RotationRad::from_degrees(item.angle) + rotation),
-                                f64::from(item.radius()),
+                                f64::from(item.radius().as_raw()),
                             );
 
                             if item_circle.contains(&pointer) {
@@ -388,7 +388,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                                 }
                                 let item_circle = Circle::<Pixels>::new(
                                     center + Vec2::<Pixels>::from_polar(item_ring_radius, RotationRad::from_degrees(item.angle) + rotation),
-                                    f64::from(item.radius()),
+                                    f64::from(item.radius().as_raw()),
                                 );
 
                                 if item_circle.contains(&pointer) {

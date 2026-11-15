@@ -6,6 +6,7 @@ use crate::menu_widget::menu_item::error::SetMenuItemEnabledError;
 use crate::menu_widget::menu_item::error::UpdateMenuItemError;
 use crate::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
 use crate::menu_widget::menu_item::widget_config_error::SetWidgetConfigError;
+use serde_json::Value;
 
 impl PieMenuMenuItemHandler for PieMenuOverlayWidgetImpl {
     fn add_menu_item(&self, menu_item: MenuItem) -> Result<(), AddMenuItemError> {
@@ -83,7 +84,7 @@ impl PieMenuMenuItemHandler for PieMenuOverlayWidgetImpl {
         }
     }
 
-    fn set_widget_config(&self, id: &str, config: serde_json::Value) -> Result<(), SetWidgetConfigError> {
+    fn set_widget_config(&self, id: &str, config: Value) -> Result<(), SetWidgetConfigError> {
         let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
         let Some(pie_menu_widget) = pie_menu_widget_borrow.clone() else {
             return Err(SetWidgetConfigError::NotFound { id: id.to_string() });

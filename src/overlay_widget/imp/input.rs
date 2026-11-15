@@ -3,6 +3,7 @@ use crate::overlay_widget::control::handler::PieMenuControlHandler;
 use crate::overlay_widget::message::handler::PieMenuMessageSender;
 use crate::overlay_widget::message::message::PieMenuMessage;
 use glib::subclass::prelude::ObjectSubclassIsExt;
+use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
 use std::sync::atomic::Ordering;
@@ -105,17 +106,17 @@ impl PieMenuOverlayWidgetImpl {
 
     /// Computes the ring radius for a given submenu level.
     /// Uses explicit override if set, otherwise `main_radius + level * step`.
-    pub(crate) fn submenu_radius_for_level(&self, level: u32) -> f32 {
+    pub(crate) fn submenu_radius_for_level(&self, level: u32) -> Pixels {
         if let Some(radius) = self.submenu_radii.borrow().get(&level) {
-            return *radius;
+            return Pixels::from(f64::from(*radius));
         }
         let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
         let main_radius = pie_menu_widget_borrow
             .as_ref()
-            .map(|widget| widget.imp().radius.load(Ordering::Relaxed))
-            .unwrap_or(160.0);
-        let step = self.submenu_radius_step.load(Ordering::Relaxed) as f32;
-        main_radius + level as f32 * step
+            .map(|widget| widget.imp().radius())
+            .unwrap_or(Pixels::new(160.0));
+        let step = Pixels::from(self.submenu_radius_step.load(Ordering::Relaxed));
+        main_radius + step * f64::from(level)
     }
 }
 
