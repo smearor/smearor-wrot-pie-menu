@@ -8,6 +8,7 @@
 pub mod menu;
 pub mod menu_widget;
 pub mod overlay_widget;
+pub mod palette;
 #[cfg(test)]
 pub mod test_util;
 
@@ -34,3 +35,6 @@ pub use menu_widget::rotation::handler::RotationHandler;
 pub use overlay_widget::PieMenuOverlayWidget;
 pub use overlay_widget::imp::PieMenuOverlayWidgetImpl;
 pub use overlay_widget::message::PieMenuMessage;
+pub use palette::DEFAULT_PALETTE;
+pub use palette::DISABLED_ALPHA;
+pub use palette::PieMenuSlot;
