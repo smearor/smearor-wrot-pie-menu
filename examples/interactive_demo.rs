@@ -134,7 +134,7 @@ fn build_ui(app: &Application) {
         .margin_end(12)
         .build();
 
-    let activation_label = Label::builder().label("Activation: 3.50").width_chars(16).xalign(0.0).build();
+    let activation_label = Label::builder().label("Activation: 3.50").width_chars(28).xalign(0.0).build();
     let activation_scale = Scale::with_range(Orientation::Horizontal, 1.0, 10.0, 0.1);
     activation_scale.set_value(3.5);
     activation_scale.set_hexpand(true);
@@ -143,7 +143,7 @@ fn build_ui(app: &Application) {
     activation_row.append(&activation_scale);
     sliders_box.append(&activation_row);
 
-    let deactivation_label = Label::builder().label("Deactivation: 0.50").width_chars(16).xalign(0.0).build();
+    let deactivation_label = Label::builder().label("Deactivation: 0.50").width_chars(28).xalign(0.0).build();
     let deactivation_scale = Scale::with_range(Orientation::Horizontal, 0.1, 1.0, 0.05);
     deactivation_scale.set_value(0.5);
     deactivation_scale.set_hexpand(true);
@@ -152,7 +152,7 @@ fn build_ui(app: &Application) {
     deactivation_row.append(&deactivation_scale);
     sliders_box.append(&deactivation_row);
 
-    let scroll_step_label = Label::builder().label("Scroll Step: 5.0 °/px").width_chars(16).xalign(0.0).build();
+    let scroll_step_label = Label::builder().label("Scroll Step: 5.0 °/px").width_chars(28).xalign(0.0).build();
     let scroll_step_scale = Scale::with_range(Orientation::Horizontal, 0.5, 20.0, 0.5);
     scroll_step_scale.set_value(5.0);
     scroll_step_scale.set_hexpand(true);
