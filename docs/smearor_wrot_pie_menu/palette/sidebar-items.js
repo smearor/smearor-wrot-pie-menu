@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DISABLED_ALPHA"],"enum":["PieMenuSlot"],"static":["DEFAULT_PALETTE"]};
