@@ -5,6 +5,7 @@
 //! trigger clockwise / counter-clockwise rotation snaps.
 
 use smearor_commons_color::Color;
+use smearor_commons_geometry::DegreesPerPixel;
 use smearor_commons_geometry::RotationRad;
 use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
@@ -121,21 +122,46 @@ fn build_ui(app: &Application) {
     controls_box.append(&natural_child_size_label);
     controls_box.append(&natural_child_size_switch);
 
-    let activation_label = Label::new(Some("Activation: 3.50"));
+    main_box.append(&controls_box);
+
+    // --- Sliders column: activation / deactivation / scroll step ---
+    let sliders_box = gtk4::Box::builder()
+        .orientation(Orientation::Vertical)
+        .spacing(4)
+        .halign(Align::Fill)
+        .margin_top(4)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+
+    let activation_label = Label::builder().label("Activation: 3.50").width_chars(16).xalign(0.0).build();
     let activation_scale = Scale::with_range(Orientation::Horizontal, 1.0, 10.0, 0.1);
     activation_scale.set_value(3.5);
     activation_scale.set_hexpand(true);
-    controls_box.append(&activation_label);
-    controls_box.append(&activation_scale);
+    let activation_row = gtk4::Box::builder().orientation(Orientation::Horizontal).spacing(8).build();
+    activation_row.append(&activation_label);
+    activation_row.append(&activation_scale);
+    sliders_box.append(&activation_row);
 
-    let deactivation_label = Label::new(Some("Deactivation: 0.50"));
+    let deactivation_label = Label::builder().label("Deactivation: 0.50").width_chars(16).xalign(0.0).build();
     let deactivation_scale = Scale::with_range(Orientation::Horizontal, 0.1, 1.0, 0.05);
     deactivation_scale.set_value(0.5);
     deactivation_scale.set_hexpand(true);
-    controls_box.append(&deactivation_label);
-    controls_box.append(&deactivation_scale);
+    let deactivation_row = gtk4::Box::builder().orientation(Orientation::Horizontal).spacing(8).build();
+    deactivation_row.append(&deactivation_label);
+    deactivation_row.append(&deactivation_scale);
+    sliders_box.append(&deactivation_row);
 
-    main_box.append(&controls_box);
+    let scroll_step_label = Label::builder().label("Scroll Step: 5.0 °/px").width_chars(16).xalign(0.0).build();
+    let scroll_step_scale = Scale::with_range(Orientation::Horizontal, 0.5, 20.0, 0.5);
+    scroll_step_scale.set_value(5.0);
+    scroll_step_scale.set_hexpand(true);
+    let scroll_step_row = gtk4::Box::builder().orientation(Orientation::Horizontal).spacing(8).build();
+    scroll_step_row.append(&scroll_step_label);
+    scroll_step_row.append(&scroll_step_scale);
+    sliders_box.append(&scroll_step_row);
+
+    main_box.append(&sliders_box);
 
     // --- RotationWidget with smearor.png ---
     let picture = Picture::for_filename("assets/smearor.png");
@@ -335,6 +361,18 @@ fn build_ui(app: &Application) {
             let value = scale.value();
             pie_menu.set_deactivation_threshold(value);
             deactivation_label.set_label(&format!("Deactivation Threshold: {:.2}", value));
+        }
+    ));
+
+    scroll_step_scale.connect_value_changed(glib::clone!(
+        #[weak]
+        pie_menu,
+        #[weak]
+        scroll_step_label,
+        move |scale| {
+            let value = scale.value();
+            pie_menu.set_scroll_rotation_step(DegreesPerPixel::new(value));
+            scroll_step_label.set_label(&format!("Scroll Step: {:.1} °/px", value));
         }
     ));
 
