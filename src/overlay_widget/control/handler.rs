@@ -7,6 +7,7 @@ use crate::overlay_widget::imp::widget::DEFAULT_ACTIVATION_THRESHOLD;
 use crate::overlay_widget::imp::widget::DEFAULT_DEACTIVATION_THRESHOLD;
 use crate::overlay_widget::imp::widget::MAX_SUBMENU_DEPTH;
 use glib::subclass::prelude::ObjectSubclassIsExt;
+use smearor_commons_geometry::DegreesPerPixel;
 use smearor_commons_geometry::RotationRad;
 
 pub trait PieMenuControlHandler {
@@ -47,13 +48,13 @@ pub trait PieMenuControlHandler {
     /// Returns whether ring markings are currently enabled.
     fn markings_enabled(&self) -> bool;
 
-    /// Sets the scroll rotation sensitivity multiplier.
+    /// Sets the scroll rotation sensitivity in degrees per pixel.
     /// The rotation delta is computed as `dy * sensitivity`, so higher
     /// values produce faster rotation. Default: `5.0`.
-    fn set_scroll_rotation_step(&self, sensitivity: f64);
+    fn set_scroll_rotation_step(&self, sensitivity: DegreesPerPixel);
 
-    /// Returns the current scroll rotation sensitivity multiplier.
-    fn scroll_rotation_step(&self) -> f32;
+    /// Returns the current scroll rotation sensitivity in degrees per pixel.
+    fn scroll_rotation_step(&self) -> DegreesPerPixel;
 
     /// Cycles the keyboard selection by `direction` (-1 for CCW, +1 for CW).
     /// Items are sorted by angle to ensure deterministic navigation order.
@@ -181,11 +182,11 @@ impl PieMenuControlHandler for PieMenuOverlayWidget {
         self.imp().markings_enabled()
     }
 
-    fn set_scroll_rotation_step(&self, sensitivity: f64) {
+    fn set_scroll_rotation_step(&self, sensitivity: DegreesPerPixel) {
         self.imp().set_scroll_rotation_step(sensitivity);
     }
 
-    fn scroll_rotation_step(&self) -> f32 {
+    fn scroll_rotation_step(&self) -> DegreesPerPixel {
         self.imp().scroll_rotation_step()
     }
 

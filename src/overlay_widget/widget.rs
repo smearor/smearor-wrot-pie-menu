@@ -12,6 +12,7 @@ use gtk4::ConstraintTarget;
 use gtk4::Widget;
 use gtk4::glib::Object;
 use gtk4::subclass::prelude::*;
+use smearor_commons_geometry::DegreesPerPixel;
 use std::sync::mpsc::Sender;
 use tracing::error;
 
@@ -65,10 +66,10 @@ impl PieMenuOverlayWidget {
         self
     }
 
-    /// Sets the scroll rotation sensitivity multiplier and returns self for chaining.
+    /// Sets the scroll rotation sensitivity in degrees per pixel and returns self for chaining.
     /// Default: `5.0`.
-    pub fn with_scroll_rotation_step(self, sensitivity: f64) -> Self {
-        self.set_scroll_rotation_step(sensitivity);
+    pub fn with_scroll_rotation_step(self, sensitivity: impl Into<DegreesPerPixel>) -> Self {
+        self.set_scroll_rotation_step(sensitivity.into());
         self
     }
 

@@ -23,6 +23,7 @@ use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::widget::WidgetImplExt;
 use smearor_commons_geometry::Annulus;
 use smearor_commons_geometry::Circle;
+use smearor_commons_geometry::DegreesPerPixel;
 use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
@@ -77,7 +78,7 @@ pub struct PieMenuOverlayWidgetImpl {
     /// Reference to the rotate gesture controller for propagation phase toggling.
     pub(crate) rotate_gesture: RefCell<Option<GestureRotate>>,
 
-    /// Scroll rotation sensitivity multiplier. Default: `5.0`.
+    /// Scroll rotation sensitivity in degrees per pixel. Default: `5.0`.
     /// The rotation delta is computed as `dy * sensitivity`.
     pub(crate) scroll_rotation_step: AtomicF64,
 
@@ -112,9 +113,9 @@ pub const DEFAULT_ACTIVATION_THRESHOLD: f64 = 3.5;
 /// Default deactivation threshold for pinch-out (scale must drop below this to close the menu)
 pub const DEFAULT_DEACTIVATION_THRESHOLD: f64 = 0.5;
 
-/// Default scroll rotation sensitivity multiplier.
+/// Default scroll rotation sensitivity in degrees per pixel.
 /// With a discrete mouse wheel tick (`dy ≈ 1.0`), this yields ~5° per tick.
-pub const DEFAULT_SCROLL_ROTATION_STEP: f64 = 5.0;
+pub const DEFAULT_SCROLL_ROTATION_STEP: DegreesPerPixel = DegreesPerPixel::new(5.0);
 
 /// Default step width between consecutive submenu ring levels in pixels.
 pub const DEFAULT_SUBMENU_RADIUS_STEP: f64 = 80.0;
@@ -137,7 +138,7 @@ impl Default for PieMenuOverlayWidgetImpl {
             deactivation_threshold: AtomicF64::new(DEFAULT_DEACTIVATION_THRESHOLD),
             rotation_gesture_enabled: AtomicBool::new(true),
             rotate_gesture: RefCell::new(None),
-            scroll_rotation_step: AtomicF64::new(DEFAULT_SCROLL_ROTATION_STEP),
+            scroll_rotation_step: AtomicF64::new(DEFAULT_SCROLL_ROTATION_STEP.as_f64()),
             left_stick_x: Cell::new(0.0),
             #[cfg(feature = "keyboard")]
             key_controller: RefCell::new(None),
@@ -441,7 +442,7 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
 
                 let rotation_step = widget.scroll_rotation_step();
                 let current_rotation = widget.rotation();
-                let new_rotation = current_rotation.rotated_degrees(dy * f64::from(rotation_step));
+                let new_rotation = current_rotation.rotated(rotation_step.scale(Pixels::new(dy)).into());
                 widget.set_rotation(new_rotation);
                 widget.send_message(PieMenuMessage::Rotate(new_rotation));
 
@@ -471,7 +472,8 @@ impl ObjectImpl for PieMenuOverlayWidgetImpl {
                     return glib::ControlFlow::Continue;
                 }
 
-                let rotation_delta = stick_x * widget.scroll_rotation_step();
+                // The scroll step doubles as degrees per unit stick deflection.
+                let rotation_delta = f64::from(stick_x) * widget.scroll_rotation_step().as_f64();
                 let current = widget.rotation();
                 let new_rotation = current.rotated_degrees(rotation_delta);
                 widget.set_rotation(new_rotation);

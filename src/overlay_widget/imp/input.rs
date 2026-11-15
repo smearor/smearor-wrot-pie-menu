@@ -3,6 +3,7 @@ use crate::overlay_widget::control::handler::PieMenuControlHandler;
 use crate::overlay_widget::message::handler::PieMenuMessageSender;
 use crate::overlay_widget::message::message::PieMenuMessage;
 use glib::subclass::prelude::ObjectSubclassIsExt;
+use smearor_commons_geometry::DegreesPerPixel;
 use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::Vec2;
@@ -94,14 +95,14 @@ impl PieMenuOverlayWidgetImpl {
         }
     }
 
-    /// Sets the scroll rotation sensitivity multiplier.
-    pub(crate) fn set_scroll_rotation_step(&self, sensitivity: f64) {
-        self.scroll_rotation_step.store(sensitivity, Ordering::Relaxed);
+    /// Sets the scroll rotation sensitivity in degrees per pixel.
+    pub(crate) fn set_scroll_rotation_step(&self, sensitivity: DegreesPerPixel) {
+        self.scroll_rotation_step.store(sensitivity.as_f64(), Ordering::Relaxed);
     }
 
-    /// Returns the current scroll rotation sensitivity multiplier.
-    pub(crate) fn scroll_rotation_step(&self) -> f32 {
-        self.scroll_rotation_step.load(Ordering::Relaxed) as f32
+    /// Returns the current scroll rotation sensitivity in degrees per pixel.
+    pub(crate) fn scroll_rotation_step(&self) -> DegreesPerPixel {
+        DegreesPerPixel::new(self.scroll_rotation_step.load(Ordering::Relaxed))
     }
 
     /// Computes the ring radius for a given submenu level.
@@ -129,13 +130,13 @@ mod tests {
 
     #[test]
     fn test_scroll_rotation_step_default() {
-        let step = AtomicF64::new(DEFAULT_SCROLL_ROTATION_STEP);
+        let step = AtomicF64::new(DEFAULT_SCROLL_ROTATION_STEP.as_f64());
         assert_eq!(step.load(Ordering::Relaxed), 5.0);
     }
 
     #[test]
     fn test_set_scroll_rotation_step() {
-        let step = AtomicF64::new(DEFAULT_SCROLL_ROTATION_STEP);
+        let step = AtomicF64::new(DEFAULT_SCROLL_ROTATION_STEP.as_f64());
         step.store(10.0, Ordering::Relaxed);
         assert_eq!(step.load(Ordering::Relaxed), 10.0);
     }

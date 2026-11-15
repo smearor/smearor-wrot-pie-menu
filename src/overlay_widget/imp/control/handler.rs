@@ -12,6 +12,7 @@ use glib::subclass::prelude::ObjectSubclassIsExt;
 use gtk4::PropagationPhase;
 use gtk4::prelude::EventControllerExt;
 use gtk4::prelude::WidgetExt;
+use smearor_commons_geometry::DegreesPerPixel;
 use smearor_commons_geometry::RotationRad;
 use std::sync::atomic::Ordering;
 
@@ -92,12 +93,12 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
         }
     }
 
-    fn set_scroll_rotation_step(&self, sensitivity: f64) {
-        self.scroll_rotation_step.store(sensitivity, Ordering::Relaxed);
+    fn set_scroll_rotation_step(&self, sensitivity: DegreesPerPixel) {
+        self.scroll_rotation_step.store(sensitivity.as_f64(), Ordering::Relaxed);
     }
 
-    fn scroll_rotation_step(&self) -> f32 {
-        self.scroll_rotation_step.load(Ordering::Relaxed) as f32
+    fn scroll_rotation_step(&self) -> DegreesPerPixel {
+        DegreesPerPixel::new(self.scroll_rotation_step.load(Ordering::Relaxed))
     }
 
     fn cycle_selection(&self, direction: i32) {
