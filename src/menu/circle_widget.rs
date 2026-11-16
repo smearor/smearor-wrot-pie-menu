@@ -63,6 +63,7 @@ impl MenuItemWidgetFactory for CircleWidgetFactory {
             bg_color,
             label_color,
             item.radius(),
+            config.icon_size,
             item.enabled,
         );
 

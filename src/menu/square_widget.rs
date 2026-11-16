@@ -61,6 +61,7 @@ impl MenuItemWidgetFactory for SquareWidgetFactory {
             bg_color,
             label_color,
             item.radius(),
+            config.icon_size,
             item.enabled,
         );
 
