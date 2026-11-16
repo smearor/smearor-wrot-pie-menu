@@ -29,7 +29,7 @@
 <a href=#29 id=29 data-nosnippet>29</a>    </span><span class="attr">#[builder(default, setter(into, strip_option))]
 <a href=#30 id=30 data-nosnippet>30</a>    </span><span class="kw">pub </span>label_color: <span class="prelude-ty">Option</span>&lt;Color&lt;f32&gt;&gt;,
 <a href=#31 id=31 data-nosnippet>31</a>    <span class="doccomment">/// Icon size in pixels. When `None`, uses the default icon size.
-<a href=#32 id=32 data-nosnippet>32</a>    </span><span class="attr">#[builder(default)]
+<a href=#32 id=32 data-nosnippet>32</a>    </span><span class="attr">#[builder(default, setter(into, strip_option))]
 <a href=#33 id=33 data-nosnippet>33</a>    </span><span class="kw">pub </span>icon_size: <span class="prelude-ty">Option</span>&lt;Pixels&lt;f32&gt;&gt;,
 <a href=#34 id=34 data-nosnippet>34</a>    <span class="doccomment">/// Whether to show the label. Defaults to `true`.
 <a href=#35 id=35 data-nosnippet>35</a>    </span><span class="attr">#[builder(default)]
@@ -92,7 +92,7 @@
 <a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">let </span>config = CircleConfig::builder()
 <a href=#93 id=93 data-nosnippet>93</a>            .icon_name(<span class="string">"test"</span>)
 <a href=#94 id=94 data-nosnippet>94</a>            .label(<span class="string">"Label"</span>)
-<a href=#95 id=95 data-nosnippet>95</a>            .icon_size(<span class="prelude-val">Some</span>(Pixels::new(<span class="number">48.0</span>)))
+<a href=#95 id=95 data-nosnippet>95</a>            .icon_size(Pixels::new(<span class="number">48.0</span>))
 <a href=#96 id=96 data-nosnippet>96</a>            .show_label(<span class="prelude-val">Some</span>(<span class="bool-val">true</span>))
 <a href=#97 id=97 data-nosnippet>97</a>            .build();
 <a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">let </span>json = serde_json::to_string(<span class="kw-2">&amp;</span>config).expect(<span class="string">"serialize should succeed"</span>);

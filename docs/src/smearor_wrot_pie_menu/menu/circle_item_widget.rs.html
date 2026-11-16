@@ -15,12 +15,12 @@
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>std::cell::RefCell;
 <a href=#16 id=16 data-nosnippet>16</a>
 <a href=#17 id=17 data-nosnippet>17</a><span class="kw">mod </span>imp {
-<a href=#18 id=18 data-nosnippet>18</a>    <span class="kw">use </span>gtk4::gdk::{Display, RGBA};
-<a href=#19 id=19 data-nosnippet>19</a>    <span class="kw">use </span>gtk4::gsk::{PathBuilder, RoundedRect, Stroke};
-<a href=#20 id=20 data-nosnippet>20</a>    <span class="kw">use </span>gtk4::{IconLookupFlags, IconTheme, Orientation, TextDirection};
-<a href=#21 id=21 data-nosnippet>21</a>    <span class="kw">use </span>gtk4::graphene::Point;
+<a href=#18 id=18 data-nosnippet>18</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#19 id=19 data-nosnippet>19</a>    <span class="kw">use </span>gtk4::gdk::{Display, RGBA};
+<a href=#20 id=20 data-nosnippet>20</a>    <span class="kw">use </span>gtk4::graphene::Point;
+<a href=#21 id=21 data-nosnippet>21</a>    <span class="kw">use </span>gtk4::gsk::{PathBuilder, RoundedRect, Stroke};
 <a href=#22 id=22 data-nosnippet>22</a>    <span class="kw">use </span>gtk4::pango::{FontDescription, Layout};
-<a href=#23 id=23 data-nosnippet>23</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#23 id=23 data-nosnippet>23</a>    <span class="kw">use </span>gtk4::{IconLookupFlags, IconTheme, Orientation, TextDirection};
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a>    <span class="kw">pub struct </span>CircleItemWidgetImpl {
 <a href=#26 id=26 data-nosnippet>26</a>        <span class="kw">pub </span>icon_name: RefCell&lt;String&gt;,
@@ -120,88 +120,82 @@
 <a href=#120 id=120 data-nosnippet>120</a>                    .borrow()
 <a href=#121 id=121 data-nosnippet>121</a>                    .map(|size| Pixels::new(f64::from(size.as_raw())))
 <a href=#122 id=122 data-nosnippet>122</a>                    .unwrap_or(item_radius * <span class="number">0.6</span>);
-<a href=#123 id=123 data-nosnippet>123</a>                <span class="kw">let </span>paintable = icon_theme.lookup_icon(
-<a href=#124 id=124 data-nosnippet>124</a>                    icon_name,
-<a href=#125 id=125 data-nosnippet>125</a>                    <span class="kw-2">&amp;</span>[icon_name],
-<a href=#126 id=126 data-nosnippet>126</a>                    icon_size.as_f64() <span class="kw">as </span>i32,
-<a href=#127 id=127 data-nosnippet>127</a>                    <span class="number">1</span>,
-<a href=#128 id=128 data-nosnippet>128</a>                    TextDirection::None,
-<a href=#129 id=129 data-nosnippet>129</a>                    IconLookupFlags::FORCE_SYMBOLIC,
-<a href=#130 id=130 data-nosnippet>130</a>                );
-<a href=#131 id=131 data-nosnippet>131</a>                <span class="kw">let </span>icon_pos = center - Vec2::&lt;Pixels&gt;::splat(icon_size / <span class="number">2.0</span>);
-<a href=#132 id=132 data-nosnippet>132</a>                snapshot.translate(<span class="kw-2">&amp;</span>Point::from(icon_pos.to_f32()));
-<a href=#133 id=133 data-nosnippet>133</a>                paintable.snapshot(snapshot, icon_size.as_f64(), icon_size.as_f64());
-<a href=#134 id=134 data-nosnippet>134</a>                snapshot.translate(<span class="kw-2">&amp;</span>Point::from((-icon_pos).to_f32()));
-<a href=#135 id=135 data-nosnippet>135</a>            }
-<a href=#136 id=136 data-nosnippet>136</a>
-<a href=#137 id=137 data-nosnippet>137</a>            <span class="comment">// Draw label below icon
-<a href=#138 id=138 data-nosnippet>138</a>            </span><span class="kw">let </span>label_text = <span class="self">self</span>.label.borrow();
-<a href=#139 id=139 data-nosnippet>139</a>            <span class="kw">let </span>label_text = label_text.as_str();
-<a href=#140 id=140 data-nosnippet>140</a>            <span class="kw">if </span>!label_text.is_empty() {
-<a href=#141 id=141 data-nosnippet>141</a>                <span class="kw">let </span>pango_context = obj.pango_context();
-<a href=#142 id=142 data-nosnippet>142</a>                <span class="kw">let </span>pango_layout = Layout::new(<span class="kw-2">&amp;</span>pango_context);
-<a href=#143 id=143 data-nosnippet>143</a>                pango_layout.set_text(label_text);
-<a href=#144 id=144 data-nosnippet>144</a>                <span class="kw">let </span>font_desc = FontDescription::from_string(<span class="string">"Sans 7"</span>);
-<a href=#145 id=145 data-nosnippet>145</a>                pango_layout.set_font_description(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>font_desc));
+<a href=#123 id=123 data-nosnippet>123</a>                <span class="kw">let </span>paintable =
+<a href=#124 id=124 data-nosnippet>124</a>                    icon_theme.lookup_icon(icon_name, <span class="kw-2">&amp;</span>[icon_name], icon_size.as_f64() <span class="kw">as </span>i32, <span class="number">1</span>, TextDirection::None, IconLookupFlags::FORCE_SYMBOLIC);
+<a href=#125 id=125 data-nosnippet>125</a>                <span class="kw">let </span>icon_pos = center - Vec2::&lt;Pixels&gt;::splat(icon_size / <span class="number">2.0</span>);
+<a href=#126 id=126 data-nosnippet>126</a>                snapshot.translate(<span class="kw-2">&amp;</span>Point::from(icon_pos.to_f32()));
+<a href=#127 id=127 data-nosnippet>127</a>                paintable.snapshot(snapshot, icon_size.as_f64(), icon_size.as_f64());
+<a href=#128 id=128 data-nosnippet>128</a>                snapshot.translate(<span class="kw-2">&amp;</span>Point::from((-icon_pos).to_f32()));
+<a href=#129 id=129 data-nosnippet>129</a>            }
+<a href=#130 id=130 data-nosnippet>130</a>
+<a href=#131 id=131 data-nosnippet>131</a>            <span class="comment">// Draw label below icon
+<a href=#132 id=132 data-nosnippet>132</a>            </span><span class="kw">let </span>label_text = <span class="self">self</span>.label.borrow();
+<a href=#133 id=133 data-nosnippet>133</a>            <span class="kw">let </span>label_text = label_text.as_str();
+<a href=#134 id=134 data-nosnippet>134</a>            <span class="kw">if </span>!label_text.is_empty() {
+<a href=#135 id=135 data-nosnippet>135</a>                <span class="kw">let </span>pango_context = obj.pango_context();
+<a href=#136 id=136 data-nosnippet>136</a>                <span class="kw">let </span>pango_layout = Layout::new(<span class="kw-2">&amp;</span>pango_context);
+<a href=#137 id=137 data-nosnippet>137</a>                pango_layout.set_text(label_text);
+<a href=#138 id=138 data-nosnippet>138</a>                <span class="kw">let </span>font_desc = FontDescription::from_string(<span class="string">"Sans 7"</span>);
+<a href=#139 id=139 data-nosnippet>139</a>                pango_layout.set_font_description(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>font_desc));
+<a href=#140 id=140 data-nosnippet>140</a>
+<a href=#141 id=141 data-nosnippet>141</a>                <span class="kw">let </span>label_color = <span class="kw-2">*</span><span class="self">self</span>.label_color.borrow();
+<a href=#142 id=142 data-nosnippet>142</a>                <span class="kw">let </span>label_color = RGBA::from(label_color.with_alpha(disabled_alpha));
+<a href=#143 id=143 data-nosnippet>143</a>                <span class="kw">let </span>(_ink_rect, logical_rect) = pango_layout.extents();
+<a href=#144 id=144 data-nosnippet>144</a>                <span class="kw">let </span>label_width = logical_rect.width() <span class="kw">as </span>f64 / gtk4::pango::SCALE <span class="kw">as </span>f64;
+<a href=#145 id=145 data-nosnippet>145</a>                <span class="kw">let </span>label_pos = Vec2::&lt;Pixels&gt;::new(center.x - label_width / <span class="number">2.0</span>, center.y + item_radius.as_f64());
 <a href=#146 id=146 data-nosnippet>146</a>
-<a href=#147 id=147 data-nosnippet>147</a>                <span class="kw">let </span>label_color = <span class="kw-2">*</span><span class="self">self</span>.label_color.borrow();
-<a href=#148 id=148 data-nosnippet>148</a>                <span class="kw">let </span>label_color = RGBA::from(label_color.with_alpha(disabled_alpha));
-<a href=#149 id=149 data-nosnippet>149</a>                <span class="kw">let </span>(_ink_rect, logical_rect) = pango_layout.extents();
-<a href=#150 id=150 data-nosnippet>150</a>                <span class="kw">let </span>label_width = logical_rect.width() <span class="kw">as </span>f64 / gtk4::pango::SCALE <span class="kw">as </span>f64;
-<a href=#151 id=151 data-nosnippet>151</a>                <span class="kw">let </span>label_pos = Vec2::&lt;Pixels&gt;::new(center.x - label_width / <span class="number">2.0</span>, center.y + item_radius.as_f64());
-<a href=#152 id=152 data-nosnippet>152</a>
-<a href=#153 id=153 data-nosnippet>153</a>                <span class="comment">// Label shadow
-<a href=#154 id=154 data-nosnippet>154</a>                </span><span class="kw">let </span>shadow_offset = Vec2::&lt;Pixels&gt;::splat(Pixels::new(<span class="number">1.0</span>));
-<a href=#155 id=155 data-nosnippet>155</a>                <span class="kw">let </span>shadow_color = RGBA::from(PieMenuSlot::LabelShadow.color());
-<a href=#156 id=156 data-nosnippet>156</a>                snapshot.translate(<span class="kw-2">&amp;</span>Point::from((label_pos + shadow_offset).to_f32()));
-<a href=#157 id=157 data-nosnippet>157</a>                snapshot.append_layout(<span class="kw-2">&amp;</span>pango_layout, <span class="kw-2">&amp;</span>shadow_color);
-<a href=#158 id=158 data-nosnippet>158</a>                snapshot.translate(<span class="kw-2">&amp;</span>Point::from((-(label_pos + shadow_offset)).to_f32()));
-<a href=#159 id=159 data-nosnippet>159</a>
-<a href=#160 id=160 data-nosnippet>160</a>                <span class="comment">// Label
-<a href=#161 id=161 data-nosnippet>161</a>                </span>snapshot.translate(<span class="kw-2">&amp;</span>Point::from(label_pos.to_f32()));
-<a href=#162 id=162 data-nosnippet>162</a>                snapshot.append_layout(<span class="kw-2">&amp;</span>pango_layout, <span class="kw-2">&amp;</span>label_color);
-<a href=#163 id=163 data-nosnippet>163</a>                snapshot.translate(<span class="kw-2">&amp;</span>Point::from((-label_pos).to_f32()));
-<a href=#164 id=164 data-nosnippet>164</a>            }
+<a href=#147 id=147 data-nosnippet>147</a>                <span class="comment">// Label shadow
+<a href=#148 id=148 data-nosnippet>148</a>                </span><span class="kw">let </span>shadow_offset = Vec2::&lt;Pixels&gt;::splat(Pixels::new(<span class="number">1.0</span>));
+<a href=#149 id=149 data-nosnippet>149</a>                <span class="kw">let </span>shadow_color = RGBA::from(PieMenuSlot::LabelShadow.color());
+<a href=#150 id=150 data-nosnippet>150</a>                snapshot.translate(<span class="kw-2">&amp;</span>Point::from((label_pos + shadow_offset).to_f32()));
+<a href=#151 id=151 data-nosnippet>151</a>                snapshot.append_layout(<span class="kw-2">&amp;</span>pango_layout, <span class="kw-2">&amp;</span>shadow_color);
+<a href=#152 id=152 data-nosnippet>152</a>                snapshot.translate(<span class="kw-2">&amp;</span>Point::from((-(label_pos + shadow_offset)).to_f32()));
+<a href=#153 id=153 data-nosnippet>153</a>
+<a href=#154 id=154 data-nosnippet>154</a>                <span class="comment">// Label
+<a href=#155 id=155 data-nosnippet>155</a>                </span>snapshot.translate(<span class="kw-2">&amp;</span>Point::from(label_pos.to_f32()));
+<a href=#156 id=156 data-nosnippet>156</a>                snapshot.append_layout(<span class="kw-2">&amp;</span>pango_layout, <span class="kw-2">&amp;</span>label_color);
+<a href=#157 id=157 data-nosnippet>157</a>                snapshot.translate(<span class="kw-2">&amp;</span>Point::from((-label_pos).to_f32()));
+<a href=#158 id=158 data-nosnippet>158</a>            }
+<a href=#159 id=159 data-nosnippet>159</a>        }
+<a href=#160 id=160 data-nosnippet>160</a>
+<a href=#161 id=161 data-nosnippet>161</a>        <span class="kw">fn </span>measure(<span class="kw-2">&amp;</span><span class="self">self</span>, _orientation: Orientation, _for_size: i32) -&gt; (i32, i32, i32, i32) {
+<a href=#162 id=162 data-nosnippet>162</a>            <span class="kw">let </span>item_radius = <span class="self">self</span>.item_radius.borrow().as_raw();
+<a href=#163 id=163 data-nosnippet>163</a>            <span class="kw">let </span>size = (item_radius * <span class="number">2.0 </span>+ <span class="number">20.0</span>) <span class="kw">as </span>i32;
+<a href=#164 id=164 data-nosnippet>164</a>            (size, size, -<span class="number">1</span>, -<span class="number">1</span>)
 <a href=#165 id=165 data-nosnippet>165</a>        }
-<a href=#166 id=166 data-nosnippet>166</a>
-<a href=#167 id=167 data-nosnippet>167</a>        <span class="kw">fn </span>measure(<span class="kw-2">&amp;</span><span class="self">self</span>, _orientation: Orientation, _for_size: i32) -&gt; (i32, i32, i32, i32) {
-<a href=#168 id=168 data-nosnippet>168</a>            <span class="kw">let </span>item_radius = <span class="self">self</span>.item_radius.borrow().as_raw();
-<a href=#169 id=169 data-nosnippet>169</a>            <span class="kw">let </span>size = (item_radius * <span class="number">2.0 </span>+ <span class="number">20.0</span>) <span class="kw">as </span>i32;
-<a href=#170 id=170 data-nosnippet>170</a>            (size, size, -<span class="number">1</span>, -<span class="number">1</span>)
-<a href=#171 id=171 data-nosnippet>171</a>        }
-<a href=#172 id=172 data-nosnippet>172</a>    }
+<a href=#166 id=166 data-nosnippet>166</a>    }
+<a href=#167 id=167 data-nosnippet>167</a>}
+<a href=#168 id=168 data-nosnippet>168</a>
+<a href=#169 id=169 data-nosnippet>169</a><span class="macro">glib::wrapper!</span> {
+<a href=#170 id=170 data-nosnippet>170</a>    <span class="kw">pub struct </span>CircleItemWidget(ObjectSubclass&lt;imp::CircleItemWidgetImpl&gt;)
+<a href=#171 id=171 data-nosnippet>171</a>        @extends gtk4::Widget,
+<a href=#172 id=172 data-nosnippet>172</a>        @implements gtk4::Accessible, gtk4::Buildable, gtk4::ConstraintTarget;
 <a href=#173 id=173 data-nosnippet>173</a>}
 <a href=#174 id=174 data-nosnippet>174</a>
-<a href=#175 id=175 data-nosnippet>175</a><span class="macro">glib::wrapper!</span> {
-<a href=#176 id=176 data-nosnippet>176</a>    <span class="kw">pub struct </span>CircleItemWidget(ObjectSubclass&lt;imp::CircleItemWidgetImpl&gt;)
-<a href=#177 id=177 data-nosnippet>177</a>        @extends gtk4::Widget,
-<a href=#178 id=178 data-nosnippet>178</a>        @implements gtk4::Accessible, gtk4::Buildable, gtk4::ConstraintTarget;
-<a href=#179 id=179 data-nosnippet>179</a>}
-<a href=#180 id=180 data-nosnippet>180</a>
-<a href=#181 id=181 data-nosnippet>181</a><span class="kw">impl </span>CircleItemWidget {
-<a href=#182 id=182 data-nosnippet>182</a>    <span class="kw">pub fn </span>new(
-<a href=#183 id=183 data-nosnippet>183</a>        icon_name: <span class="kw-2">&amp;</span>str,
-<a href=#184 id=184 data-nosnippet>184</a>        label: <span class="kw-2">&amp;</span>str,
-<a href=#185 id=185 data-nosnippet>185</a>        bg_color: Color&lt;f32&gt;,
-<a href=#186 id=186 data-nosnippet>186</a>        label_color: Color&lt;f32&gt;,
-<a href=#187 id=187 data-nosnippet>187</a>        item_radius: Pixels&lt;f32&gt;,
-<a href=#188 id=188 data-nosnippet>188</a>        icon_size: <span class="prelude-ty">Option</span>&lt;Pixels&lt;f32&gt;&gt;,
-<a href=#189 id=189 data-nosnippet>189</a>        enabled: bool,
-<a href=#190 id=190 data-nosnippet>190</a>    ) -&gt; <span class="self">Self </span>{
-<a href=#191 id=191 data-nosnippet>191</a>        <span class="kw">let </span>widget: <span class="self">Self </span>= glib::Object::builder().build();
-<a href=#192 id=192 data-nosnippet>192</a>        widget.imp().icon_name.replace(icon_name.to_string());
-<a href=#193 id=193 data-nosnippet>193</a>        widget.imp().label.replace(label.to_string());
-<a href=#194 id=194 data-nosnippet>194</a>        widget.imp().item_radius.replace(item_radius);
-<a href=#195 id=195 data-nosnippet>195</a>        widget.imp().icon_size.replace(icon_size);
-<a href=#196 id=196 data-nosnippet>196</a>        widget.imp().enabled.replace(enabled);
-<a href=#197 id=197 data-nosnippet>197</a>        widget.imp().bg_color.replace(bg_color);
-<a href=#198 id=198 data-nosnippet>198</a>        widget.imp().label_color.replace(label_color);
-<a href=#199 id=199 data-nosnippet>199</a>        widget
-<a href=#200 id=200 data-nosnippet>200</a>    }
-<a href=#201 id=201 data-nosnippet>201</a>
-<a href=#202 id=202 data-nosnippet>202</a>    <span class="kw">pub fn </span>set_selected(<span class="kw-2">&amp;</span><span class="self">self</span>, selected: bool) {
-<a href=#203 id=203 data-nosnippet>203</a>        <span class="self">self</span>.imp().selected.replace(selected);
-<a href=#204 id=204 data-nosnippet>204</a>        <span class="self">self</span>.queue_draw();
-<a href=#205 id=205 data-nosnippet>205</a>    }
-<a href=#206 id=206 data-nosnippet>206</a>}
+<a href=#175 id=175 data-nosnippet>175</a><span class="kw">impl </span>CircleItemWidget {
+<a href=#176 id=176 data-nosnippet>176</a>    <span class="kw">pub fn </span>new(
+<a href=#177 id=177 data-nosnippet>177</a>        icon_name: <span class="kw-2">&amp;</span>str,
+<a href=#178 id=178 data-nosnippet>178</a>        label: <span class="kw-2">&amp;</span>str,
+<a href=#179 id=179 data-nosnippet>179</a>        bg_color: Color&lt;f32&gt;,
+<a href=#180 id=180 data-nosnippet>180</a>        label_color: Color&lt;f32&gt;,
+<a href=#181 id=181 data-nosnippet>181</a>        item_radius: Pixels&lt;f32&gt;,
+<a href=#182 id=182 data-nosnippet>182</a>        icon_size: <span class="prelude-ty">Option</span>&lt;Pixels&lt;f32&gt;&gt;,
+<a href=#183 id=183 data-nosnippet>183</a>        enabled: bool,
+<a href=#184 id=184 data-nosnippet>184</a>    ) -&gt; <span class="self">Self </span>{
+<a href=#185 id=185 data-nosnippet>185</a>        <span class="kw">let </span>widget: <span class="self">Self </span>= glib::Object::builder().build();
+<a href=#186 id=186 data-nosnippet>186</a>        widget.imp().icon_name.replace(icon_name.to_string());
+<a href=#187 id=187 data-nosnippet>187</a>        widget.imp().label.replace(label.to_string());
+<a href=#188 id=188 data-nosnippet>188</a>        widget.imp().item_radius.replace(item_radius);
+<a href=#189 id=189 data-nosnippet>189</a>        widget.imp().icon_size.replace(icon_size);
+<a href=#190 id=190 data-nosnippet>190</a>        widget.imp().enabled.replace(enabled);
+<a href=#191 id=191 data-nosnippet>191</a>        widget.imp().bg_color.replace(bg_color);
+<a href=#192 id=192 data-nosnippet>192</a>        widget.imp().label_color.replace(label_color);
+<a href=#193 id=193 data-nosnippet>193</a>        widget
+<a href=#194 id=194 data-nosnippet>194</a>    }
+<a href=#195 id=195 data-nosnippet>195</a>
+<a href=#196 id=196 data-nosnippet>196</a>    <span class="kw">pub fn </span>set_selected(<span class="kw-2">&amp;</span><span class="self">self</span>, selected: bool) {
+<a href=#197 id=197 data-nosnippet>197</a>        <span class="self">self</span>.imp().selected.replace(selected);
+<a href=#198 id=198 data-nosnippet>198</a>        <span class="self">self</span>.queue_draw();
+<a href=#199 id=199 data-nosnippet>199</a>    }
+<a href=#200 id=200 data-nosnippet>200</a>}
 </code></pre></div></section></main></body></html>
