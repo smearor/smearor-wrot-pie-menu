@@ -109,7 +109,7 @@ impl PieMenuOverlayWidgetImpl {
     /// Uses explicit override if set, otherwise `main_radius + level * step`.
     pub(crate) fn submenu_radius_for_level(&self, level: u32) -> Pixels {
         if let Some(radius) = self.submenu_radii.borrow().get(&level) {
-            return Pixels::from(f64::from(*radius));
+            return *radius;
         }
         let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
         let main_radius = pie_menu_widget_borrow

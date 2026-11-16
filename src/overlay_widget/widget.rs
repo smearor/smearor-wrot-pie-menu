@@ -13,6 +13,7 @@ use gtk4::Widget;
 use gtk4::glib::Object;
 use gtk4::subclass::prelude::*;
 use smearor_commons_geometry::DegreesPerPixel;
+use smearor_commons_geometry::Pixels;
 use std::sync::mpsc::Sender;
 use tracing::error;
 
@@ -90,14 +91,14 @@ impl PieMenuOverlayWidget {
     /// Sets the step width between consecutive submenu ring levels and returns self for chaining.
     /// Each submenu level's radius is computed as: `main_radius + level * step`.
     /// Default: `80.0`.
-    pub fn with_submenu_radius_step(self, step: f32) -> Self {
+    pub fn with_submenu_radius_step(self, step: impl Into<Pixels>) -> Self {
         self.set_submenu_radius_step(step);
         self
     }
 
     /// Sets the radius for a specific submenu level and returns self for chaining.
     /// Level 0 is the main ring, level 1 is the first submenu, etc.
-    pub fn with_submenu_radius(self, level: u32, radius: f32) -> Self {
+    pub fn with_submenu_radius(self, level: u32, radius: impl Into<Pixels>) -> Self {
         self.set_submenu_radius(level, radius);
         self
     }

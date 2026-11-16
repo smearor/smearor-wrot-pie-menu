@@ -8,6 +8,7 @@ use crate::overlay_widget::imp::widget::DEFAULT_DEACTIVATION_THRESHOLD;
 use crate::overlay_widget::imp::widget::MAX_SUBMENU_DEPTH;
 use glib::subclass::prelude::ObjectSubclassIsExt;
 use smearor_commons_geometry::DegreesPerPixel;
+use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 
 pub trait PieMenuControlHandler {
@@ -124,14 +125,14 @@ pub trait PieMenuControlHandler {
     /// Returns the current inner radius of the pie menu ring in pixels.
     fn pie_menu_center_radius(&self) -> f32;
 
-    /// Sets the radius for a specific submenu level.
+    /// Sets the radius for a specific submenu level in pixels.
     /// Level 0 is the main ring, level 1 is the first submenu, etc.
-    fn set_submenu_radius(&self, level: u32, radius: f32);
+    fn set_submenu_radius(&self, level: u32, radius: impl Into<Pixels>);
 
-    /// Sets the global step width between consecutive ring levels.
+    /// Sets the global step width between consecutive ring levels in pixels.
     /// Each submenu level's radius is computed as:
     /// `main_radius + level * step`. Default: `80.0`.
-    fn set_submenu_radius_step(&self, step: f32);
+    fn set_submenu_radius_step(&self, step: impl Into<Pixels>);
 
     /// Returns the maximum submenu nesting depth.
     fn max_submenu_depth(&self) -> u32;
@@ -258,12 +259,12 @@ impl PieMenuControlHandler for PieMenuOverlayWidget {
         self.imp().pie_menu_center_radius()
     }
 
-    fn set_submenu_radius(&self, level: u32, radius: f32) {
-        self.imp().set_submenu_radius(level, radius);
+    fn set_submenu_radius(&self, level: u32, radius: impl Into<Pixels>) {
+        self.imp().set_submenu_radius(level, radius.into());
     }
 
-    fn set_submenu_radius_step(&self, step: f32) {
-        self.imp().set_submenu_radius_step(step);
+    fn set_submenu_radius_step(&self, step: impl Into<Pixels>) {
+        self.imp().set_submenu_radius_step(step.into());
     }
 
     fn max_submenu_depth(&self) -> u32 {

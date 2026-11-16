@@ -13,6 +13,7 @@ use gtk4::PropagationPhase;
 use gtk4::prelude::EventControllerExt;
 use gtk4::prelude::WidgetExt;
 use smearor_commons_geometry::DegreesPerPixel;
+use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use std::sync::atomic::Ordering;
 
@@ -306,15 +307,16 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
             .unwrap_or(64.0)
     }
 
-    fn set_submenu_radius(&self, level: u32, radius: f32) {
-        self.submenu_radii.borrow_mut().insert(level, radius);
+    fn set_submenu_radius(&self, level: u32, radius: impl Into<Pixels>) {
+        self.submenu_radii.borrow_mut().insert(level, radius.into());
     }
 
-    fn set_submenu_radius_step(&self, step: f32) {
-        self.submenu_radius_step.store(step as f64, Ordering::Relaxed);
+    fn set_submenu_radius_step(&self, step: impl Into<Pixels>) {
+        let step = step.into();
+        self.submenu_radius_step.store(step.as_f64(), Ordering::Relaxed);
         let pie_menu_widget_borrow = self.pie_menu_widget.borrow();
         if let Some(pie_menu_widget) = pie_menu_widget_borrow.as_ref() {
-            pie_menu_widget.imp().submenu_radius_step.store(step, Ordering::Relaxed);
+            pie_menu_widget.imp().submenu_radius_step.store(step.as_f64() as f32, Ordering::Relaxed);
             pie_menu_widget.queue_draw();
         }
     }

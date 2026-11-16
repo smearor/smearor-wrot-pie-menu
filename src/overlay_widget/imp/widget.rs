@@ -101,7 +101,7 @@ pub struct PieMenuOverlayWidgetImpl {
 
     /// Per-level submenu radius overrides. Level 0 is the main ring.
     /// Levels without an explicit override use `main_radius + level * step`.
-    pub(crate) submenu_radii: RefCell<HashMap<u32, f32>>,
+    pub(crate) submenu_radii: RefCell<HashMap<u32, Pixels>>,
 
     /// Step width between consecutive ring levels. Default: `80.0`.
     pub(crate) submenu_radius_step: AtomicF64,
@@ -117,8 +117,8 @@ pub const DEFAULT_DEACTIVATION_THRESHOLD: f64 = 0.5;
 /// With a discrete mouse wheel tick (`dy ≈ 1.0`), this yields ~5° per tick.
 pub const DEFAULT_SCROLL_ROTATION_STEP: DegreesPerPixel = DegreesPerPixel::new(5.0);
 
-/// Default step width between consecutive submenu ring levels in pixels.
-pub const DEFAULT_SUBMENU_RADIUS_STEP: f64 = 80.0;
+/// Default step width between consecutive submenu ring levels.
+pub const DEFAULT_SUBMENU_RADIUS_STEP: Pixels = Pixels::new(80.0);
 
 /// Maximum submenu nesting depth to prevent visual overflow.
 pub const MAX_SUBMENU_DEPTH: u32 = 3;
@@ -144,7 +144,7 @@ impl Default for PieMenuOverlayWidgetImpl {
             key_controller: RefCell::new(None),
             submenu_stack: RefCell::new(Vec::new()),
             submenu_radii: RefCell::new(HashMap::new()),
-            submenu_radius_step: AtomicF64::new(DEFAULT_SUBMENU_RADIUS_STEP),
+            submenu_radius_step: AtomicF64::new(DEFAULT_SUBMENU_RADIUS_STEP.as_f64()),
         }
     }
 }
@@ -685,7 +685,7 @@ mod tests {
 
     #[test]
     fn test_default_submenu_radius_step_constant() {
-        assert_eq!(DEFAULT_SUBMENU_RADIUS_STEP, 80.0);
+        assert_eq!(DEFAULT_SUBMENU_RADIUS_STEP.as_f64(), 80.0);
     }
 
     #[test]
