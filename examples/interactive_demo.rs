@@ -6,6 +6,7 @@
 
 use smearor_commons_color::Color;
 use smearor_commons_geometry::DegreesPerPixel;
+use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use smearor_wrot_pie_menu::CircleConfig;
 use smearor_wrot_pie_menu::MenuItem;
@@ -201,6 +202,7 @@ fn build_ui(app: &Application) {
                         .icon_name("object-rotate-right-symbolic")
                         .label("Rotate CW")
                         .color("#00000077".parse::<Color<f32>>().unwrap_or_default())
+                        .icon_size(Pixels::new(32.0))
                         .build(),
                 )
                 .build(),
@@ -221,6 +223,7 @@ fn build_ui(app: &Application) {
                         .icon_name("object-rotate-left-symbolic")
                         .label("Rotate CCW")
                         .color("#00000077".parse::<Color<f32>>().unwrap_or_default())
+                        .icon_size(Pixels::new(24.0))
                         .build(),
                 )
                 .build(),

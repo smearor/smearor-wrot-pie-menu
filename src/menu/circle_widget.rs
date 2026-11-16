@@ -29,7 +29,7 @@ pub struct CircleConfig {
     #[builder(default, setter(into, strip_option))]
     pub label_color: Option<Color<f32>>,
     /// Icon size in pixels. When `None`, uses the default icon size.
-    #[builder(default)]
+    #[builder(default, setter(into, strip_option))]
     pub icon_size: Option<Pixels<f32>>,
     /// Whether to show the label. Defaults to `true`.
     #[builder(default)]
@@ -92,7 +92,7 @@ mod tests {
         let config = CircleConfig::builder()
             .icon_name("test")
             .label("Label")
-            .icon_size(Some(Pixels::new(48.0)))
+            .icon_size(Pixels::new(48.0))
             .show_label(Some(true))
             .build();
         let json = serde_json::to_string(&config).expect("serialize should succeed");

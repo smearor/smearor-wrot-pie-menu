@@ -15,12 +15,12 @@ use smearor_commons_geometry::WidgetSizeExt;
 use std::cell::RefCell;
 
 mod imp {
-    use gtk4::gdk::{Display, RGBA};
-    use gtk4::gsk::{PathBuilder, RoundedRect, Stroke};
-    use gtk4::{IconLookupFlags, IconTheme, Orientation, TextDirection};
-    use gtk4::graphene::Point;
-    use gtk4::pango::{FontDescription, Layout};
     use super::*;
+    use gtk4::gdk::{Display, RGBA};
+    use gtk4::graphene::Point;
+    use gtk4::gsk::{PathBuilder, RoundedRect, Stroke};
+    use gtk4::pango::{FontDescription, Layout};
+    use gtk4::{IconLookupFlags, IconTheme, Orientation, TextDirection};
 
     pub struct CircleItemWidgetImpl {
         pub icon_name: RefCell<String>,
@@ -120,14 +120,8 @@ mod imp {
                     .borrow()
                     .map(|size| Pixels::new(f64::from(size.as_raw())))
                     .unwrap_or(item_radius * 0.6);
-                let paintable = icon_theme.lookup_icon(
-                    icon_name,
-                    &[icon_name],
-                    icon_size.as_f64() as i32,
-                    1,
-                    TextDirection::None,
-                    IconLookupFlags::FORCE_SYMBOLIC,
-                );
+                let paintable =
+                    icon_theme.lookup_icon(icon_name, &[icon_name], icon_size.as_f64() as i32, 1, TextDirection::None, IconLookupFlags::FORCE_SYMBOLIC);
                 let icon_pos = center - Vec2::<Pixels>::splat(icon_size / 2.0);
                 snapshot.translate(&Point::from(icon_pos.to_f32()));
                 paintable.snapshot(snapshot, icon_size.as_f64(), icon_size.as_f64());
