@@ -109,7 +109,7 @@
 <a href=#109 id=109 data-nosnippet>109</a>    /// Uses explicit override if set, otherwise `main_radius + level * step`.
 <a href=#110 id=110 data-nosnippet>110</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>submenu_radius_for_level(<span class="kw-2">&amp;</span><span class="self">self</span>, level: u32) -&gt; Pixels {
 <a href=#111 id=111 data-nosnippet>111</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(radius) = <span class="self">self</span>.submenu_radii.borrow().get(<span class="kw-2">&amp;</span>level) {
-<a href=#112 id=112 data-nosnippet>112</a>            <span class="kw">return </span>Pixels::from(f64::from(<span class="kw-2">*</span>radius));
+<a href=#112 id=112 data-nosnippet>112</a>            <span class="kw">return </span><span class="kw-2">*</span>radius;
 <a href=#113 id=113 data-nosnippet>113</a>        }
 <a href=#114 id=114 data-nosnippet>114</a>        <span class="kw">let </span>pie_menu_widget_borrow = <span class="self">self</span>.pie_menu_widget.borrow();
 <a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">let </span>main_radius = pie_menu_widget_borrow
