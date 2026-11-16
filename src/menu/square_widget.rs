@@ -7,6 +7,7 @@ use gtk4::prelude::*;
 use serde::Deserialize;
 use serde::Serialize;
 use smearor_commons_color::Color;
+use smearor_commons_geometry::Pixels;
 use typed_builder::TypedBuilder;
 
 /// Typed configuration for the `"square"` widget type.
@@ -29,7 +30,7 @@ pub struct SquareConfig {
     pub label_color: Option<Color<f32>>,
     /// Icon size in pixels. When `None`, uses the default icon size.
     #[builder(default)]
-    pub icon_size: Option<u32>,
+    pub icon_size: Option<Pixels<f32>>,
     /// Whether to show the label. Defaults to `true`.
     #[builder(default)]
     pub show_label: Option<bool>,
@@ -84,7 +85,7 @@ mod tests {
         let config = SquareConfig::builder()
             .icon_name("test")
             .label("Label")
-            .icon_size(Some(48))
+            .icon_size(Some(Pixels::new(48.0)))
             .show_label(Some(true))
             .build();
         let json = serde_json::to_string(&config).expect("serialize should succeed");
