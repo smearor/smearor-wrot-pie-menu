@@ -2,6 +2,7 @@ use crate::menu::MenuItem;
 use crate::menu::widget_factory_erased::MenuItemWidgetFactoryErased;
 use crate::menu_widget::menu_item::error::AddMenuItemError;
 use crate::menu_widget::menu_item::handler::PieMenuMenuItemHandler;
+use crate::overlay_widget::SubmenuLevel;
 use crate::overlay_widget::control::handler::PieMenuControlHandler;
 use crate::overlay_widget::imp::PieMenuOverlayWidgetImpl;
 use crate::overlay_widget::message::handler::PieMenuMessageSender;
@@ -98,7 +99,7 @@ impl PieMenuOverlayWidget {
 
     /// Sets the radius for a specific submenu level and returns self for chaining.
     /// Level 0 is the main ring, level 1 is the first submenu, etc.
-    pub fn with_submenu_radius(self, level: u32, radius: impl Into<Pixels>) -> Self {
+    pub fn with_submenu_radius(self, level: impl Into<SubmenuLevel>, radius: impl Into<Pixels>) -> Self {
         self.set_submenu_radius(level, radius);
         self
     }

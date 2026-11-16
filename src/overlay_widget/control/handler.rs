@@ -1,6 +1,7 @@
 use crate::MenuItem;
 use crate::PieMenuOverlayWidget;
 use crate::menu_widget::menu_item::submenu_error::SubmenuError;
+use crate::overlay_widget::SubmenuLevel;
 use crate::overlay_widget::control::error::HidePieMenuError;
 use crate::overlay_widget::control::error::ShowPieMenuError;
 use crate::overlay_widget::imp::widget::DEFAULT_ACTIVATION_THRESHOLD;
@@ -127,7 +128,7 @@ pub trait PieMenuControlHandler {
 
     /// Sets the radius for a specific submenu level in pixels.
     /// Level 0 is the main ring, level 1 is the first submenu, etc.
-    fn set_submenu_radius(&self, level: u32, radius: impl Into<Pixels>);
+    fn set_submenu_radius(&self, level: impl Into<SubmenuLevel>, radius: impl Into<Pixels>);
 
     /// Sets the global step width between consecutive ring levels in pixels.
     /// Each submenu level's radius is computed as:
@@ -259,8 +260,8 @@ impl PieMenuControlHandler for PieMenuOverlayWidget {
         self.imp().pie_menu_center_radius()
     }
 
-    fn set_submenu_radius(&self, level: u32, radius: impl Into<Pixels>) {
-        self.imp().set_submenu_radius(level, radius.into());
+    fn set_submenu_radius(&self, level: impl Into<SubmenuLevel>, radius: impl Into<Pixels>) {
+        self.imp().set_submenu_radius(level.into(), radius.into());
     }
 
     fn set_submenu_radius_step(&self, step: impl Into<Pixels>) {

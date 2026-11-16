@@ -2,6 +2,7 @@ use crate::MenuItem;
 use crate::PieMenuOverlayWidgetImpl;
 use crate::menu::Menu;
 use crate::menu_widget::menu_item::submenu_error::SubmenuError;
+use crate::overlay_widget::SubmenuLevel;
 use crate::overlay_widget::control::error::HidePieMenuError;
 use crate::overlay_widget::control::error::ShowPieMenuError;
 use crate::overlay_widget::control::handler::PieMenuControlHandler;
@@ -307,8 +308,8 @@ impl PieMenuControlHandler for PieMenuOverlayWidgetImpl {
             .unwrap_or(64.0)
     }
 
-    fn set_submenu_radius(&self, level: u32, radius: impl Into<Pixels>) {
-        self.submenu_radii.borrow_mut().insert(level, radius.into());
+    fn set_submenu_radius(&self, level: impl Into<SubmenuLevel>, radius: impl Into<Pixels>) {
+        self.submenu_radii.borrow_mut().insert(level.into(), radius.into());
     }
 
     fn set_submenu_radius_step(&self, step: impl Into<Pixels>) {

@@ -1,4 +1,5 @@
 use crate::PieMenuOverlayWidgetImpl;
+use crate::overlay_widget::SubmenuLevel;
 use crate::overlay_widget::control::handler::PieMenuControlHandler;
 use crate::overlay_widget::message::handler::PieMenuMessageSender;
 use crate::overlay_widget::message::message::PieMenuMessage;
@@ -107,7 +108,8 @@ impl PieMenuOverlayWidgetImpl {
 
     /// Computes the ring radius for a given submenu level.
     /// Uses explicit override if set, otherwise `main_radius + level * step`.
-    pub(crate) fn submenu_radius_for_level(&self, level: u32) -> Pixels {
+    pub(crate) fn submenu_radius_for_level(&self, level: impl Into<SubmenuLevel>) -> Pixels {
+        let level = level.into();
         if let Some(radius) = self.submenu_radii.borrow().get(&level) {
             return *radius;
         }
@@ -117,7 +119,7 @@ impl PieMenuOverlayWidgetImpl {
             .map(|widget| widget.imp().radius())
             .unwrap_or(Pixels::new(160.0));
         let step = Pixels::from(self.submenu_radius_step.load(Ordering::Relaxed));
-        main_radius + step * f64::from(level)
+        main_radius + step * f64::from(level.as_u32())
     }
 }
 

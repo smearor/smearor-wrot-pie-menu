@@ -33,6 +33,7 @@ pub use menu_widget::menu_item::submenu_error::SubmenuError;
 pub use menu_widget::menu_item::widget_config_error::SetWidgetConfigError;
 pub use menu_widget::rotation::handler::RotationHandler;
 pub use overlay_widget::PieMenuOverlayWidget;
+pub use overlay_widget::SubmenuLevel;
 pub use overlay_widget::imp::PieMenuOverlayWidgetImpl;
 pub use overlay_widget::message::PieMenuMessage;
 pub use palette::DEFAULT_PALETTE;

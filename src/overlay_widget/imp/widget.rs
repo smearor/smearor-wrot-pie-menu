@@ -2,6 +2,7 @@ use crate::PieMenuMessage;
 use crate::PieMenuOverlayWidget;
 use crate::PieMenuWidget;
 use crate::RotationHandler;
+use crate::overlay_widget::SubmenuLevel;
 use crate::overlay_widget::control::handler::PieMenuControlHandler;
 use crate::overlay_widget::message::handler::PieMenuMessageSender;
 use atomic_float::AtomicF64;
@@ -101,7 +102,7 @@ pub struct PieMenuOverlayWidgetImpl {
 
     /// Per-level submenu radius overrides. Level 0 is the main ring.
     /// Levels without an explicit override use `main_radius + level * step`.
-    pub(crate) submenu_radii: RefCell<HashMap<u32, Pixels>>,
+    pub(crate) submenu_radii: RefCell<HashMap<SubmenuLevel, Pixels>>,
 
     /// Step width between consecutive ring levels. Default: `80.0`.
     pub(crate) submenu_radius_step: AtomicF64,
