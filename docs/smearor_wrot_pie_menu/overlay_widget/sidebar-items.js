@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["control","imp","menu_item","message","rotation","widget"]};
+window.SIDEBAR_ITEMS = {"mod":["control","imp","menu_item","message","rotation","submenu_level","widget"]};
