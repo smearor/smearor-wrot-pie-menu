@@ -586,28 +586,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "miette"
-version = "7.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f98efec8807c63c752b5bd61f862c165c115b0a35685bdcfd9238c7aeb592b7"
-dependencies = [
- "cfg-if",
- "miette-derive",
- "unicode-width",
-]
-
-[[package]]
-name = "miette-derive"
-version = "7.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db5b29714e950dbb20d5e6f74f9dcec4edbcc1067bb7f8ed198c097b8c1a818b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
 name = "nix"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -892,7 +870,7 @@ checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
 [[package]]
 name = "smearor-commons-animation"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#7f969bbfc32ca3786a82328954747a685a10a6f0"
+source = "git+https://github.com/smearor/smearor-commons.git#feef67e26b1db7f532999efc6f7d64219cf47d01"
 dependencies = [
  "gtk4",
  "serde",
@@ -902,7 +880,7 @@ dependencies = [
 [[package]]
 name = "smearor-commons-color"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#7f969bbfc32ca3786a82328954747a685a10a6f0"
+source = "git+https://github.com/smearor/smearor-commons.git#feef67e26b1db7f532999efc6f7d64219cf47d01"
 dependencies = [
  "gtk4",
  "serde",
@@ -912,11 +890,22 @@ dependencies = [
 [[package]]
 name = "smearor-commons-geometry"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#7f969bbfc32ca3786a82328954747a685a10a6f0"
+source = "git+https://github.com/smearor/smearor-commons.git#feef67e26b1db7f532999efc6f7d64219cf47d01"
 dependencies = [
  "cairo-rs",
  "gtk4",
  "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "smearor-commons-layer"
+version = "0.1.0"
+source = "git+https://github.com/smearor/smearor-commons.git#feef67e26b1db7f532999efc6f7d64219cf47d01"
+dependencies = [
+ "gtk4-layer-shell",
+ "serde",
+ "smearor-commons-geometry",
  "thiserror",
 ]
 
@@ -944,15 +933,15 @@ dependencies = [
 [[package]]
 name = "smearor-wrot-rotation"
 version = "0.3.0"
-source = "git+https://github.com/smearor/smearor-wrot-rotation.git#19225062441bd2d0a6ad5e49cb61926127919d3c"
+source = "git+https://github.com/smearor/smearor-wrot-rotation.git#a5f23e20a4b1510791c84a23bc700c1dd7b29f45"
 dependencies = [
  "glib",
  "gtk4",
  "gtk4-layer-shell",
- "miette",
  "serde",
  "smearor-commons-animation",
  "smearor-commons-geometry",
+ "smearor-commons-layer",
  "tracing",
 ]
 
@@ -1158,12 +1147,6 @@ name = "unicode-ident"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
-
-[[package]]
-name = "unicode-width"
-version = "0.1.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
 
 [[package]]
 name = "version-compare"
