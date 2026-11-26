@@ -455,8 +455,20 @@ dependencies = [
  "glib",
  "glib-sys",
  "gtk4",
- "gtk4-layer-shell-sys",
+ "gtk4-layer-shell-sys 0.6.1",
  "libc",
+]
+
+[[package]]
+name = "gtk4-layer-shell"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc070e72e5e2cf5deab2adc68b7c8cd759ca99b4f9044a6578c84001cf7f9db0"
+dependencies = [
+ "gdk4",
+ "glib",
+ "gtk4",
+ "gtk4-layer-shell-sys 0.7.0",
 ]
 
 [[package]]
@@ -470,6 +482,19 @@ dependencies = [
  "gtk4-sys",
  "libc",
  "system-deps 8.0.0",
+]
+
+[[package]]
+name = "gtk4-layer-shell-sys"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58f38ce9d3abb33f7a37567b713fca1d6a6ed9d7751e96a62b48795a93ca9e38"
+dependencies = [
+ "gdk4-sys",
+ "glib-sys",
+ "gtk4-sys",
+ "libc",
+ "system-deps 9.0.1",
 ]
 
 [[package]]
@@ -870,7 +895,7 @@ checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
 [[package]]
 name = "smearor-commons-animation"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#81ee9bcf302587a6fc0359e20641e4ba25041ab1"
+source = "git+https://github.com/smearor/smearor-commons.git#e3a1d9af766981551c90047a9725df79fa9f2ecd"
 dependencies = [
  "gtk4",
  "serde",
@@ -880,7 +905,7 @@ dependencies = [
 [[package]]
 name = "smearor-commons-color"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#81ee9bcf302587a6fc0359e20641e4ba25041ab1"
+source = "git+https://github.com/smearor/smearor-commons.git#e3a1d9af766981551c90047a9725df79fa9f2ecd"
 dependencies = [
  "gtk4",
  "serde",
@@ -890,7 +915,7 @@ dependencies = [
 [[package]]
 name = "smearor-commons-geometry"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#81ee9bcf302587a6fc0359e20641e4ba25041ab1"
+source = "git+https://github.com/smearor/smearor-commons.git#e3a1d9af766981551c90047a9725df79fa9f2ecd"
 dependencies = [
  "cairo-rs",
  "gtk4",
@@ -901,9 +926,9 @@ dependencies = [
 [[package]]
 name = "smearor-commons-layer"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#81ee9bcf302587a6fc0359e20641e4ba25041ab1"
+source = "git+https://github.com/smearor/smearor-commons.git#e3a1d9af766981551c90047a9725df79fa9f2ecd"
 dependencies = [
- "gtk4-layer-shell",
+ "gtk4-layer-shell 0.9.0",
  "serde",
  "smearor-commons-geometry",
  "thiserror",
@@ -937,7 +962,7 @@ source = "git+https://github.com/smearor/smearor-wrot-rotation.git#a5f23e20a4b15
 dependencies = [
  "glib",
  "gtk4",
- "gtk4-layer-shell",
+ "gtk4-layer-shell 0.8.1",
  "serde",
  "smearor-commons-animation",
  "smearor-commons-geometry",
